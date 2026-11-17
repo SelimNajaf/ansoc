@@ -1,0 +1,27 @@
+# downloaded media (the Desktop/MediaDownloader download folder) - never commit
+/Instagram/
+/TikTok/
+/Pinterest/
+
+# helper: per-user install state, packages, logs
+helper/.venv/
+helper/state/
+helper/logs/
+helper/bin/
+helper/config.json
+helper/pindl_host.bat
+helper/pindl_host.sh
+helper/com.local.media_downloader.json
+helper/host-stderr.log
+__pycache__/
+*.pyc
+*.log
+
+# local notes / old files
+/translations/
+/QURASHDIRMA-OXU.txt
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini

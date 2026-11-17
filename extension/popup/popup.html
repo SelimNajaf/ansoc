@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <span class="logo" aria-hidden="true">↓</span>
+    <h1>Media Downloader</h1>
+    <button id="helperBadge" class="badge" type="button" aria-live="polite"></button>
+  </header>
+
+  <section id="updateBox" class="update" hidden aria-live="polite">
+    <div id="updateText" class="update-text"></div>
+    <div class="update-actions">
+      <button id="updateBtn" class="small primary" type="button" data-i18n="btn_update_now"></button>
+      <a id="updateNotes" class="small" href="https://github.com/SelimNajaf/ansoc/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" data-i18n="btn_whats_new"></a>
+    </div>
+  </section>
+
+  <section id="helperHelp" class="help" hidden></section>
+
+  <form id="urlForm" class="row" autocomplete="off">
+    <label for="urlInput" class="sr-only" data-i18n="ui_url_label"></label>
+    <input id="urlInput" type="text" inputmode="url" spellcheck="false" data-i18n-placeholder="ui_url_placeholder">
+    <button id="downloadBtn" class="primary" type="submit" data-i18n="btn_download"></button>
+  </form>
+  <div id="detected" class="detected" aria-live="polite"></div>
+
+  <div class="stack">
+    <button id="currentBtn" type="button" data-i18n="btn_download_current"></button>
+    <button id="boardBtn" type="button" data-i18n="btn_download_board"></button>
+    <button id="folderBtn" type="button" data-i18n="btn_open_folder"></button>
+    <button id="analyzerBtn" type="button" data-i18n="btn_reels_analyzer"></button>
+  </div>
+
+  <section class="status-box" aria-live="polite">
+    <div id="statusText" class="status"></div>
+    <div id="statusBar" class="bar" hidden><div class="fill"></div></div>
+    <div id="errorText" class="error" hidden></div>
+  </section>
+
+  <section>
+    <div class="list-head">
+      <h2 data-i18n="ui_recent"></h2>
+      <button id="cancelAllBtn" class="link danger" type="button" hidden></button>
+      <button id="clearBtn" class="link" type="button" data-i18n="btn_clear"></button>
+    </div>
+    <ul id="recent" class="recent"></ul>
+    <p id="empty" class="muted" data-i18n="ui_empty"></p>
+  </section>
+
+  <details class="settings">
+    <summary data-i18n="ui_settings"></summary>
+    <label><input type="checkbox" id="setSkipDup"> <span data-i18n="set_skip_dup"></span></label>
+    <label><input type="checkbox" id="setNotify"> <span data-i18n="set_notify"></span></label>
+    <label><input type="checkbox" id="setCookies"> <span data-i18n="set_cookies"></span></label>
+    <label><input type="checkbox" id="setCompat"> <span data-i18n="set_compat"></span></label>
+    <label><input type="checkbox" id="setMeta"> <span data-i18n="set_meta"></span></label>
+    <p class="muted small" data-i18n="set_privacy"></p>
+  </details>
+
+  <script src="../utils/constants.js"></script>
+  <script src="../utils/pinterest.js"></script>
+  <script src="../utils/platforms.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,1295 @@
+{
+  "ext_name": {
+    "message": "Media Downloader (local)"
+  },
+  "ext_desc": {
+    "message": "Download Pinterest, TikTok and Instagram media in the highest available quality with metadata. 100% local, no third-party servers."
+  },
+  "btn_download": {
+    "message": "Download"
+  },
+  "btn_download_current": {
+    "message": "Download current page"
+  },
+  "btn_download_board": {
+    "message": "Download all pins on this board"
+  },
+  "btn_open_folder": {
+    "message": "Open folder"
+  },
+  "btn_download_image": {
+    "message": "Download image"
+  },
+  "btn_download_video": {
+    "message": "Download video"
+  },
+  "btn_download_all": {
+    "message": "Download all"
+  },
+  "btn_save_metadata": {
+    "message": "Save metadata"
+  },
+  "btn_retry": {
+    "message": "Retry"
+  },
+  "btn_retry_failed": {
+    "message": "Retry failed"
+  },
+  "btn_download_again": {
+    "message": "Download again"
+  },
+  "btn_show_file": {
+    "message": "Show file"
+  },
+  "btn_open_pin": {
+    "message": "Open pin"
+  },
+  "btn_stop": {
+    "message": "Stop"
+  },
+  "btn_clear": {
+    "message": "Clear"
+  },
+  "ui_url_label": {
+    "message": "Pin URL"
+  },
+  "ui_url_placeholder": {
+    "message": "Paste a Pinterest, TikTok or Instagram link"
+  },
+  "ui_recent": {
+    "message": "Recent downloads"
+  },
+  "ui_empty": {
+    "message": "Nothing downloaded yet."
+  },
+  "ui_settings": {
+    "message": "Settings"
+  },
+  "ui_minimize": {
+    "message": "Minimize"
+  },
+  "set_skip_dup": {
+    "message": "Skip files that were already downloaded (duplicate detection)"
+  },
+  "set_notify": {
+    "message": "Show a notification when a download finishes"
+  },
+  "set_cookies": {
+    "message": "Use Chrome's login for private / login-only posts (needed for most Instagram posts). Cookies are read locally and sent only to that platform."
+  },
+  "set_privacy": {
+    "message": "Everything runs on this computer. Only Pinterest, TikTok, Instagram and their own CDNs are contacted. No analytics, no telemetry."
+  },
+  "helper_checking": {
+    "message": "Checking helper…"
+  },
+  "helper_ok": {
+    "message": "Helper connected"
+  },
+  "helper_partial": {
+    "message": "Helper: tools missing"
+  },
+  "helper_missing": {
+    "message": "Helper not installed"
+  },
+  "helper_missing_deps": {
+    "message": "Missing: $1. Video (HLS) downloads may fail."
+  },
+  "helper_rerun_install": {
+    "message": "Install the missing tool and run the install script again."
+  },
+  "helper_install_hint": {
+    "message": "TikTok, Instagram and HLS videos need the helper. Without it, Pinterest images and MP4 videos are saved to Downloads/MediaDownloader/Pinterest. To install it, double-click the installer from the downloaded folder:"
+  },
+  "status_queued": {
+    "message": "Queued…"
+  },
+  "status_resolving": {
+    "message": "Reading pin…"
+  },
+  "status_downloading": {
+    "message": "Downloading"
+  },
+  "status_processing": {
+    "message": "Saving + metadata…"
+  },
+  "status_success": {
+    "message": "Downloaded"
+  },
+  "status_duplicate": {
+    "message": "Already downloaded (skipped)"
+  },
+  "status_failed": {
+    "message": "Failed"
+  },
+  "status_retrying": {
+    "message": "Retrying…"
+  },
+  "status_active_many": {
+    "message": "$1 active"
+  },
+  "status_collecting": {
+    "message": "Collecting pins… $1 found"
+  },
+  "status_collecting_of": {
+    "message": "Collecting pins… $1 / $2"
+  },
+  "status_board_queued": {
+    "message": "$1 pins queued."
+  },
+  "status_board_progress": {
+    "message": "$1 / $2 done · $3 ok · $4 duplicate · $5 failed"
+  },
+  "confirm_partial_board": {
+    "message": "Collection stopped. Download the $1 pins found so far?"
+  },
+  "note_board_partial": {
+    "message": "Fewer pins than the board count were found (some may be hidden or still loading)."
+  },
+  "note_not_original": {
+    "message": "'originals' was not available; the largest size was used."
+  },
+  "note_webp": {
+    "message": "The original file is WebP; saved as-is."
+  },
+  "note_hls": {
+    "message": "Video is HLS (.m3u8): downloaded by the local helper with yt-dlp, stream copy (no re-encode)."
+  },
+  "note_blob": {
+    "message": "Video was a blob: URL; the real HLS stream was found and downloaded by the helper."
+  },
+  "note_fallback_folder": {
+    "message": "Helper not installed: opened Chrome's download folder (Downloads/MediaDownloader)."
+  },
+  "notif_done_title": {
+    "message": "Download complete"
+  },
+  "notif_failed_title": {
+    "message": "Download failed"
+  },
+  "notif_dup_title": {
+    "message": "Already downloaded"
+  },
+  "notif_board_title": {
+    "message": "Board download finished"
+  },
+  "notif_board_body": {
+    "message": "$1 downloaded, $2 duplicates, $3 failed."
+  },
+  "err_PIN_NOT_FOUND": {
+    "message": "Content not found. It may have been deleted, or the link is wrong."
+  },
+  "err_LOGIN_REQUIRED": {
+    "message": "You are not logged in to instagram.com in this Chrome profile (or “use Chrome's login” is off). Log in to Instagram in this Chrome window, then retry."
+  },
+  "err_RATE_LIMITED": {
+    "message": "The platform is rate limiting requests (too many downloads). Wait a few minutes and retry."
+  },
+  "err_NETWORK_ERROR": {
+    "message": "Network error. Check your connection and retry."
+  },
+  "err_FFMPEG_MISSING": {
+    "message": "FFmpeg is not installed. It is needed to merge HLS video and audio. Install FFmpeg and rerun the helper installer."
+  },
+  "err_YTDLP_MISSING": {
+    "message": "yt-dlp is not installed in the helper (needed for TikTok and HLS). Rerun the helper installer."
+  },
+  "err_PYTHON_MISSING": {
+    "message": "The local helper could not start (Python missing or its virtual environment is broken). Install Python 3.9+ and rerun the installer."
+  },
+  "err_HOST_NOT_INSTALLED": {
+    "message": "The local helper is not installed (or not registered for this extension ID). TikTok and Instagram need it. Run the installer in the helper folder."
+  },
+  "err_DIR_CREATE_FAILED": {
+    "message": "Cannot write to Desktop/MediaDownloader. macOS: click Allow when asked for Desktop access, or enable it in System Settings > Privacy & Security > Files and Folders."
+  },
+  "err_FILE_EXISTS": {
+    "message": "A file with this name already exists. A new name was not possible."
+  },
+  "err_DUPLICATE": {
+    "message": "This file was already downloaded."
+  },
+  "err_NO_MEDIA": {
+    "message": "No image or video was found in this post."
+  },
+  "err_HLS_NEEDS_HELPER": {
+    "message": "This video is only available as HLS (.m3u8 / blob:). Install the local helper to download it."
+  },
+  "err_BAD_URL": {
+    "message": "Enter a valid Pinterest, TikTok or Instagram link (post, reel or story)."
+  },
+  "err_BAD_REQUEST": {
+    "message": "Invalid request."
+  },
+  "err_FORBIDDEN_HOST": {
+    "message": "Blocked: only the supported platforms and their CDNs are allowed."
+  },
+  "err_DOWNLOAD_INTERRUPTED": {
+    "message": "The download was interrupted."
+  },
+  "err_INTERRUPTED": {
+    "message": "Interrupted (browser or extension restarted). Press Retry."
+  },
+  "err_UNKNOWN": {
+    "message": "Unexpected error. See Desktop/MediaDownloader/<Platform>/logs for details."
+  },
+  "err_EXTENSION_RELOADED": {
+    "message": "The extension was updated. Reload this page."
+  },
+  "err_NOT_PIN_PAGE": {
+    "message": "Open a Pinterest pin page first."
+  },
+  "err_NOT_BOARD_PAGE": {
+    "message": "Open a Pinterest board page first."
+  },
+  "err_BOARD_IN_INPUT": {
+    "message": "That is a board link. Open the board and use “Download all pins on this board”."
+  },
+  "err_HOST_EXITED": {
+    "message": "The helper started but exited immediately. macOS: allow Chrome to access the Desktop folder (System Settings > Privacy & Security > Files and Folders) and rerun helper/install_mac.sh. Details: host-stderr.log in ~/Library/Application Support/MediaDownloader."
+  },
+  "btn_download_images": {
+    "message": "Download images"
+  },
+  "media_image": {
+    "message": "Image"
+  },
+  "media_video": {
+    "message": "Video"
+  },
+  "media_slideshow": {
+    "message": "Slideshow"
+  },
+  "media_metadata": {
+    "message": "Metadata"
+  },
+  "note_slideshow": {
+    "message": "Slideshow: $1 images $2"
+  },
+  "note_with_audio": {
+    "message": "+ audio"
+  },
+  "note_images_missing": {
+    "message": "The slideshow images could not be downloaded; only the audio was saved."
+  },
+  "note_some_duplicates": {
+    "message": "$1 file(s) were already downloaded and skipped."
+  },
+  "err_NOT_FOUND": {
+    "message": "Content not found. It may have been deleted, or the link is wrong."
+  },
+  "err_PRIVATE_CONTENT": {
+    "message": "This post is private. Log in with an account that can see it and enable the login option in Settings."
+  },
+  "err_REGION_BLOCKED": {
+    "message": "This content is not available in your region (or for your IP address)."
+  },
+  "err_UNSUPPORTED_PLATFORM": {
+    "message": "Unsupported platform. Supported: Pinterest, TikTok, Instagram. Nothing was sent anywhere."
+  },
+  "err_UNSUPPORTED_PLATFORM_short": {
+    "message": "Unsupported platform"
+  },
+  "err_NOT_CONTENT_PAGE": {
+    "message": "Open a Pinterest pin, a TikTok video/photo or an Instagram post/reel/story first."
+  },
+  "btn_download_post": {
+    "message": "Download post"
+  },
+  "btn_download_story": {
+    "message": "Download story"
+  },
+  "media_carousel": {
+    "message": "Carousel"
+  },
+  "media_story": {
+    "message": "Story"
+  },
+  "note_carousel": {
+    "message": "Carousel: $1 files"
+  },
+  "btn_analyze_reels": {
+    "message": "Analyze reels"
+  },
+  "btn_reels_analyzer": {
+    "message": "Instagram Reels Analyzer"
+  },
+  "notif_collection_title": {
+    "message": "Collection “$1” finished"
+  },
+  "an_title": {
+    "message": "Instagram Reels Analyzer"
+  },
+  "an_subtitle": {
+    "message": "List a profile's reels by views, see the distribution, pick the ones you want and download them into one folder. Everything runs locally."
+  },
+  "an_login_title": {
+    "message": "Instagram login needed"
+  },
+  "an_login_body": {
+    "message": "Instagram only lists reels and view counts to logged-in users. Allow the local helper to use your Chrome login (cookies are read on this computer and sent only to Instagram)."
+  },
+  "an_enable_login": {
+    "message": "Use my Chrome login"
+  },
+  "an_profile": {
+    "message": "Profile"
+  },
+  "an_limit": {
+    "message": "Reels to analyze"
+  },
+  "an_analyze": {
+    "message": "Analyze"
+  },
+  "an_fetching": {
+    "message": "Fetching reels… $1 found"
+  },
+  "an_fetching_details": {
+    "message": "Fetching missing view counts… $1 / $2"
+  },
+  "an_err_profile": {
+    "message": "Enter a username or profile link."
+  },
+  "an_err_login_setting": {
+    "message": "Allow the Chrome login above first."
+  },
+  "an_followers": {
+    "message": "$1 followers"
+  },
+  "an_reels_analyzed": {
+    "message": "$1 reels analyzed"
+  },
+  "an_note_truncated": {
+    "message": "Only the latest $1 reels were analyzed (limit)."
+  },
+  "an_note_missing": {
+    "message": "$1 reels have hidden view counts and are left out of the statistics."
+  },
+  "an_no_views": {
+    "message": "No view counts available for this profile."
+  },
+  "an_stat_total": {
+    "message": "Total views"
+  },
+  "an_stat_reels": {
+    "message": "$1 reels"
+  },
+  "an_mean": {
+    "message": "Average"
+  },
+  "an_median": {
+    "message": "Median"
+  },
+  "an_tip_mean": {
+    "message": "Arithmetic mean. A few viral reels can pull it up a lot."
+  },
+  "an_tip_median": {
+    "message": "Half of the reels have fewer views, half have more. The best 'normal' value for skewed data."
+  },
+  "an_stat_typical": {
+    "message": "Typical range"
+  },
+  "an_stat_typical_sub": {
+    "message": "middle 50% (P25–P75)"
+  },
+  "an_tip_typical": {
+    "message": "Interquartile range: 50% of the reels fall inside it."
+  },
+  "an_stat_p90_sub": {
+    "message": "only 10% get more"
+  },
+  "an_tip_p90": {
+    "message": "90th percentile."
+  },
+  "an_stat_range": {
+    "message": "Range"
+  },
+  "an_stat_viral": {
+    "message": "Viral reels"
+  },
+  "an_stat_viral_sub": {
+    "message": "≥ $1 typical views (z ≥ 2)"
+  },
+  "an_tip_viral": {
+    "message": "Views at least this many times what is typical for this profile at the time it was posted. Statistically about the top 2% on any profile; never less than 3×."
+  },
+  "an_stat_top10": {
+    "message": "Top 10% share"
+  },
+  "an_stat_top10_sub": {
+    "message": "of all views ($1 reels)"
+  },
+  "an_tip_top10": {
+    "message": "How much of the total the best 10% of reels collect."
+  },
+  "an_stat_er": {
+    "message": "Engagement (median)"
+  },
+  "an_stat_er_sub": {
+    "message": "(likes + comments) / views"
+  },
+  "an_tip_er": {
+    "message": "Raw engagement rate: (likes + comments) ÷ views. On real profiles it rises with views (the algorithm pushes reels people react to), so compare it with 'ER vs expected'."
+  },
+  "an_distribution": {
+    "message": "Views distribution"
+  },
+  "an_linear": {
+    "message": "Linear"
+  },
+  "an_log": {
+    "message": "Logarithmic"
+  },
+  "an_group_outliers": {
+    "message": "Group the top 5% into the last bar"
+  },
+  "an_legend_bars": {
+    "message": "Number of reels in the interval"
+  },
+  "an_click_bar": {
+    "message": "Click a bar to list its reels."
+  },
+  "an_axis_y": {
+    "message": "Reels"
+  },
+  "an_axis_x": {
+    "message": "Views (interval: $1)"
+  },
+  "an_axis_x_log": {
+    "message": "Views (logarithmic intervals)"
+  },
+  "an_views_word": {
+    "message": "views"
+  },
+  "an_reels_count": {
+    "message": "$1 reels"
+  },
+  "an_ins_dense": {
+    "message": "$1 of the reels fall between $2 and $3 views."
+  },
+  "an_ins_typical": {
+    "message": "A typical reel (middle 50%) gets $1 – $2 views."
+  },
+  "an_ins_skew": {
+    "message": "The average ($1) is pulled up by a few hits; the median ($2) is the better 'normal' value."
+  },
+  "an_ins_viral": {
+    "message": "$1 reels are viral for this profile (≥ $2 typical views) and bring $3 of all views."
+  },
+  "an_ins_no_viral": {
+    "message": "No reel is statistically viral for this profile: results are fairly even."
+  },
+  "an_ins_top10": {
+    "message": "The top $1 reels (10%) collect $2 of all views."
+  },
+  "an_ins_volatile": {
+    "message": "Views vary a lot between reels (hit-driven profile)."
+  },
+  "an_ins_stable": {
+    "message": "Views are consistent between reels."
+  },
+  "an_ins_trend_up": {
+    "message": "The newer half of the reels has a $1 higher median than the older half."
+  },
+  "an_ins_trend_down": {
+    "message": "The newer half of the reels has a $1 lower median than the older half."
+  },
+  "an_reels": {
+    "message": "Reels"
+  },
+  "an_show": {
+    "message": "Show"
+  },
+  "an_all": {
+    "message": "All"
+  },
+  "an_sort": {
+    "message": "Sort by"
+  },
+  "an_col_views": {
+    "message": "Views"
+  },
+  "an_col_score": {
+    "message": "vs typical"
+  },
+  "an_col_likes": {
+    "message": "Likes"
+  },
+  "an_col_comments": {
+    "message": "Comments"
+  },
+  "an_col_er": {
+    "message": "Engagement"
+  },
+  "an_col_date": {
+    "message": "Date"
+  },
+  "an_col_caption": {
+    "message": "Caption / link"
+  },
+  "an_col_status": {
+    "message": "Download"
+  },
+  "an_tip_score": {
+    "message": "Views ÷ typical views of the reels posted around the same time ($1). z = $2: how many robust standard deviations above (or below) typical."
+  },
+  "an_filter_active": {
+    "message": "Interval $1: $2 reels"
+  },
+  "an_clear_filter": {
+    "message": "Show all"
+  },
+  "an_select": {
+    "message": "Select:"
+  },
+  "an_sel_viral": {
+    "message": "Viral"
+  },
+  "an_sel_shown": {
+    "message": "All shown"
+  },
+  "an_sel_none": {
+    "message": "None"
+  },
+  "an_selected": {
+    "message": "selected"
+  },
+  "an_sel_views": {
+    "message": "($1 views in total)"
+  },
+  "an_folder": {
+    "message": "Folder"
+  },
+  "an_copy_links": {
+    "message": "Copy links"
+  },
+  "an_download_selected": {
+    "message": "Download selected"
+  },
+  "an_queueing": {
+    "message": "Adding $1 reels to the queue…"
+  },
+  "an_queued": {
+    "message": "$1 reels queued → $2 (one every few seconds to avoid Instagram limits)."
+  },
+  "an_copied": {
+    "message": "$1 links copied (with view counts)."
+  },
+  "set_meta": {
+    "message": "Also save a metadata JSON file next to each download (off = only images and videos)"
+  },
+  "an_cached": {
+    "message": "Saved result from $1 (no new request was made). Press Analyze to refresh the numbers."
+  },
+  "set_compat": {
+    "message": "Compatibility mode: only H.264/H.265 videos (open everywhere, e.g. QuickTime) — may be a lower resolution on Instagram. Off = maximum quality (H.264/H.265 still preferred when the resolution is the same)."
+  },
+  "an_activity": {
+    "message": "Posting activity"
+  },
+  "an_interval": {
+    "message": "Interval:"
+  },
+  "an_int_1": {
+    "message": "1 day"
+  },
+  "an_int_3": {
+    "message": "3 days"
+  },
+  "an_int_7": {
+    "message": "1 week"
+  },
+  "an_int_30": {
+    "message": "1 month"
+  },
+  "an_act_legend_bars": {
+    "message": "Posts"
+  },
+  "an_act_legend_line": {
+    "message": "Median views in that interval"
+  },
+  "an_click_bar_date": {
+    "message": "Click a bar → that period's reels in the table"
+  },
+  "an_when_title": {
+    "message": "When do they post? (weekday × hour)"
+  },
+  "an_act_note": {
+    "message": "Times are in your computer's time zone. Only analyzed reels are counted (regular posts and stories are not included)."
+  },
+  "an_col_vpd": {
+    "message": "Views/day"
+  },
+  "an_tip_vpd": {
+    "message": "Daily views: views ÷ days since posting. Shows which reel (product) is hot right now."
+  },
+  "an_sel_hot": {
+    "message": "Hot now (last 30 days)"
+  },
+  "an_act_range": {
+    "message": "$1 – $2 · $4 reels in $3 days"
+  },
+  "an_dur_min": {
+    "message": "$1 min"
+  },
+  "an_dur_hours": {
+    "message": "$1 h"
+  },
+  "an_dur_days": {
+    "message": "$1 days"
+  },
+  "an_act_per1": {
+    "message": "Per day"
+  },
+  "an_act_per3": {
+    "message": "Per 3 days"
+  },
+  "an_act_per7": {
+    "message": "Per week"
+  },
+  "an_act_per30": {
+    "message": "Per 30 days"
+  },
+  "an_act_posts": {
+    "message": "posts"
+  },
+  "an_act_gap_mean": {
+    "message": "Average gap between posts"
+  },
+  "an_act_gap_median": {
+    "message": "typically (median): $1"
+  },
+  "an_tip_gap": {
+    "message": "Time between two consecutive reels. The median ignores a few long pauses, so it shows the usual pace better."
+  },
+  "an_act_gap_max": {
+    "message": "Longest pause"
+  },
+  "an_act_last": {
+    "message": "Last post"
+  },
+  "an_act_ago": {
+    "message": "$1 ago"
+  },
+  "an_act_active": {
+    "message": "Active days"
+  },
+  "an_act_active_sub": {
+    "message": "posted on $1 of $2 days"
+  },
+  "an_tip_active": {
+    "message": "Share of days with at least one reel."
+  },
+  "an_act_max_day": {
+    "message": "Most in one day"
+  },
+  "an_act_axis_y": {
+    "message": "reels"
+  },
+  "an_act_axis_y2": {
+    "message": "median views"
+  },
+  "an_act_tip_views": {
+    "message": "Median views: $1"
+  },
+  "an_filter_date": {
+    "message": "Dates $1: $2 reels"
+  },
+  "an_ai_pace": {
+    "message": "Posts about $1 reels a week; usually $2 between two reels."
+  },
+  "an_ai_trend_restart": {
+    "message": "No posts in the previous 30 days, $1 reels in the last 30 — the profile is active again (maybe a new product test)."
+  },
+  "an_ai_trend_up": {
+    "message": "Pace is rising: $1 reels in the last 30 days vs $2 in the 30 before. Often a new product test or pushing a winner."
+  },
+  "an_ai_trend_down": {
+    "message": "Pace is dropping: $1 reels in the last 30 days vs $2 in the 30 before."
+  },
+  "an_ai_trend_flat": {
+    "message": "Pace is steady: $1 reels in the last 30 days vs $2 in the 30 before."
+  },
+  "an_ai_inactive": {
+    "message": "The last reel was $1 days ago — the store may have paused or moved to another platform."
+  },
+  "an_ai_when": {
+    "message": "Posts most on $1, between $2."
+  },
+  "an_ai_best_day": {
+    "message": "Best results on $1: median $2 views ($3 reels) vs $4 overall."
+  },
+  "an_ai_best_time": {
+    "message": "Best time slot $1: median $2 views ($3 reels)."
+  },
+  "an_ai_multi_worse": {
+    "message": "Days with 2+ reels get median $1 views vs $2 on single-post days — posting more splits the views."
+  },
+  "an_ai_multi_better": {
+    "message": "Days with 2+ reels get median $1 views vs $2 on single-post days — posting more doesn't hurt this profile."
+  },
+  "an_ai_multi_same": {
+    "message": "No real difference in median views between 2+ post days ($1) and single-post days ($2)."
+  },
+  "an_ai_regular": {
+    "message": "Posting is very regular — likely a planned or scheduled posting calendar."
+  },
+  "an_ai_bursty": {
+    "message": "Posting is irregular: bursts of reels, then pauses (campaigns or product-test waves)."
+  },
+  "an_ai_pause": {
+    "message": "Longest pause $1 days: $2 – $3."
+  },
+  "an_ai_hot": {
+    "message": "Hottest reel of the last 30 days: ~$1 views/day ($2) — “$3”."
+  },
+  "an_ai_truncated": {
+    "message": "Only the latest $1 reels were analyzed, so the start date is not when the profile started. Raise the limit for a longer history."
+  },
+  "an_weekdays_short": {
+    "message": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+  },
+  "an_weekdays_long": {
+    "message": "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
+  },
+  "an_metric": {
+    "message": "Metric"
+  },
+  "an_thr_mean": {
+    "message": "Above average"
+  },
+  "an_thr_custom": {
+    "message": "Custom: above my value"
+  },
+  "an_thr_info_mean": {
+    "message": "$1 > $2 (average): $3 / $4 reels, sorted by $1."
+  },
+  "an_thr_info_custom": {
+    "message": "$1 > $2: $3 / $4 reels, sorted by $1."
+  },
+  "an_thr_all": {
+    "message": "All $2 reels, sorted by $1."
+  },
+  "an_thr_date": {
+    "message": "No filter for dates: all $2 reels, newest first."
+  },
+  "an_thr_hint": {
+    "message": "Type a number: 10K, 1.5M, 2500. For ER in percent: 5 = 5%."
+  },
+  "an_thr_bad": {
+    "message": "Couldn't read that number. Examples: 10K, 1.5M, 2500 (ER: 5 = 5%)."
+  },
+  "an_stat_strong": {
+    "message": "Strong reels"
+  },
+  "an_stat_strong_sub": {
+    "message": "≥ $1 typical, below viral (z ≥ 1)"
+  },
+  "an_tip_strong": {
+    "message": "Clearly above this profile's typical views (about the top 16%), but not viral."
+  },
+  "an_stat_winner": {
+    "message": "Winner candidates"
+  },
+  "an_stat_winner_sub": {
+    "message": "strong reach + more engagement than that reach usually gets"
+  },
+  "an_tip_winner": {
+    "message": "Strong or viral reach AND engagement above what reels with that many views normally get on this profile (z ≥ 1). People watched it and reacted: the best hint of a product with demand."
+  },
+  "an_stat_high_er": {
+    "message": "High engagement"
+  },
+  "an_stat_high_er_sub": {
+    "message": "$1 with an unusual comment rate"
+  },
+  "an_tip_high_er": {
+    "message": "Engagement far above what is expected for the reel's views (z ≥ 2, at least 20 likes + comments). Comment outliers often mean questions like 'where can I buy this?'."
+  },
+  "an_method_title": {
+    "message": "How are Viral, Strong and Winner calculated?"
+  },
+  "an_method_few": {
+    "message": "At least 8 reels with view counts are needed for a statistical classification."
+  },
+  "an_method_why": {
+    "message": "Why not '3× median' or '2× average'? Views on social video are heavy-tailed (a few reels get most of the views). A fixed multiplier then means something different on every profile: on a steady account '3× median' is almost never reached, on a volatile one it labels 1 in 5 reels viral. The average is pulled up by the hits themselves, so 'above average' is simply the top ~30%. So this tool measures how unusual a reel is for this profile, on a log scale, with outlier-resistant statistics."
+  },
+  "an_method_baseline_local": {
+    "message": "Typical views = the median of the ~30 reels posted closest in time to each reel. A growing (or shrinking) account is compared with its own level at that moment, not with its whole history."
+  },
+  "an_method_baseline_global": {
+    "message": "Typical views = the median of all analyzed reels (fewer than 20 reels, so no time-local baseline)."
+  },
+  "an_method_tiers": {
+    "message": "This profile's spread (robust standard deviation of log views, from the median absolute deviation) is $1. Strong = at least $2 typical views (z ≥ 1, about the top 16%). Viral = at least $3 typical views (z ≥ 2, about the top 2%). Viral is never below 3× and strong never below 1.5×, so a steady account doesn't call a small bump viral."
+  },
+  "an_method_eng": {
+    "message": "Engagement is judged against reach, because on real profiles they move together: here log(likes + comments) grows with log(views) with slope $1 (1.0 would mean the engagement rate doesn't depend on views; above 1 = reels with more views also get a higher rate). A robust (Theil–Sen) line gives the expected engagement for every view count; 'ER vs expected' is the difference from that line, and its robust z decides High engagement (z ≥ 2) and Winner (strong or viral reach + z ≥ 1). Comments get their own line (slope $2: below 1 = the comment rate falls as reach grows)."
+  },
+  "an_method_new": {
+    "message": "Reels younger than 3 days are still collecting views: they are marked NEW, left out of the baselines and never called weak."
+  },
+  "an_ins_winner": {
+    "message": "$1 winner candidates: strong reach and above-typical engagement. Look at these products first."
+  },
+  "an_ins_viral_low_er": {
+    "message": "$1 viral reels have clearly weaker engagement than usual: watched (a strong hook) but not acted on."
+  },
+  "an_ins_talk": {
+    "message": "$1 reels get unusually many comments per view: read those comments for buying questions and objections."
+  },
+  "an_viral_line": {
+    "message": "Viral ≈"
+  },
+  "an_thr_strong": {
+    "message": "Strong or viral"
+  },
+  "an_thr_viral": {
+    "message": "Viral only"
+  },
+  "an_thr_winner": {
+    "message": "Winner candidates"
+  },
+  "an_thr_engaged": {
+    "message": "High engagement / talked about"
+  },
+  "an_thr_info_tier": {
+    "message": "$1: $2 / $3 reels · sorted by $4"
+  },
+  "an_sel_winner": {
+    "message": "Winners"
+  },
+  "an_sig_viral": {
+    "message": "VIRAL"
+  },
+  "an_sig_viral_tip": {
+    "message": "z = $1 (≥ 2): about the top 2% for this profile."
+  },
+  "an_sig_strong": {
+    "message": "STRONG"
+  },
+  "an_sig_strong_tip": {
+    "message": "z = $1 (≥ 1): about the top 16% for this profile."
+  },
+  "an_sig_weak": {
+    "message": "WEAK"
+  },
+  "an_sig_weak_tip": {
+    "message": "z ≤ −1: clearly below typical for this profile."
+  },
+  "an_sig_new": {
+    "message": "NEW"
+  },
+  "an_sig_new_tip": {
+    "message": "Posted less than 3 days ago: still collecting views."
+  },
+  "an_sig_winner": {
+    "message": "WINNER"
+  },
+  "an_sig_winner_tip": {
+    "message": "Strong or viral reach and engagement above what that reach normally gets (z ≥ 1)."
+  },
+  "an_sig_high_er": {
+    "message": "HIGH ER"
+  },
+  "an_sig_high_er_tip": {
+    "message": "Engagement $1 vs $2 expected for this reach; z = $3 (≥ 2)."
+  },
+  "an_sig_talk": {
+    "message": "TALKED ABOUT"
+  },
+  "an_sig_talk_tip": {
+    "message": "Comments per view z = $1 (≥ 2) for this reach, and at least 5 comments."
+  },
+  "an_viral_legend": {
+    "message": "Viral ≈ (typical views × viral multiple; each reel is compared with reels posted around the same time)"
+  },
+  "an_col_erAdj": {
+    "message": "ER vs expected"
+  },
+  "an_tip_eradj": {
+    "message": "Actual engagement $1; expected for a reel with this many views on this profile: $2. Engagement z = $3. Positive = people reacted more than this reach normally brings."
+  },
+  "an_method_tail": {
+    "message": "Viral rate on this profile: $1 of reels. A pure log-normal (no real virality) would give about 2%; anything clearly above that is a genuine viral tail."
+  },
+  "an_method_dates": {
+    "message": "Instagram's reels list doesn't return post dates any more, so dates are decoded from each reel's shortcode (the media ID contains its creation time). Accurate to the minute for normal posts."
+  },
+  "an_rb_title": {
+    "message": "Time range"
+  },
+  "an_rb_sub": {
+    "message": "Pick the period to analyze. Everything below (viral, winners, charts, table) is recalculated for it."
+  },
+  "an_rb_reset": {
+    "message": "Show everything"
+  },
+  "an_rb_from": {
+    "message": "Range start"
+  },
+  "an_rb_to": {
+    "message": "Range end"
+  },
+  "an_rb_count": {
+    "message": "Analyzing $1 of $2 reels"
+  },
+  "an_rb_all": {
+    "message": "All"
+  },
+  "an_rb_last_days": {
+    "message": "Last $1 days"
+  },
+  "an_rb_period": {
+    "message": "Active period $1: $2 ($3 reels)"
+  },
+  "an_rb_period_tip": {
+    "message": "A stretch of regular posting between two pauses."
+  },
+  "an_rb_paused": {
+    "message": "Paused · $1 days"
+  },
+  "an_rb_lg_pause": {
+    "message": "Pause (≥ 14 days and ≥ 10× the usual gap)"
+  },
+  "an_col_likeRate": {
+    "message": "Like rate"
+  },
+  "an_col_commentRate": {
+    "message": "Comment rate"
+  },
+  "an_col_commentShare": {
+    "message": "Comment share"
+  },
+  "an_tip_ercell": {
+    "message": "Engagement $1 = like rate $2 ($3 of the engagement) + comment rate $4 ($5 of the engagement). 1 comment per $6 likes."
+  },
+  "an_stat_mix": {
+    "message": "Engagement mix"
+  },
+  "an_stat_mix_sub": {
+    "message": "likes · comments — 1 comment per $1 likes"
+  },
+  "an_tip_mix": {
+    "message": "Which part of all engagement comes from likes and which from comments (sums over the reels in range). Comments take more effort than a like, so a higher comment share usually means questions, tags of friends or buying interest."
+  },
+  "an_stat_rates": {
+    "message": "Like rate · comment rate"
+  },
+  "an_stat_rates_sub": {
+    "message": "likes ÷ views · comments ÷ views"
+  },
+  "an_tip_rates": {
+    "message": "Total likes and total comments divided by total views of the reels in range. Like rate + comment rate = engagement rate."
+  },
+  "an_er_bar": {
+    "message": "Engagement bar:"
+  },
+  "an_er_bar_hint": {
+    "message": "hover a cell for the exact split"
+  },
+  "an_rb_label2": {
+    "message": "$1 days · $2 reels"
+  },
+  "an_rb_quiet": {
+    "message": "Quiet · $1 days"
+  },
+  "an_rb_lg_curve": {
+    "message": "Posting activity (reels per day, smoothed)"
+  },
+  "an_rb_lg_viral": {
+    "message": "Viral reel"
+  },
+  "an_rb_hint": {
+    "message": "Drag the handles or the selected window · click to move the nearest handle · ← → keys (Shift = 7 days)"
+  },
+  "an_lg_score": {
+    "message": "vs typical:"
+  },
+  "an_lg_score_hint": {
+    "message": "hover the number for all signals (new, high ER, talked about …)"
+  },
+  "an_sig_rising": {
+    "message": "RISING"
+  },
+  "an_tip_rising": {
+    "message": "Rising: posted $1 ago and already $2 views ($3 typical, ~$4 views per hour). Still collecting views, so the final number will be higher."
+  },
+  "an_tip_fresh": {
+    "message": "New: posted $1 ago (~$2 views per hour). Still collecting views; not above the strong line yet."
+  },
+  "an_lg_rising": {
+    "message": "Rising (new and already strong)"
+  },
+  "an_lg_new": {
+    "message": "New (< 3 days)"
+  },
+  "an_thr_rising": {
+    "message": "Rising (new and already strong)"
+  },
+  "an_ins_rising": {
+    "message": "$1 new reels (under 3 days old) are already above the strong line and still growing: watch these products now."
+  },
+  "an_line_label": {
+    "message": "Line:"
+  },
+  "an_line_median": {
+    "message": "Median views"
+  },
+  "an_line_total": {
+    "message": "Total views"
+  },
+  "an_line_off": {
+    "message": "Off"
+  },
+  "an_act_legend_total": {
+    "message": "Total views of all reels posted in that interval"
+  },
+  "an_act_axis_total": {
+    "message": "total views"
+  },
+  "an_act_tip_total": {
+    "message": "Total views: $1"
+  },
+  "an_heat_color": {
+    "message": "Color:"
+  },
+  "an_heat_posts": {
+    "message": "Posts"
+  },
+  "an_heat_perf": {
+    "message": "Performance"
+  },
+  "an_heat_tip_ratio": {
+    "message": "Median: $1 typical views"
+  },
+  "an_heat_tip_single": {
+    "message": "Only 1 reel here: an anecdote, not a pattern."
+  },
+  "an_heat_all_days": {
+    "message": "All days"
+  },
+  "an_heat_lg_posts": {
+    "message": "Darker = more reels posted at that time"
+  },
+  "an_heat_lg_below": {
+    "message": "Below typical"
+  },
+  "an_heat_lg_above": {
+    "message": "Above typical (median 'vs typical' of the reels posted then; 4× = full green)"
+  },
+  "an_heat_lg_thin": {
+    "message": "· faded = only 1 reel"
+  },
+  "an_sum_label": {
+    "message": "Average"
+  },
+  "an_sum_count": {
+    "message": "$1 reels, $2 views"
+  },
+  "an_sum_tip": {
+    "message": "Average $1 · median $2 (over $3 reels shown)"
+  },
+  "an_sum_pooled": {
+    "message": "Pooled (totals ÷ total views, big reels weigh more): $1"
+  },
+  "an_sum_median": {
+    "message": "Median"
+  },
+  "status_ratelimited": {
+    "message": "Instagram rate limit · retrying at $1"
+  },
+  "status_waiting": {
+    "message": "Waiting · retrying at $1"
+  },
+  "btn_cancel": {
+    "message": "Cancel"
+  },
+  "btn_cancel_all": {
+    "message": "Cancel all ($1)"
+  },
+  "status_cancelled": {
+    "message": "Cancelled"
+  },
+  "status_cancelling": {
+    "message": "Cancelling…"
+  },
+  "err_CANCELLED": {
+    "message": "Cancelled"
+  },
+  "an_cancelled": {
+    "message": "$1 downloads cancelled. Files that were already completely saved stay in the folder."
+  },
+  "an_dr_hint": {
+    "message": "Click for details (description, numbers, audio)"
+  },
+  "an_dr_prev": {
+    "message": "Previous reel (←)"
+  },
+  "an_dr_next": {
+    "message": "Next reel (→)"
+  },
+  "an_dr_close": {
+    "message": "Close (Esc)"
+  },
+  "an_dr_title": {
+    "message": "Reel $1 · $2 views"
+  },
+  "an_dr_pos": {
+    "message": "$1 of $2 shown"
+  },
+  "an_dr_pinned": {
+    "message": "PINNED"
+  },
+  "an_dr_paid": {
+    "message": "PAID PARTNERSHIP"
+  },
+  "an_dr_caption": {
+    "message": "Description"
+  },
+  "an_dr_loading": {
+    "message": "Loading the description from Instagram…"
+  },
+  "an_dr_no_caption": {
+    "message": "This reel has no description."
+  },
+  "an_dr_copy": {
+    "message": "Copy"
+  },
+  "an_dr_refresh": {
+    "message": "Load again from Instagram"
+  },
+  "an_dr_fetched": {
+    "message": "Loaded $1. Click to load again."
+  },
+  "an_dr_copied_caption": {
+    "message": "Description copied."
+  },
+  "an_dr_copied_link": {
+    "message": "Link copied."
+  },
+  "an_dr_caption_analysis": {
+    "message": "In the description"
+  },
+  "an_dr_length": {
+    "message": "Length"
+  },
+  "an_dr_length_v": {
+    "message": "$1 words · $2 characters · $3 emoji"
+  },
+  "an_dr_cta": {
+    "message": "Calls to action"
+  },
+  "an_dr_no_cta": {
+    "message": "none found"
+  },
+  "an_dr_price": {
+    "message": "Price / discount"
+  },
+  "an_dr_tags": {
+    "message": "Hashtags"
+  },
+  "an_dr_mentions": {
+    "message": "Mentions"
+  },
+  "an_dr_numbers": {
+    "message": "Numbers"
+  },
+  "an_dr_per_day": {
+    "message": "~$1 per day since posting"
+  },
+  "an_dr_typical": {
+    "message": "typical here $1 · z = $2"
+  },
+  "an_dr_mix": {
+    "message": "$1 likes · $2 comments"
+  },
+  "an_dr_expected": {
+    "message": "expected for this reach: $1"
+  },
+  "an_dr_lpc": {
+    "message": "Likes per comment"
+  },
+  "an_dr_lpc_sub": {
+    "message": "lower = more discussion"
+  },
+  "an_dr_duration": {
+    "message": "Length"
+  },
+  "an_dr_more": {
+    "message": "Audio, place, people"
+  },
+  "an_dr_audio": {
+    "message": "Audio"
+  },
+  "an_dr_audio_original": {
+    "message": "original audio"
+  },
+  "an_dr_audio_music": {
+    "message": "music"
+  },
+  "an_dr_location": {
+    "message": "Location"
+  },
+  "an_dr_tagged": {
+    "message": "Tagged"
+  },
+  "an_dr_coauthors": {
+    "message": "Collaborators"
+  },
+  "an_dr_comments_off": {
+    "message": "Comments turned off"
+  },
+  "an_dr_yes": {
+    "message": "yes"
+  },
+  "an_dr_open": {
+    "message": "Open on Instagram"
+  },
+  "an_dr_copy_link": {
+    "message": "Copy link"
+  },
+  "an_dr_select": {
+    "message": "Select for download"
+  },
+  "an_dr_unselect": {
+    "message": "Unselect"
+  },
+  "an_dr_download": {
+    "message": "Download this reel"
+  },
+  "btn_update_now": {
+    "message": "Update now"
+  },
+  "btn_whats_new": {
+    "message": "What's new"
+  },
+  "update_available": {
+    "message": "Update available: version $1 (you have $2)."
+  },
+  "update_running": {
+    "message": "Updating… keep Chrome open."
+  },
+  "update_step_download": {
+    "message": "Downloading"
+  },
+  "update_step_install": {
+    "message": "Installing"
+  },
+  "update_step_packages": {
+    "message": "Updating packages"
+  },
+  "update_done": {
+    "message": "Updated to version $1."
+  },
+  "update_done_warn": {
+    "message": "(with warnings: hover for details)"
+  },
+  "update_failed": {
+    "message": "The update did not finish: $1 Try again, or double-click Update-Windows.bat / Update-Mac.command in your MediaDownloader folder."
+  },
+  "update_manual": {
+    "message": "This one time, please update by hand: double-click Update-Windows.bat (Windows) or Update-Mac.command (Mac) in the MediaDownloader folder in your home folder. After that, updates are one click."
+  }
+}

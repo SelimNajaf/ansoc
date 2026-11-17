@@ -1,0 +1,303 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reels Analyzer</title>
+  <link rel="stylesheet" href="analyzer.css">
+</head>
+<body>
+  <header class="top">
+    <span class="logo" aria-hidden="true">↓</span>
+    <div class="grow">
+      <h1 data-i18n="an_title"></h1>
+      <p class="muted small" data-i18n="an_subtitle"></p>
+    </div>
+    <span id="helperBadge" class="badge"></span>
+  </header>
+
+  <main>
+    <section id="cookieNotice" class="notice" hidden>
+      <div>
+        <strong data-i18n="an_login_title"></strong>
+        <p class="small" data-i18n="an_login_body"></p>
+      </div>
+      <button id="enableCookies" type="button" class="primary" data-i18n="an_enable_login"></button>
+    </section>
+
+    <form id="fetchForm" class="card fetch" autocomplete="off">
+      <label class="field grow">
+        <span class="label" data-i18n="an_profile"></span>
+        <input id="profileInput" type="text" spellcheck="false" placeholder="@username / https://www.instagram.com/username/reels/">
+      </label>
+      <label class="field">
+        <span class="label" data-i18n="an_limit"></span>
+        <select id="limitSelect">
+          <option value="30">30</option>
+          <option value="60">60</option>
+          <option value="120" selected>120</option>
+          <option value="240">240</option>
+          <option value="500">500</option>
+        </select>
+      </label>
+      <button id="fetchBtn" type="submit" class="primary" data-i18n="an_analyze"></button>
+    </form>
+
+    <section id="progressBox" class="card" hidden>
+      <div id="progressText" class="small"></div>
+      <div class="bar"><div id="progressFill" class="fill indet"></div></div>
+    </section>
+
+    <div id="errorBox" class="error" hidden></div>
+
+    <div id="results" hidden>
+      <section class="profile card">
+        <div>
+          <div id="profileName" class="pname"></div>
+          <div id="profileMeta" class="muted small"></div>
+        </div>
+        <div id="profileNote" class="muted small"></div>
+        <div id="cacheNote" class="cache-note small" hidden></div>
+      </section>
+
+      <section id="rangeCard" class="card range">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="an_rb_title"></h2>
+            <p class="muted small" data-i18n="an_rb_sub"></p>
+          </div>
+          <div class="controls small">
+            <span id="rbCount" class="rb-count"></span>
+            <button type="button" id="rbReset" class="link" data-i18n="an_rb_reset" hidden></button>
+          </div>
+        </div>
+        <div class="rb-range">
+          <span id="rbFromLabel" class="rb-date"></span>
+          <span class="rb-arrow" aria-hidden="true">→</span>
+          <span id="rbToLabel" class="rb-date"></span>
+          <span id="rbLabel" class="rb-meta"></span>
+        </div>
+        <div id="rb" class="rb">
+          <div id="rbStrip" class="rb-strip"></div>
+          <div id="rbWindow" class="rb-window"></div>
+          <div id="rbHandleA" class="rb-handle" role="slider" tabindex="0" data-i18n-aria="an_rb_from"><span class="grip"></span></div>
+          <div id="rbHandleB" class="rb-handle" role="slider" tabindex="0" data-i18n-aria="an_rb_to"><span class="grip"></span></div>
+          <div id="rbHover" class="rb-hover" hidden><span id="rbHoverText" class="rb-hover-text"></span></div>
+        </div>
+        <div class="rb-foot">
+          <div class="legend small">
+            <span><i class="sw rb-sw-curve"></i><span data-i18n="an_rb_lg_curve"></span></span>
+            <span><i class="rb-sw-rug"></i><span data-i18n="an_rb_lg_viral"></span></span>
+            <span><i class="sw rb-sw-pause"></i><span data-i18n="an_rb_lg_pause"></span></span>
+          </div>
+          <span class="muted small" data-i18n="an_rb_hint"></span>
+        </div>
+        <div id="rbChips" class="quick small rb-chips"></div>
+      </section>
+
+      <section id="cards" class="cards" aria-label="Statistics"></section>
+      <details class="card method">
+        <summary data-i18n="an_method_title"></summary>
+        <div id="methodBody" class="small"></div>
+      </details>
+
+      <section class="card">
+        <div class="section-head">
+          <h2 data-i18n="an_distribution"></h2>
+          <div class="controls">
+            <div class="seg" role="group" aria-label="Scale">
+              <button type="button" id="scaleLinear" class="seg-btn on" data-i18n="an_linear"></button>
+              <button type="button" id="scaleLog" class="seg-btn" data-i18n="an_log"></button>
+            </div>
+            <label class="check small"><input type="checkbox" id="clampOutliers" checked> <span data-i18n="an_group_outliers"></span></label>
+          </div>
+        </div>
+        <div id="chartWrap" class="chart-wrap"></div>
+        <div class="legend small">
+          <span><i class="sw bar-sw"></i><span data-i18n="an_legend_bars"></span></span>
+          <span><i class="sw line mean"></i><span data-i18n="an_mean"></span></span>
+          <span><i class="sw line median"></i><span data-i18n="an_median"></span></span>
+          <span><i class="sw line viral"></i><span data-i18n="an_viral_legend"></span></span>
+          <span class="muted" data-i18n="an_click_bar"></span>
+        </div>
+        <ul id="insights" class="insights"></ul>
+      </section>
+
+      <section id="activityCard" class="card">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="an_activity"></h2>
+            <p id="activityRange" class="muted small"></p>
+          </div>
+          <div class="controls">
+            <span class="small muted" data-i18n="an_interval"></span>
+            <div id="intervalSeg" class="seg" role="group">
+              <button type="button" class="seg-btn" data-days="1"></button>
+              <button type="button" class="seg-btn" data-days="3"></button>
+              <button type="button" class="seg-btn" data-days="7"></button>
+              <button type="button" class="seg-btn" data-days="30"></button>
+            </div>
+            <span class="small muted" data-i18n="an_line_label"></span>
+            <div id="viewsLineSeg" class="seg" role="group">
+              <button type="button" class="seg-btn" data-line="median"></button>
+              <button type="button" class="seg-btn" data-line="total"></button>
+              <button type="button" class="seg-btn" data-line="off"></button>
+            </div>
+          </div>
+        </div>
+        <div id="activityCards" class="cards mini"></div>
+        <div id="activityWrap" class="chart-wrap"></div>
+        <div class="legend small">
+          <span><i class="sw act-sw"></i><span data-i18n="an_act_legend_bars"></span></span>
+          <span id="viewsLegend"><i class="sw line views"></i><span id="viewsLegendText"></span></span>
+          <span class="muted" data-i18n="an_click_bar_date"></span>
+        </div>
+        <div class="heat-head">
+          <h3 class="sub" data-i18n="an_when_title"></h3>
+          <div class="controls small">
+            <span class="muted" data-i18n="an_heat_color"></span>
+            <div id="heatSeg" class="seg" role="group">
+              <button type="button" class="seg-btn" data-mode="posts"></button>
+              <button type="button" class="seg-btn" data-mode="perf"></button>
+            </div>
+          </div>
+        </div>
+        <div id="heatmap" class="heatmap-wrap"></div>
+        <div class="legend small">
+          <span id="heatLegendPosts"><i class="sw act-sw"></i><span data-i18n="an_heat_lg_posts"></span></span>
+          <span id="heatLegendPerf" hidden>
+            <span data-i18n="an_heat_lg_below"></span>
+            <i class="heat-scale" aria-hidden="true"></i>
+            <span data-i18n="an_heat_lg_above"></span>
+            <span class="muted" data-i18n="an_heat_lg_thin"></span>
+          </span>
+        </div>
+        <ul id="activityInsights" class="insights"></ul>
+        <p class="muted small" data-i18n="an_act_note"></p>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2 data-i18n="an_reels"></h2>
+          <div class="controls">
+            <label class="field inline small"><span data-i18n="an_metric"></span>
+              <select id="sortSelect">
+                <option value="views" data-i18n="an_col_views"></option>
+                <option value="score" data-i18n="an_col_score"></option>
+                <option value="likes" data-i18n="an_col_likes"></option>
+                <option value="comments" data-i18n="an_col_comments"></option>
+                <option value="er" data-i18n="an_col_er"></option>
+                <option value="likeRate" data-i18n="an_col_likeRate"></option>
+                <option value="commentRate" data-i18n="an_col_commentRate"></option>
+                <option value="commentShare" data-i18n="an_col_commentShare"></option>
+                <option value="erAdj" data-i18n="an_col_erAdj"></option>
+                <option value="vpd" data-i18n="an_col_vpd"></option>
+                <option value="date" data-i18n="an_col_date"></option>
+              </select>
+            </label>
+            <label class="field inline small"><span data-i18n="an_show"></span>
+              <select id="thresholdSelect">
+                <option value="strong" data-i18n="an_thr_strong" selected></option>
+                <option value="viral" data-i18n="an_thr_viral"></option>
+                <option value="winner" data-i18n="an_thr_winner"></option>
+                <option value="rising" data-i18n="an_thr_rising"></option>
+                <option value="engaged" data-i18n="an_thr_engaged"></option>
+                <option value="mean" data-i18n="an_thr_mean"></option>
+                <option value="custom" data-i18n="an_thr_custom"></option>
+                <option value="all" data-i18n="an_all"></option>
+              </select>
+            </label>
+            <input id="customInput" class="custom-thr" type="text" inputmode="decimal" spellcheck="false" hidden>
+          </div>
+        </div>
+        <div id="filterBar" class="filterbar small" hidden>
+          <span id="filterText"></span>
+          <button type="button" id="clearFilter" class="link" data-i18n="an_clear_filter"></button>
+        </div>
+        <div id="thresholdInfo" class="thr-info small muted"></div>
+        <div class="quick small">
+          <span data-i18n="an_select"></span>
+          <button type="button" class="chipbtn" id="selViral" data-i18n="an_sel_viral"></button>
+          <button type="button" class="chipbtn" id="selWinner" data-i18n="an_sel_winner"></button>
+          <button type="button" class="chipbtn" id="selHot" data-i18n="an_sel_hot"></button>
+          <button type="button" class="chipbtn" id="selShown" data-i18n="an_sel_shown"></button>
+          <button type="button" class="chipbtn" id="selNone" data-i18n="an_sel_none"></button>
+        </div>
+        <div class="legend small er-legend">
+          <span data-i18n="an_lg_score"></span>
+          <span><i class="lg-score viral">12×</i> <span data-i18n="an_sig_viral"></span></span>
+          <span><i class="lg-score strong">3×</i> <span data-i18n="an_sig_strong"></span></span>
+          <span><i class="lg-score winner">3×</i> <span data-i18n="an_sig_winner"></span></span>
+          <span><i class="fresh rising"></i><span data-i18n="an_lg_rising"></span></span>
+          <span><i class="fresh"></i><span data-i18n="an_lg_new"></span></span>
+          <span class="muted" data-i18n="an_lg_score_hint"></span>
+        </div>
+        <div class="legend small er-legend">
+          <span data-i18n="an_er_bar"></span>
+          <span><i class="sw like"></i><span data-i18n="an_col_likes"></span></span>
+          <span><i class="sw comment"></i><span data-i18n="an_col_comments"></span></span>
+          <span class="muted" data-i18n="an_er_bar_hint"></span>
+        </div>
+        <div class="table-wrap">
+          <table id="reelTable">
+            <thead>
+              <tr>
+                <th class="c-check"><input type="checkbox" id="checkAll" aria-label="Select all shown"></th>
+                <th class="num">#</th>
+                <th></th>
+                <th class="num" data-i18n="an_col_views"></th>
+                <th class="num" data-i18n="an_col_score" title=""></th>                <th class="num" data-i18n="an_col_likes"></th>
+                <th class="num" data-i18n="an_col_comments"></th>
+                <th class="num" data-i18n="an_col_er"></th>
+                <th class="num" data-i18n="an_col_likeRate"></th>
+                <th class="num" data-i18n="an_col_commentRate"></th>
+                <th class="num" data-i18n="an_col_erAdj"></th>
+                <th class="num" data-i18n="an_col_vpd"></th>
+                <th data-i18n="an_col_date"></th>
+                <th data-i18n="an_col_caption"></th>
+                <th data-i18n="an_col_status"></th>
+              </tr>
+            </thead>
+            <tbody id="reelBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <aside id="drawer" class="drawer" hidden role="dialog" aria-labelledby="drTitle">
+    <div class="dr-head">
+      <div class="grow">
+        <div id="drTitle" class="dr-title"></div>
+        <div id="drSub" class="muted small"></div>
+      </div>
+      <div class="dr-nav">
+        <button type="button" id="drPrev" class="chipbtn" data-i18n-aria="an_dr_prev">←</button>
+        <button type="button" id="drNext" class="chipbtn" data-i18n-aria="an_dr_next">→</button>
+        <button type="button" id="drClose" class="chipbtn" data-i18n-aria="an_dr_close">✕</button>
+      </div>
+    </div>
+    <div id="drBody" class="dr-body"></div>
+  </aside>
+
+  <footer id="actionBar" class="actionbar" hidden>
+    <div class="sel-info">
+      <strong id="selCount">0</strong> <span data-i18n="an_selected"></span>
+      <span id="selViews" class="muted small"></span>
+    </div>
+    <label class="field inline grow">
+      <span class="small" data-i18n="an_folder"></span>
+      <input id="collectionInput" type="text" spellcheck="false">
+    </label>
+    <button type="button" id="copyLinks" data-i18n="an_copy_links"></button>
+    <button type="button" id="cancelAll" class="danger" hidden></button>
+    <button type="button" id="downloadSel" class="primary" data-i18n="an_download_selected"></button>
+    <div id="actionMsg" class="small action-msg" aria-live="polite"></div>
+  </footer>
+
+  <script src="../utils/constants.js"></script>
+  <script src="../utils/platforms.js"></script>
+  <script src="stats.js"></script>
+  <script src="analyzer.js"></script>
+</body>
+</html>
