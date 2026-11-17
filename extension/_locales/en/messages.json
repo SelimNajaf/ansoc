@@ -1296,7 +1296,7 @@
     "message": "Stop loading"
   },
   "an_cap_loading": {
-    "message": "Loading descriptions from Instagram… $1 / $2 (one at a time, to stay under Instagram's limit)"
+    "message": "Loading descriptions from Instagram… $1 / $2"
   },
   "an_cap_views": {
     "message": "$1 views"

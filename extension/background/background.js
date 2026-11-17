@@ -601,6 +601,8 @@ function markCancelled(job) {
     errorMessage: PD.t("status_cancelled"), errorDetail: "" }, true);
 }
 
+let detailsRequestId = null; // running "reels_details" helper request (cancellable)
+
 // ============================================================================ updates
 // The published version lives in the GitHub repo's manifest.json (raw.githubusercontent.com
 // answers with CORS "*", so no extra permission is needed). Checked at most every 6 hours.
@@ -922,6 +924,42 @@ const handlers = {
     for (const k of keys.slice(400)) delete store[k]; // keep the newest 400
     await chrome.storage.local.set({ [KEY]: store });
     return data;
+  },
+  /**
+   * Details of many reels at once ("Copy descriptions"): cached ones at once, the rest in ONE
+   * helper call (one gallery-dl setup, 1-2 s between Instagram requests). Progress goes to the
+   * analyzer as {type: "detailsProgress", done, total}; cancelDetails stops it.
+   */
+  async reelDetailsMany(msg) {
+    const codes = [...new Set([].concat(msg.codes || []).map(String))].filter((c) => /^[A-Za-z0-9_-]{5,64}$/.test(c)).slice(0, 200);
+    const KEY = "reelDetails";
+    const store = (await chrome.storage.local.get(KEY))[KEY] || {};
+    const items = {};
+    for (const c of codes) if (store[c]) items[c] = store[c].data;
+    const missing = codes.filter((c) => !items[c]);
+    if (!missing.length) return { items, errors: {}, stopped: null };
+    await load();
+    const res = await PD.native.request("reels_details", { codes: missing, ...(await loginParams("instagram")) }, {
+      timeout: 30 * 60 * 1000,
+      onId: (id) => (detailsRequestId = id),
+      onProgress: (m) => {
+        const p = /^details:(\d+)\/(\d+)$/.exec(m.text || "");
+        if (p) chrome.runtime.sendMessage({ type: "detailsProgress", done: Number(p[1]), total: Number(p[2]) }).catch(() => null);
+      },
+    }).finally(() => (detailsRequestId = null));
+    const now = Date.now();
+    for (const [c, data] of Object.entries(res.items || {})) {
+      store[c] = { at: now, data };
+      items[c] = data;
+    }
+    const keys = Object.keys(store).sort((a, b) => store[b].at - store[a].at);
+    for (const k of keys.slice(400)) delete store[k];
+    await chrome.storage.local.set({ [KEY]: store });
+    return { items, errors: res.errors || {}, stopped: res.stopped || null };
+  },
+  async cancelDetails() {
+    if (detailsRequestId) await PD.native.cancel(detailsRequestId);
+    return {};
   },
   async updateInfo(msg) {
     return checkForUpdate(!!msg.force, msg.maxAgeMs);

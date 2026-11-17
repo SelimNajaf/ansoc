@@ -1900,15 +1900,22 @@ async function downloadSelected() {
 
 /**
  * Copy the descriptions of the selected reels in one go. Cached descriptions are used at once;
- * missing ones are fetched one by one with a pause (Instagram rate-limits bursts). Clicking the
- * button again stops. The result is copied and also shown in a dialog (copy / save as .txt).
+ * the missing ones come from ONE helper call (one gallery-dl setup, 1-2 s between Instagram
+ * requests, stops at the first rate-limit answer). Clicking the button again stops it. The
+ * result is copied and also shown in a dialog (copy / save as .txt).
  */
 let captionRun = null; // {stop: boolean} while fetching
-const CAPTION_GAP_MS = 1500;
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === "detailsProgress" && captionRun) {
+    setActionMsg(t("an_cap_loading", [String(msg.done), String(msg.total)]));
+  }
+});
 
 async function copyCaptions() {
   if (captionRun) {
     captionRun.stop = true;
+    send({ type: "cancelDetails" });
     return;
   }
   const sel = selectedRows();
@@ -1923,24 +1930,22 @@ async function copyCaptions() {
   btn.textContent = t("an_cap_stop");
   let failed = 0;
   let stoppedBy = "";
-  for (let i = 0; i < missing.length; i++) {
-    if (run.stop) {
-      stoppedBy = "user";
-      break;
+  if (missing.length) {
+    setActionMsg(t("an_cap_loading", ["0", String(missing.length)]));
+    const res = await send({ type: "reelDetailsMany", codes: missing.map((r) => r.code) });
+    if (res.ok) {
+      for (const [code, data] of Object.entries(res.data.items || {})) details.set(code, { data, at: Date.now() });
+      failed = Object.keys(res.data.errors || {}).length;
+      const why = res.data.stopped || "";
+      if (why === "CANCELLED" || run.stop) stoppedBy = "user";
+      else if (/RATE_LIMITED|LOGIN_REQUIRED/.test(why)) stoppedBy = "instagram";
+    } else {
+      failed = missing.length;
+      const e = res.error || {};
+      if (run.stop || e.code === "CANCELLED") stoppedBy = "user";
+      else if (/RATE_LIMITED|LOGIN_REQUIRED/.test(e.code || "") || /rate limit|429/i.test(e.message || "")) stoppedBy = "instagram";
+      else setActionMsg(e.message || t("err_UNKNOWN"), "err");
     }
-    setActionMsg(t("an_cap_loading", [String(i + 1), String(missing.length)]));
-    const r = missing[i];
-    const res = await send({ type: "reelDetails", code: r.code });
-    if (res.ok) details.set(r.code, { data: res.data, at: res.data.cached || Date.now() });
-    else {
-      failed++;
-      // rate limit / login problem: the next requests would fail too
-      if (/RATE_LIMITED|LOGIN_REQUIRED/.test((res.error && res.error.code) || "") || /rate limit|429|wait/i.test((res.error && res.error.message) || "")) {
-        stoppedBy = "instagram";
-        break;
-      }
-    }
-    if (i < missing.length - 1) await new Promise((ok) => setTimeout(ok, CAPTION_GAP_MS));
   }
   captionRun = null;
   btn.textContent = t("an_copy_captions");

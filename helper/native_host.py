@@ -192,6 +192,13 @@ def handle(action: str, params: dict, progress) -> dict:
         import updater
 
         return updater.self_update(lambda p, txt="": progress({"percent": p, "text": txt}))
+    if action == "reels_details":  # several reels in one go ("Copy descriptions")
+        eng = router.get_engine("instagram")(progress)
+        _prep(eng, params)
+        codes = params.get("codes") or []
+        if not isinstance(codes, list):
+            raise HelperError(E_BAD_REQUEST, "codes must be a list")
+        return eng.reels_details(codes, cookies)
     if action == "reel_details":  # one reel's caption, audio, tags ... (opened in the analyzer)
         eng = router.get_engine("instagram")(progress)
         _prep(eng, params)

@@ -350,41 +350,79 @@ class InstagramEngine(BaseEngine):
         return HelperError(classify_error(text), f"{name}: {text}"[:500])
 
     def reel_details(self, code: str, use_browser_cookies: bool = False) -> Dict[str, Any]:
-        """Everything the Reels-tab list leaves out, for ONE reel: the full caption, audio,
-        location, tagged accounts, paid-partnership flag. One request (/media/<id>/info/);
-        the extension asks only when the user opens a reel, and caches the answer."""
-        code = str(code or "").strip()
-        if not re.fullmatch(r"[A-Za-z0-9_-]{5,64}", code):
-            raise HelperError(E_BAD_REQUEST, "Invalid reel code")
+        """Details of ONE reel (the analyzer's details panel). See reels_details()."""
+        res = self.reels_details([code], use_browser_cookies)
+        if code in res["items"]:
+            return res["items"][code]
+        err = res["errors"].get(code) or {"code": E_NO_MEDIA, "message": "Instagram returned no data for this reel"}
+        raise HelperError(err["code"], err["message"])
+
+    def reels_details(self, codes: List[str], use_browser_cookies: bool = False) -> Dict[str, Any]:
+        """Everything the Reels-tab list leaves out (full caption, audio, location, tags,
+        paid-partnership flag) for several reels in ONE helper call: one gallery-dl setup,
+        one request (/media/<id>/info/) per reel.
+
+        gallery-dl waits 6-12 s before every Instagram request by default; for these small
+        single-item lookups 1-2 s is enough (2-4 s for big batches). The first rate-limit or
+        login error stops the batch: the next requests would fail the same way."""
+        codes = [str(c or "").strip() for c in codes][:200]
+        bad = [c for c in codes if not re.fullmatch(r"[A-Za-z0-9_-]{5,64}", c)]
+        if bad:
+            raise HelperError(E_BAD_REQUEST, f"Invalid reel code: {bad[0]}")
+        if not codes:
+            return {"items": {}, "errors": {}, "stopped": None}
         if not use_browser_cookies:
             raise HelperError(E_LOGIN_REQUIRED, "Reel details need Instagram login: enable \"use Chrome's login\".")
         if not module_available("gallery_dl"):
             raise HelperError(E_NO_MEDIA, "gallery-dl is not installed")
+        items: Dict[str, Any] = {}
+        errors: Dict[str, Dict[str, str]] = {}
+        stopped: Optional[str] = None
         with _GDL_LOCK:
-            from gallery_dl import extractor
+            from gallery_dl import config, extractor
 
             if self.dl.cookies and not self.dl.has_cookie("sessionid"):
                 raise HelperError(E_LOGIN_REQUIRED, "You are not logged in to instagram.com in this Chrome "
                                   "profile. Log in there, then retry.")
             self._gdl_setup({c["name"]: c["value"] for c in self.dl.cookies} if self.dl.cookies else True)
+            config.set(("extractor", "instagram"), "sleep-request", [1.0, 2.0] if len(codes) <= 40 else [2.0, 4.0])
+            # on HTTP 429 fail at once (and stop the batch) instead of gallery-dl's 1-4 minute backoff
+            config.set(("extractor", "instagram"), "retries", 0)
             try:
-                ex = extractor.find(f"https://www.instagram.com/reel/{code}/")
+                ex = extractor.find(f"https://www.instagram.com/reel/{codes[0]}/")
                 if ex is None:
-                    raise HelperError(E_BAD_REQUEST, f"gallery-dl cannot handle {code}")
+                    raise HelperError(E_BAD_REQUEST, f"gallery-dl cannot handle {codes[0]}")
                 ex.initialize()
                 ex.login()
-                media = next(iter(ex.api.media(code)), None) or {}
-            except HelperError:
-                raise
+                for i, code in enumerate(codes, 1):
+                    self.dl.progress(i * 100.0 / len(codes), f"details:{i}/{len(codes)}", force=True)  # also checks Cancel
+                    try:
+                        media = next(iter(ex.api.media(code)), None) or {}
+                    except Exception as exc:  # one reel failing (deleted, private) must not lose the others
+                        err = exc if isinstance(exc, HelperError) else self._gdl_error(exc)
+                        errors[code] = {"code": err.code, "message": err.message}
+                        if err.code in (E_RATE_LIMITED, E_LOGIN_REQUIRED):
+                            stopped = err.code
+                            break
+                        continue
+                    if media:
+                        items[code] = self._details_from_media(code, media)
+                    else:
+                        errors[code] = {"code": E_NO_MEDIA, "message": "Instagram returned no data for this reel"}
+            except HelperError as exc:
+                if exc.code == E_CANCELLED:
+                    stopped = E_CANCELLED  # keep what was loaded so far
+                elif not items:
+                    raise
+                else:
+                    stopped = exc.code
             except Exception as exc:
-                raise self._gdl_error(exc) from exc
+                if not items:
+                    raise self._gdl_error(exc) from exc
+                stopped = self._gdl_error(exc).code
             finally:
-                from gallery_dl import config
-
                 config.clear()
-        if not media:
-            raise HelperError(E_NO_MEDIA, "Instagram returned no data for this reel")
-        return self._details_from_media(code, media)
+        return {"items": items, "errors": errors, "stopped": stopped}
 
     def _details_from_media(self, code: str, media: Dict[str, Any]) -> Dict[str, Any]:
         cap = media.get("caption")
