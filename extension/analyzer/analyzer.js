@@ -1976,9 +1976,19 @@ function renderTable() {
       jobStatusCell(r),
     ]);
     // click anywhere else on the row ticks / unticks it (Shift+click: the whole range from the last click)
+    // A drag across the row (selecting text in the caption) is not a click. Judge it by how far the
+    // pointer moved on THIS row - not by a text selection left somewhere else on the page, which
+    // used to block every row click until it was cleared.
+    let down = null;
+    tr.addEventListener("pointerdown", (ev) => (down = { x: ev.clientX, y: ev.clientY }));
     tr.addEventListener("click", (ev) => {
       if (ev.target.closest("input, button, a, select")) return;
-      if (window.getSelection && String(window.getSelection()).length) return; // the user was selecting text
+      if (down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 6) return;
+      if (!ev.shiftKey) {
+        try {
+          window.getSelection().removeAllRanges(); // drop a stale selection so the row looks clean
+        } catch (_e) { /* ignore */ }
+      }
       const on = !state.selected.has(r.code);
       if (ev.shiftKey && lastClickedCode && lastClickedCode !== r.code) {
         const codes = rows.map((x) => x.code);

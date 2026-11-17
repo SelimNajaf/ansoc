@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.2
+
+- **Fixed:** in the Reels Analyzer, clicking a row did nothing while some text was selected anywhere on the page. A click anywhere on a row selects it again; dragging across a caption to copy text still does not.
+
 ## 2.5.1
 
 - **Fixed:** after an update, the popup kept showing "Updated to …" for a day and hid newer versions. A newer version is now always shown first with **Update now**.
