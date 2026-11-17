@@ -279,6 +279,17 @@ tr.sel td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .lg-score.winner { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .signals { white-space: nowrap; }
 .ercell { min-width: 64px; }
+/* "Copy descriptions" result dialog */
+.capdlg { width: min(720px, 94vw); max-height: 86vh; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--card); color: var(--fg); }
+.capdlg::backdrop { background: rgba(0, 0, 0, .45); }
+.capdlg[open] { display: flex; flex-direction: column; gap: 8px; }
+.capdlg-head { display: flex; justify-content: space-between; align-items: center; }
+.capdlg textarea {
+  width: 100%; min-height: 50vh; resize: vertical; font: 12.5px/1.5 ui-monospace, Consolas, monospace;
+  background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px;
+}
+.capdlg-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
 /* clickable rows + the reel details drawer */
 tr.clickable { cursor: pointer; }
 tr.clickable:hover td { background: color-mix(in srgb, var(--fg) 4%, transparent); }

@@ -616,10 +616,10 @@ function newerVersion(a, b) {
   return false;
 }
 
-async function checkForUpdate(force) {
+async function checkForUpdate(force, maxAgeMs) {
   const current = chrome.runtime.getManifest().version;
   const saved = (await chrome.storage.local.get("updateInfo")).updateInfo;
-  if (!force && saved && saved.current === current && Date.now() - saved.at < UPDATE_CHECK_MS) return saved;
+  if (!force && saved && saved.current === current && Date.now() - saved.at < (maxAgeMs || UPDATE_CHECK_MS)) return saved;
   let latest = null;
   try {
     const r = await fetch(UPDATE_MANIFEST_URL, { cache: "no-store", credentials: "omit" });
@@ -924,7 +924,7 @@ const handlers = {
     return data;
   },
   async updateInfo(msg) {
-    return checkForUpdate(!!msg.force);
+    return checkForUpdate(!!msg.force, msg.maxAgeMs);
   },
   /** One-click update: the helper downloads + installs the latest version, then we reload. */
   async applyUpdate() {

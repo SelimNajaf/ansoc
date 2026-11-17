@@ -265,6 +265,19 @@
     </div>
   </main>
 
+  <dialog id="capDialog" class="capdlg" aria-labelledby="capTitle">
+    <div class="capdlg-head">
+      <strong id="capTitle"></strong>
+      <button type="button" id="capClose" class="chipbtn" data-i18n-aria="an_dr_close">✕</button>
+    </div>
+    <div id="capNote" class="small muted"></div>
+    <textarea id="capText" readonly spellcheck="false"></textarea>
+    <div class="capdlg-actions">
+      <button type="button" id="capCopy" class="primary" data-i18n="an_dr_copy"></button>
+      <button type="button" id="capSave" data-i18n="an_cap_save"></button>
+    </div>
+  </dialog>
+
   <aside id="drawer" class="drawer" hidden role="dialog" aria-labelledby="drTitle">
     <div class="dr-head">
       <div class="grow">
@@ -290,6 +303,7 @@
       <input id="collectionInput" type="text" spellcheck="false">
     </label>
     <button type="button" id="copyLinks" data-i18n="an_copy_links"></button>
+    <button type="button" id="copyCaptions" data-i18n="an_copy_captions"></button>
     <button type="button" id="cancelAll" class="danger" hidden></button>
     <button type="button" id="downloadSel" class="primary" data-i18n="an_download_selected"></button>
     <div id="actionMsg" class="small action-msg" aria-live="polite"></div>

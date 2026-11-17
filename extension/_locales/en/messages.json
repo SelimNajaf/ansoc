@@ -1291,5 +1291,44 @@
   },
   "update_manual": {
     "message": "This one time, please update by hand: double-click Update-Windows.bat (Windows) or Update-Mac.command (Mac) in the MediaDownloader folder in your home folder. After that, updates are one click."
+  },
+  "an_copy_captions": {
+    "message": "Copy descriptions"
+  },
+  "an_cap_stop": {
+    "message": "Stop loading"
+  },
+  "an_cap_loading": {
+    "message": "Loading descriptions from Instagram… $1 / $2 (one at a time, to stay under Instagram's limit)"
+  },
+  "an_cap_views": {
+    "message": "$1 views"
+  },
+  "an_cap_none": {
+    "message": "(no description)"
+  },
+  "an_cap_count": {
+    "message": "$1 of $2 reels have a description."
+  },
+  "an_cap_stopped_ig": {
+    "message": "Instagram asked to slow down, so loading stopped: wait 10–15 minutes and press the button again to get the rest (loaded ones are remembered)."
+  },
+  "an_cap_stopped_user": {
+    "message": "Stopped: press the button again to continue (loaded ones are remembered)."
+  },
+  "an_cap_failed": {
+    "message": "$1 could not be loaded."
+  },
+  "an_cap_copied": {
+    "message": "Descriptions of $1 reels copied."
+  },
+  "an_cap_copied_short": {
+    "message": "Copied to the clipboard."
+  },
+  "an_cap_title": {
+    "message": "Descriptions of the selected reels"
+  },
+  "an_cap_save": {
+    "message": "Save as .txt"
   }
 }

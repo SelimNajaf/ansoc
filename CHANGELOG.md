@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.1
+
+- **Copy descriptions:** select reels in the Reels Analyzer and copy all their descriptions with one button (header with rank, views, date and link for each). Descriptions not loaded yet are fetched one at a time to stay under Instagram's limit; the result can also be saved as a .txt file.
+- The popup now looks for updates every 30 minutes while you use it.
+
 ## 2.4.0
 
 **New**

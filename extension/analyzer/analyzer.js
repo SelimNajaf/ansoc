@@ -1756,6 +1756,7 @@ function updateActionBar() {
   $("selViews").textContent = sel.length ? t("an_sel_views", [cmp(total)]) : "";
   $("downloadSel").disabled = !sel.length || !state.helperOk;
   $("copyLinks").disabled = !sel.length;
+  $("copyCaptions").disabled = !sel.length && !captionRun;
   updateCancelAll();
 }
 
@@ -1794,6 +1795,101 @@ async function downloadSelected() {
   for (const j of res.data.jobs) state.jobs.set(j.code, j.jobId);
   setActionMsg(t("an_queued", [String(res.data.jobs.length), `MediaDownloader/Instagram/${res.data.folder}`]), "ok");
   renderTable();
+}
+
+/**
+ * Copy the descriptions of the selected reels in one go. Cached descriptions are used at once;
+ * missing ones are fetched one by one with a pause (Instagram rate-limits bursts). Clicking the
+ * button again stops. The result is copied and also shown in a dialog (copy / save as .txt).
+ */
+let captionRun = null; // {stop: boolean} while fetching
+const CAPTION_GAP_MS = 1500;
+
+async function copyCaptions() {
+  if (captionRun) {
+    captionRun.stop = true;
+    return;
+  }
+  const sel = selectedRows();
+  if (!sel.length) return;
+  // same order as the table shows them (selected reels outside the current filter go last, by views)
+  const order = new Map(visibleRows().map((r, i) => [r.code, i]));
+  sel.sort((a, b) => (order.has(a.code) ? order.get(a.code) : 1e6 - (a.views || 0) / 1e9)
+    - (order.has(b.code) ? order.get(b.code) : 1e6 - (b.views || 0) / 1e9));
+  const missing = sel.filter((r) => !captionOf(r) && !((details.get(r.code) || {}).data));
+  const btn = $("copyCaptions");
+  const run = (captionRun = { stop: false });
+  btn.textContent = t("an_cap_stop");
+  let failed = 0;
+  let stoppedBy = "";
+  for (let i = 0; i < missing.length; i++) {
+    if (run.stop) {
+      stoppedBy = "user";
+      break;
+    }
+    setActionMsg(t("an_cap_loading", [String(i + 1), String(missing.length)]));
+    const r = missing[i];
+    const res = await send({ type: "reelDetails", code: r.code });
+    if (res.ok) details.set(r.code, { data: res.data, at: res.data.cached || Date.now() });
+    else {
+      failed++;
+      // rate limit / login problem: the next requests would fail too
+      if (/RATE_LIMITED|LOGIN_REQUIRED/.test((res.error && res.error.code) || "") || /rate limit|429|wait/i.test((res.error && res.error.message) || "")) {
+        stoppedBy = "instagram";
+        break;
+      }
+    }
+    if (i < missing.length - 1) await new Promise((ok) => setTimeout(ok, CAPTION_GAP_MS));
+  }
+  captionRun = null;
+  btn.textContent = t("an_copy_captions");
+  renderTable(); // the caption column shows what was loaded
+
+  const blocks = [];
+  let without = 0;
+  for (const r of sel) {
+    const cap = captionOf(r);
+    if (!cap) without++;
+    const head = [
+      r.rank ? `#${r.rank}` : "",
+      r.views != null ? t("an_cap_views", [cmp(r.views)]) : "",
+      r.ts ? dateLong(r.ts) : "",
+    ].filter(Boolean).join(" · ");
+    blocks.push(`${head}\n${r.url}\n\n${cap || t("an_cap_none")}`);
+  }
+  const text = blocks.join("\n\n────────────────────\n\n");
+  const note = [t("an_cap_count", [String(sel.length - without), String(sel.length)])];
+  if (stoppedBy === "instagram") note.push(t("an_cap_stopped_ig"));
+  else if (stoppedBy === "user") note.push(t("an_cap_stopped_user"));
+  else if (failed) note.push(t("an_cap_failed", [String(failed)]));
+
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    copied = true;
+  } catch (_e) { /* the dialog below still lets the user copy or save it */ }
+  setActionMsg((copied ? t("an_cap_copied", [String(sel.length - without)]) + " " : "") + note.slice(1).join(" "), copied && !stoppedBy ? "ok" : "");
+  showCaptionDialog(text, note.join(" "), copied);
+}
+
+function showCaptionDialog(text, note, copied) {
+  $("capTitle").textContent = t("an_cap_title");
+  $("capNote").textContent = (copied ? t("an_cap_copied_short") + " " : "") + note;
+  $("capText").value = text;
+  const dlg = $("capDialog");
+  if (!dlg.open) dlg.showModal();
+  $("capText").scrollTop = 0;
+}
+
+function saveCaptionsTxt() {
+  const blob = new Blob([$("capText").value], { type: "text/plain;charset=utf-8" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: `${(state.data && state.data.username) || "reels"}_descriptions_${today()}.txt` });
+  document.body.append(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
 }
 
 async function copyLinks() {
@@ -1935,6 +2031,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("downloadSel").addEventListener("click", downloadSelected);
   $("copyLinks").addEventListener("click", copyLinks);
   $("cancelAll").addEventListener("click", cancelAll);
+  $("copyCaptions").addEventListener("click", copyCaptions);
+  $("capClose").addEventListener("click", () => $("capDialog").close());
+  $("capSave").addEventListener("click", saveCaptionsTxt);
+  $("capCopy").addEventListener("click", () => copyText($("capText").value, "an_cap_copied_short"));
   // details panel: buttons + keyboard (Esc closes, ← → move through the table's order)
   $("drClose").addEventListener("click", closeDetails);
   $("drPrev").addEventListener("click", () => stepDetails(-1));
