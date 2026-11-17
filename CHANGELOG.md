@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.4
+
+- **Reels table:** clicking a row now ticks / unticks it (Shift+click selects a whole range). The details panel opens from the reel's **preview image** ("Details" appears on hover).
+
 ## 2.4.3
 
 - **Reel details panel** no longer squeezes the page: it floats over the content as a card, stays above the bottom bar, and can be resized by dragging its left edge (double-click resets the width). Click outside to close; the selected row scrolls into view when moving with the arrow keys.

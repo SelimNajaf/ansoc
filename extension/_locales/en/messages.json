@@ -1121,9 +1121,6 @@
   "an_cancelled": {
     "message": "$1 downloads cancelled. Files that were already completely saved stay in the folder."
   },
-  "an_dr_hint": {
-    "message": "Click for details (description, numbers, audio)"
-  },
   "an_dr_prev": {
     "message": "Previous reel (←)"
   },
@@ -1333,5 +1330,14 @@
   },
   "an_dr_resize": {
     "message": "Drag to resize the panel (double-click: default width)"
+  },
+  "an_row_hint": {
+    "message": "Click to select or unselect (Shift+click selects a range). Click the preview for details."
+  },
+  "an_dr_preview_hint": {
+    "message": "Open the details (description, numbers, audio)"
+  },
+  "an_dr_preview_label": {
+    "message": "Details"
   }
 }

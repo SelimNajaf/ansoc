@@ -416,3 +416,20 @@ tr.sumrow td[title] { cursor: help; }
 /* heatmap: hours start at 12:00, a thin line marks midnight in the middle */
 .heatmap .hm.midnight, .heatmap .hh.midnight { box-shadow: -2px 0 0 0 color-mix(in srgb, var(--fg) 35%, transparent); }
 .heatmap .hh.midnight { font-weight: 700; color: var(--fg); }
+/* reel preview = button that opens the details panel ("Details" overlay on hover) */
+.c-thumb { width: 52px; }
+.thumb-btn {
+  position: relative; display: block; padding: 0; border: 0; border-radius: 8px; background: none; cursor: zoom-in;
+  line-height: 0; overflow: hidden; outline-offset: 2px;
+}
+.thumb-btn .thumb { transition: transform .15s, filter .15s; }
+.thumb-ov {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font: 700 10px/1 inherit; font-family: inherit; letter-spacing: .02em; color: #fff;
+  background: color-mix(in srgb, var(--act) 70%, transparent); opacity: 0; transition: opacity .15s;
+}
+.thumb-btn:hover .thumb-ov, .thumb-btn:focus-visible .thumb-ov, .thumb-btn.open .thumb-ov { opacity: 1; }
+.thumb-btn:hover .thumb { transform: scale(1.06); }
+.thumb-btn.open { box-shadow: 0 0 0 2px var(--act); }
+tr.clickable td { user-select: none; } /* row clicks select; text is copied from the details panel */
+tr.clickable td.caption { user-select: text; }

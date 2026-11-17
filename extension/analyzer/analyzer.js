@@ -1744,6 +1744,8 @@ function summaryRow(rows) {
   ]);
 }
 
+let lastClickedCode = null; // anchor for Shift+click range selection
+
 function renderTable() {
   const body = $("reelBody");
   body.replaceChildren();
@@ -1770,6 +1772,12 @@ function renderTable() {
       thumb.src = r.thumbnail;
       thumb.addEventListener("error", () => thumb.replaceWith(el("span", { class: "thumb ph", text: "Reel" })));
     } else thumb = el("span", { class: "thumb ph", text: "Reel" });
+    // the preview opens the details panel; the rest of the row selects
+    const preview = el("button", {
+      type: "button", class: "thumb-btn" + (state.openCode === r.code ? " open" : ""),
+      title: t("an_dr_preview_hint"), "aria-label": t("an_dr_preview_hint"),
+      onclick: () => openDetails(r.code),
+    }, [thumb, el("span", { class: "thumb-ov", "aria-hidden": "true", text: t("an_dr_preview_label") })]);
     const pf = r.perf;
     const scoreCls = pf ? pf.tier : "";
     const scoreTip = signalsText(r);
@@ -1778,10 +1786,10 @@ function renderTable() {
       el("a", { href: r.url, target: "_blank", rel: "noopener noreferrer", title: captionOf(r) || r.url, text: captionOf(r) || r.url }),
       r.pinned ? el("span", { class: "pin", text: "📌" }) : null,
     ]);
-    const tr = el("tr", { class: "clickable" + (state.selected.has(r.code) ? " sel" : "") + (state.openCode === r.code ? " open" : ""), title: t("an_dr_hint") }, [
+    const tr = el("tr", { class: "clickable" + (state.selected.has(r.code) ? " sel" : "") + (state.openCode === r.code ? " open" : ""), title: t("an_row_hint") }, [
       el("td", { class: "c-check" }, [cb]),
       el("td", { class: "num muted", text: r.rank ? String(r.rank) : String(i + 1) }),
-      el("td", {}, [thumb]),
+      el("td", { class: "c-thumb" }, [preview]),
       viewsCell(r),
       el("td", { class: "num" }, [r.score != null ? el("span", {
         class: "score " + scoreCls + (pf && pf.winner ? " winner" : ""), title: scoreTip, text: `${r.score.toFixed(1)}×`,
@@ -1797,11 +1805,31 @@ function renderTable() {
       caption,
       jobStatusCell(r),
     ]);
-    // click anywhere on the row (except its checkbox, links and buttons) opens the details panel
+    // click anywhere else on the row ticks / unticks it (Shift+click: the whole range from the last click)
     tr.addEventListener("click", (ev) => {
       if (ev.target.closest("input, button, a, select")) return;
-      openDetails(r.code);
+      if (window.getSelection && String(window.getSelection()).length) return; // the user was selecting text
+      const on = !state.selected.has(r.code);
+      if (ev.shiftKey && lastClickedCode && lastClickedCode !== r.code) {
+        const codes = rows.map((x) => x.code);
+        const a = codes.indexOf(lastClickedCode);
+        const b = codes.indexOf(r.code);
+        if (a >= 0 && b >= 0) {
+          for (const c of codes.slice(Math.min(a, b), Math.max(a, b) + 1)) {
+            if (on) state.selected.add(c);
+            else state.selected.delete(c);
+          }
+          lastClickedCode = r.code;
+          renderTable();
+          updateActionBar();
+          return;
+        }
+      }
+      cb.checked = on;
+      cb.dispatchEvent(new Event("change"));
+      lastClickedCode = r.code;
     });
+    cb.addEventListener("click", () => (lastClickedCode = r.code));
     body.append(tr);
   });
   if (rows.length > 1) body.prepend(summaryRow(rows));
