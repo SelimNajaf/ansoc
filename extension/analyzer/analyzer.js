@@ -71,6 +71,7 @@ function rangeLabel(from, to) {
 function i18nize() {
   for (const n of document.querySelectorAll("[data-i18n]")) n.textContent = t(n.dataset.i18n);
   for (const n of document.querySelectorAll("[data-i18n-aria]")) n.setAttribute("aria-label", t(n.dataset.i18nAria));
+  for (const n of document.querySelectorAll("[data-i18n-title]")) n.title = t(n.dataset.i18nTitle);
   document.documentElement.lang = chrome.i18n.getUILanguage();
 }
 function showError(text) {
@@ -749,38 +750,64 @@ function renderChart() {
   wrap.append(root);
 }
 
+/**
+ * Short visual facts instead of sentences: icon + a few words; the full explanation is the
+ * tooltip. Facts that point at reels are clickable and filter the table.
+ */
+function fact(icon, text, opts) {
+  opts = opts || {};
+  const node = el(opts.onClick ? "button" : "span", {
+    class: "fact" + (opts.tone ? " " + opts.tone : ""), title: opts.title || "", type: opts.onClick ? "button" : null,
+  }, [el("span", { class: "fact-i", text: icon }), el("span", { text })]);
+  if (opts.onClick) node.addEventListener("click", opts.onClick);
+  return node;
+}
+
+/** Show a group of reels in the table (used by the clickable facts). */
+function showInTable(threshold) {
+  state.threshold = threshold;
+  $("thresholdSelect").value = threshold;
+  state.filter = null;
+  renderTable();
+  $("reelTable").closest(".card").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function renderInsights() {
   const s = state.stats;
-  const ul = $("insights");
-  ul.replaceChildren();
+  const box = $("insights");
+  box.replaceChildren();
   if (!s || !s.n) return;
-  const add = (txt) => ul.append(el("li", { text: txt }));
-  const lin = St.linearBins(state.rows.map((r) => r.views).filter((v) => typeof v === "number"), s, true);
-  const dense = St.densestRange(lin.filter((b) => !b.overflow), 0.6);
-  if (dense) add(t("an_ins_dense", [pct(dense.share), cmp(dense.from), cmp(dense.to)]));
-  add(t("an_ins_typical", [cmp(s.p25), cmp(s.p75)]));
-  if (s.skewed) add(t("an_ins_skew", [cmp(s.mean), cmp(s.median)]));
+  const add = (...a) => box.append(fact(...a));
+  add("📦", t("f_typical", [cmp(s.p25), cmp(s.p75)]), { title: t("an_ins_typical", [cmp(s.p25), cmp(s.p75)]) });
   const p = state.perf;
   if (p && p.enough) {
-    if (p.nViral) add(t("an_ins_viral", [String(p.nViral), `${p.viralMult.toFixed(1)}×`, pct(p.viralShare)]));
-    else add(t("an_ins_no_viral"));
-    if (p.nWinner) add(t("an_ins_winner", [String(p.nWinner)]));
-    if (p.nViralLowEr) add(t("an_ins_viral_low_er", [String(p.nViralLowEr)]));
-    if (p.nTalk) add(t("an_ins_talk", [String(p.nTalk)]));
-    if (p.nRising) add(t("an_ins_rising", [String(p.nRising)]));
+    if (p.nViral) {
+      add("🚀", t("f_viral", [String(p.nViral), pct(p.viralShare)]), {
+        tone: "viral", onClick: () => showInTable("viral"),
+        title: t("an_ins_viral", [String(p.nViral), `${p.viralMult.toFixed(1)}×`, pct(p.viralShare)])
+          + (p.nViralLowEr ? "\n" + t("an_ins_viral_low_er", [String(p.nViralLowEr)]) : ""),
+      });
+    } else add("🚀", t("f_no_viral"), { title: t("an_ins_no_viral") });
+    if (p.nWinner) add("🏆", t("f_winners", [String(p.nWinner)]), { tone: "win", onClick: () => showInTable("winner"), title: t("an_ins_winner", [String(p.nWinner)]) });
+    if (p.nTalk) add("💬", t("f_talk", [String(p.nTalk)]), { onClick: () => showInTable("engaged"), title: t("an_ins_talk", [String(p.nTalk)]) });
+    if (p.nRising) add("🌱", t("f_rising", [String(p.nRising)]), { tone: "good", onClick: () => showInTable("rising"), title: t("an_ins_rising", [String(p.nRising)]) });
   }
-  add(t("an_ins_top10", [String(s.top10Count), pct(s.top10Share)]));
-  if (s.cv > 1.5) add(t("an_ins_volatile"));
-  else if (s.cv < 0.5 && s.n >= 5) add(t("an_ins_stable"));
-  // Is the recent half doing better or worse than the older half?
+  add("🎯", t("f_top10", [pct(s.top10Share)]), {
+    title: t("an_ins_top10", [String(s.top10Count), pct(s.top10Share)]) + (s.cv > 1.5 ? "\n" + t("an_ins_volatile") : s.cv < 0.5 ? "\n" + t("an_ins_stable") : ""),
+  });
+  // newer half vs older half of the reels
   const withViews = state.rows.filter((r) => r.views != null);
   if (withViews.length >= 10) {
     const half = Math.floor(withViews.length / 2);
-    const recent = St.summarize(withViews.slice(0, half).map((r) => r.views)).median; // list is newest first
+    const recent = St.summarize(withViews.slice(0, half).map((r) => r.views)).median; // newest first
     const older = St.summarize(withViews.slice(half).map((r) => r.views)).median;
     if (older > 0) {
       const ch = recent / older - 1;
-      if (Math.abs(ch) >= 0.2) add(t(ch > 0 ? "an_ins_trend_up" : "an_ins_trend_down", [pct(Math.abs(ch))]));
+      if (Math.abs(ch) >= 0.2) {
+        add(ch > 0 ? "📈" : "📉", t("f_trend", [`${ch > 0 ? "+" : "−"}${pct(Math.abs(ch))}`]), {
+          tone: ch > 0 ? "good" : "bad", title: t(ch > 0 ? "an_ins_trend_up" : "an_ins_trend_down", [pct(Math.abs(ch))]),
+        });
+      }
     }
   }
 }
@@ -843,6 +870,7 @@ function renderActivity() {
   $("activityRange").textContent = t("an_act_range", [dateLong(a.first), dateLong(state.windowEnd), String(a.spanDays), String(a.n)]);
   renderActivityCards();
   renderActivityChart();
+  renderWhatWorks(); // before the heatmap: it outlines the best window
   renderHeatmap();
   renderActivityInsights();
 }
@@ -980,6 +1008,72 @@ function renderActivityChart() {
  * The extra row / column summarise each hour / weekday, where there is more data per cell.
  */
 const HEAT_HOURS = [...Array(24).keys()].map((i) => (i + 12) % 24); // 12, 13 … 23, 0, 1 … 11
+
+// ------------------------------------------------------------------ "What works" (timing + pace)
+// Same groupings and statistics as the Compare stores page (PD.stats.groupEffect): every reel's
+// "vs typical" ratio, grouped by 3-hour window, weekday, posts that day / week, gap before it.
+const WW_WINDOWS = [12, 15, 18, 21, 0, 3, 6, 9]; // same order as the heatmap (midnight in the middle)
+const p2h = (h) => String(h).padStart(2, "0");
+const WW_DIMS = {
+  window: { icon: "⏰", title: "ww_time", order: WW_WINDOWS, label: (w) => `${p2h(w)}–${p2h((w + 3) % 24)}` },
+  weekday: { icon: "📅", title: "ww_day", order: [0, 1, 2, 3, 4, 5, 6], label: (w) => weekdayName(w, true) },
+  perDay: { icon: "🔁", title: "ww_per_day", order: St.BUCKETS.perDay.order, label: (g) => t("ww_per_day_v", [g]) },
+  perWeek: { icon: "📆", title: "ww_per_week", order: St.BUCKETS.perWeek.order, label: (g) => t("ww_per_week_v", [g]) },
+  gap: { icon: "⏱", title: "ww_gap", order: St.BUCKETS.gap.order, label: (g) => g },
+};
+
+/** For every reel in range (with a score, not still growing): its group in each dimension. */
+function wwItems() {
+  const allTs = state.allRows.map((r) => r.ts).filter((x) => x > 0).sort((a, b) => a - b);
+  const perDay = new Map();
+  for (const x of allTs) perDay.set(St.dayStart(x), (perDay.get(St.dayStart(x)) || 0) + 1);
+  const out = [];
+  for (const r of state.rows) {
+    if (!r.ts || r.score == null || !r.perf || r.perf.isNew) continue;
+    const d = new Date(r.ts);
+    let week = 0;
+    let prev = null;
+    for (const x of allTs) {
+      if (x > r.ts - 7 * St.DAY && x <= r.ts) week++;
+      if (x < r.ts) prev = x;
+    }
+    out.push({
+      ratio: r.score,
+      window: St.BUCKETS.window.of(d.getHours()),
+      weekday: St.weekdayMon(r.ts),
+      perDay: St.BUCKETS.perDay.of(perDay.get(St.dayStart(r.ts)) || 1),
+      perWeek: St.BUCKETS.perWeek.of(week),
+      gap: prev ? St.BUCKETS.gap.of((r.ts - prev) / St.HOUR) : null,
+    });
+  }
+  return out;
+}
+
+function renderWhatWorks() {
+  const items = wwItems();
+  const tiles = $("wwTiles");
+  tiles.replaceChildren();
+  $("wwChart").replaceChildren();
+  state.wwEffects = {};
+  for (const [key, dim] of Object.entries(WW_DIMS)) {
+    state.wwEffects[key] = St.groupEffect(items.map((it) => ({ group: it[key], ratio: it.ratio })));
+  }
+  $("wwNote").textContent = t("ww_note", [String(items.length)]);
+  if (!state.wwDim) state.wwDim = "window";
+  for (const [key, dim] of Object.entries(WW_DIMS)) {
+    const node = PD.effectsUI.tile(dim.icon, dim.title, state.wwEffects[key], dim.label, () => {
+      state.wwDim = key;
+      renderWhatWorks();
+    });
+    node.classList.toggle("on", state.wwDim === key);
+    tiles.append(node);
+  }
+  const dim = WW_DIMS[state.wwDim];
+  $("wwChart").append(PD.effectsUI.bars(state.wwEffects[state.wwDim], { order: dim.order, label: dim.label }));
+  // the best time window is also outlined on the heatmap
+  const best = St.bestEffect(state.wwEffects.window);
+  state.bestWindow = best ? best.group : null;
+}
 
 // ------------------------------------------------------------------ CSV export (timing + performance)
 /*
@@ -1149,13 +1243,15 @@ function renderHeatmap() {
   grid.append(el("span"));
   // columns run 12:00 -> 23:00 -> 00:00 -> 11:00: midnight sits in the middle, so a night of posting
   // (evening into early morning) stays one block instead of being split over both edges
-  for (const h of HEAT_HOURS) grid.append(el("span", { class: "hh" + (h === 0 ? " midnight" : ""), text: h % 3 === 0 ? String(h).padStart(2, "0") : "" }));
+  const inBest = (h) => state.bestWindow != null && h >= state.bestWindow && h < state.bestWindow + 3;
+  const hc = (h) => (h === 0 ? " midnight" : "") + (inBest(h) ? " best" + (h === state.bestWindow ? " best-first" : h === state.bestWindow + 2 ? " best-last" : "") : "");
+  for (const h of HEAT_HOURS) grid.append(el("span", { class: "hh" + hc(h), text: inBest(h) && h === state.bestWindow + 1 ? "★" : h % 3 === 0 ? String(h).padStart(2, "0") : "" }));
   grid.append(el("span", { class: "hh", text: perfMode ? "×" : "Σ" }));
   for (let w = 0; w < 7; w++) {
     grid.append(el("span", { class: "hd", text: weekdayName(w) }));
     for (const h of HEAT_HOURS) {
       const c = g[w][h];
-      const node = el("span", { class: "hm" + (h === 0 ? " midnight" : ""), title: tipOf(`${weekdayName(w, true)} ${hourRange(h)}`, c) });
+      const node = el("span", { class: "hm" + hc(h), title: tipOf(`${weekdayName(w, true)} ${hourRange(h)}`, c) });
       paint(node, c);
       grid.append(node);
     }
@@ -1167,7 +1263,7 @@ function renderHeatmap() {
   grid.append(el("span", { class: "hd sum", text: t("an_heat_all_days") }));
   for (const h of HEAT_HOURS) {
     const c = byHour[h];
-    const node = el("span", { class: "hm sumrow" + (h === 0 ? " midnight" : ""), title: tipOf(`${t("an_heat_all_days")} ${hourRange(h)}`, c) });
+    const node = el("span", { class: "hm sumrow" + hc(h), title: tipOf(`${t("an_heat_all_days")} ${hourRange(h)}`, c) });
     paint(node, c, true);
     if (!perfMode && c.n) node.style.opacity = String(0.18 + 0.82 * (c.n / Math.max(1, ...byHour.map((x) => x.n))));
     grid.append(node);
@@ -1184,73 +1280,34 @@ function renderHeatmap() {
 
 function renderActivityInsights() {
   const a = state.activity;
-  const ul = $("activityInsights");
-  ul.replaceChildren();
-  const add = (txt) => ul.append(el("li", { text: txt }));
-  add(t("an_ai_pace", [rate(a.per7), dur(a.medianGap)]));
-
-  // Pace: last 30 days vs the 30 days before
+  const box = $("activityInsights");
+  box.replaceChildren();
+  const add = (...x) => box.append(fact(...x));
+  add("🗓", t("f_pace", [rate(a.per7), dur(a.medianGap)]), { title: t("an_ai_pace", [rate(a.per7), dur(a.medianGap)]) });
   if (a.trendComparable) {
-    if (a.prev30 === 0 && a.last30 > 0) add(t("an_ai_trend_restart", [String(a.last30)]));
+    if (a.prev30 === 0 && a.last30 > 0) add("🔄", t("f_restart", [String(a.last30)]), { tone: "good", title: t("an_ai_trend_restart", [String(a.last30)]) });
     else if (a.prev30 > 0) {
       const ch = a.last30 / a.prev30 - 1;
       const key = ch >= 0.25 ? "an_ai_trend_up" : ch <= -0.25 ? "an_ai_trend_down" : "an_ai_trend_flat";
-      add(t(key, [String(a.last30), String(a.prev30)]));
+      add(ch >= 0.25 ? "📈" : ch <= -0.25 ? "📉" : "➡️", t("f_last30", [String(a.last30), String(a.prev30)]), {
+        tone: ch >= 0.25 ? "good" : ch <= -0.25 ? "bad" : "", title: t(key, [String(a.last30), String(a.prev30)]),
+      });
     }
   }
-  if (a.sinceLastDays >= 14) add(t("an_ai_inactive", [String(Math.floor(a.sinceLastDays))]));
-
-  if (a.n >= 6) add(t("an_ai_when", [weekdayName(a.topWeekday, true), hourRange(a.topHour)]));
-
-  // Which weekday / time of day performs best (needs enough reels per group)
-  const overall = state.stats && state.stats.median;
-  const withViews = state.rows.filter((r) => r.ts && r.views != null);
-  const bestGroup = (keyOf, labelOf) => {
-    const groups = new Map();
-    for (const r of withViews) {
-      const k = keyOf(r);
-      if (!groups.has(k)) groups.set(k, []);
-      groups.get(k).push(r.views);
-    }
-    let best = null;
-    for (const [k, v] of groups) {
-      if (v.length < 3) continue;
-      const md = median(v);
-      if (!best || md > best.md) best = { k, md, n: v.length };
-    }
-    return best && overall && best.md >= overall * 1.2 ? { label: labelOf(best.k), md: best.md, n: best.n } : null;
-  };
-  const bw = bestGroup((r) => St.weekdayMon(r.ts), (k) => weekdayName(k, true));
-  if (bw) add(t("an_ai_best_day", [bw.label, cmp(bw.md), String(bw.n), cmp(overall)]));
-  const blockOf = (r) => Math.floor(new Date(r.ts).getHours() / 4);
-  const bb = bestGroup(blockOf, (k) => `${String(k * 4).padStart(2, "0")}:00–${String((k * 4 + 4) % 24).padStart(2, "0")}:00`);
-  if (bb) add(t("an_ai_best_time", [bb.label, cmp(bb.md), String(bb.n)]));
-
-  // Does posting several times a day cost views?
-  const perDay = new Map();
-  for (const r of withViews) perDay.set(St.dayStart(r.ts), (perDay.get(St.dayStart(r.ts)) || 0) + 1);
-  const multi = withViews.filter((r) => perDay.get(St.dayStart(r.ts)) >= 2).map((r) => r.views);
-  const single = withViews.filter((r) => perDay.get(St.dayStart(r.ts)) === 1).map((r) => r.views);
-  if (multi.length >= 4 && single.length >= 4) {
-    const mm = median(multi);
-    const ms = median(single);
-    const key = mm < ms * 0.8 ? "an_ai_multi_worse" : mm > ms * 1.2 ? "an_ai_multi_better" : "an_ai_multi_same";
-    add(t(key, [cmp(mm), cmp(ms)]));
-  }
-
+  if (a.sinceLastDays >= 14) add("💤", t("f_silent", [String(Math.floor(a.sinceLastDays))]), { tone: "bad", title: t("an_ai_inactive", [String(Math.floor(a.sinceLastDays))]) });
   if (a.n >= 6) {
-    if (a.gapCv < 0.6) add(t("an_ai_regular"));
-    else if (a.gapCv > 1.5) add(t("an_ai_bursty"));
+    if (a.gapCv < 0.6) add("🕰", t("f_regular"), { title: t("an_ai_regular") });
+    else if (a.gapCv > 1.5) add("🌊", t("f_bursty"), { title: t("an_ai_bursty") });
   }
-  if (a.maxGap && a.maxGap.hours >= 14 * 24) {
-    add(t("an_ai_pause", [String(Math.round(a.maxGap.hours / 24)), dateLong(a.maxGap.from), dateLong(a.maxGap.to)]));
-  }
-
-  // Hot right now: best views/day among the last 30 days
+  // hot right now: best views/day of the last 30 days -> opens that reel
   const hot = state.rows.filter((r) => r.vpd != null && r.ts > state.windowEnd - 30 * St.DAY).sort((x, y) => y.vpd - x.vpd)[0];
-  if (hot) add(t("an_ai_hot", [cmp(Math.round(hot.vpd)), dateLong(hot.ts), (hot.caption || hot.code).split("\n")[0].slice(0, 60)]));
-
-  if (state.data.truncated) add(t("an_ai_truncated", [String(state.data.count)]));
+  if (hot) {
+    add("🔥", t("f_hot", [cmp(Math.round(hot.vpd))]), {
+      tone: "viral", onClick: () => openDetails(hot.code),
+      title: t("an_ai_hot", [cmp(Math.round(hot.vpd)), dateLong(hot.ts), (captionOf(hot) || hot.code).split("\n")[0].slice(0, 60)]),
+    });
+  }
+  if (state.data.truncated) add("⚠️", t("f_truncated", [String(state.data.count)]), { tone: "warn", title: t("an_ai_truncated", [String(state.data.count)]) });
 }
 
 // ------------------------------------------------------------------ table

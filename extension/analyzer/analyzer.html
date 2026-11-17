@@ -13,6 +13,7 @@
       <h1 data-i18n="an_title"></h1>
       <p class="muted small" data-i18n="an_subtitle"></p>
     </div>
+    <a id="compareLink" class="chipbtn compare-link" href="../compare/compare.html" target="_blank" data-i18n="cmp_open"></a>
     <span id="helperBadge" class="badge"></span>
   </header>
 
@@ -64,7 +65,6 @@
         <div class="section-head">
           <div>
             <h2 data-i18n="an_rb_title"></h2>
-            <p class="muted small" data-i18n="an_rb_sub"></p>
           </div>
           <div class="controls small">
             <span id="rbCount" class="rb-count"></span>
@@ -77,7 +77,7 @@
           <span id="rbToLabel" class="rb-date"></span>
           <span id="rbLabel" class="rb-meta"></span>
         </div>
-        <div id="rb" class="rb">
+        <div id="rb" class="rb" data-i18n-title="an_rb_hint">
           <div id="rbStrip" class="rb-strip"></div>
           <div id="rbWindow" class="rb-window"></div>
           <div id="rbHandleA" class="rb-handle" role="slider" tabindex="0" data-i18n-aria="an_rb_from"><span class="grip"></span></div>
@@ -90,7 +90,6 @@
             <span><i class="rb-sw-rug"></i><span data-i18n="an_rb_lg_viral"></span></span>
             <span><i class="sw rb-sw-pause"></i><span data-i18n="an_rb_lg_pause"></span></span>
           </div>
-          <span class="muted small" data-i18n="an_rb_hint"></span>
         </div>
         <div id="rbChips" class="quick small rb-chips"></div>
       </section>
@@ -118,9 +117,8 @@
           <span><i class="sw line mean"></i><span data-i18n="an_mean"></span></span>
           <span><i class="sw line median"></i><span data-i18n="an_median"></span></span>
           <span><i class="sw line viral"></i><span data-i18n="an_viral_legend"></span></span>
-          <span class="muted" data-i18n="an_click_bar"></span>
         </div>
-        <ul id="insights" class="insights"></ul>
+        <div id="insights" class="facts"></div>
       </section>
 
       <section id="activityCard" class="card">
@@ -146,14 +144,23 @@
           </div>
         </div>
         <div id="activityCards" class="cards mini"></div>
+        <div id="activityInsights" class="facts"></div>
         <div id="activityWrap" class="chart-wrap"></div>
         <div class="legend small">
           <span><i class="sw act-sw"></i><span data-i18n="an_act_legend_bars"></span></span>
           <span id="viewsLegend"><i class="sw line views"></i><span id="viewsLegendText"></span></span>
-          <span class="muted" data-i18n="an_click_bar_date"></span>
+        </div>
+
+        <div class="ww">
+          <div class="heat-head">
+            <h3 class="sub"><span data-i18n="ww_title"></span> <span class="info" data-i18n-title="ww_info">ⓘ</span></h3>
+            <span id="wwNote" class="muted small"></span>
+          </div>
+          <div id="wwTiles" class="fx-tiles"></div>
+          <div id="wwChart" class="ww-chart"></div>
         </div>
         <div class="heat-head">
-          <h3 class="sub" data-i18n="an_when_title"></h3>
+          <h3 class="sub"><span data-i18n="an_when_title"></span> <span class="info" data-i18n-title="an_act_note">ⓘ</span></h3>
           <div class="controls small">
             <span class="muted" data-i18n="an_heat_color"></span>
             <div id="heatSeg" class="seg" role="group">
@@ -179,8 +186,6 @@
             <span class="muted" data-i18n="an_heat_lg_thin"></span>
           </span>
         </div>
-        <ul id="activityInsights" class="insights"></ul>
-        <p class="muted small" data-i18n="an_act_note"></p>
       </section>
 
       <section class="card">
@@ -235,15 +240,12 @@
           <span><i class="lg-score viral">12×</i> <span data-i18n="an_sig_viral"></span></span>
           <span><i class="lg-score strong">3×</i> <span data-i18n="an_sig_strong"></span></span>
           <span><i class="lg-score winner">3×</i> <span data-i18n="an_sig_winner"></span></span>
-          <span><i class="fresh rising"></i><span data-i18n="an_lg_rising"></span></span>
-          <span><i class="fresh"></i><span data-i18n="an_lg_new"></span></span>
-          <span class="muted" data-i18n="an_lg_score_hint"></span>
-        </div>
-        <div class="legend small er-legend">
+          <span><i class="fresh rising"></i><span data-i18n="an_sig_rising"></span></span>
+          <span><i class="fresh"></i><span data-i18n="an_sig_new"></span></span>
+          <span class="lg-sep" aria-hidden="true">|</span>
           <span data-i18n="an_er_bar"></span>
           <span><i class="sw like"></i><span data-i18n="an_col_likes"></span></span>
           <span><i class="sw comment"></i><span data-i18n="an_col_comments"></span></span>
-          <span class="muted" data-i18n="an_er_bar_hint"></span>
         </div>
         <div class="table-wrap">
           <table id="reelTable">
@@ -320,6 +322,7 @@
   <script src="../utils/constants.js"></script>
   <script src="../utils/platforms.js"></script>
   <script src="stats.js"></script>
+  <script src="effects.js"></script>
   <script src="analyzer.js"></script>
 </body>
 </html>

@@ -438,3 +438,64 @@ tr.clickable td.caption { user-select: text; }
 .csv-export { display: inline-flex; align-items: center; gap: 4px; }
 .csv-btn { background: var(--act); color: #fff; }
 .csv-fmt { padding: 4px 6px; font-size: 12px; border-radius: 8px; }
+
+/* ---------- short visual facts (instead of sentence lists) ---------- */
+.facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
+.fact {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+  background: var(--soft); color: var(--fg); font: 600 12px/1.2 inherit; font-family: inherit; border: 0; cursor: default;
+}
+button.fact { cursor: pointer; }
+button.fact:hover { filter: brightness(1.1); box-shadow: inset 0 0 0 1px var(--line); }
+.fact .fact-i { font-size: 13px; }
+.fact.viral { background: color-mix(in srgb, var(--viral) 16%, var(--soft)); }
+.fact.win { background: color-mix(in srgb, var(--accent) 16%, var(--soft)); }
+.fact.good { background: color-mix(in srgb, var(--ok) 16%, var(--soft)); }
+.fact.bad { background: color-mix(in srgb, var(--err) 14%, var(--soft)); }
+.fact.warn { background: color-mix(in srgb, var(--warn) 16%, var(--soft)); }
+.info { cursor: help; color: var(--muted); font-weight: 400; }
+.lg-sep { color: var(--line); }
+
+/* ---------- "What works": result tiles + effect bars ---------- */
+.ww { margin-top: 18px; }
+.ww .heat-head { margin-top: 0; }
+.fx-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.fx-tile {
+  text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+  color: var(--fg); font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 3px;
+}
+.fx-tile:hover { border-color: color-mix(in srgb, var(--act) 50%, var(--line)); }
+.fx-tile.on { border-color: var(--act); box-shadow: inset 0 0 0 1px var(--act); }
+.fx-tile.empty .fx-tile-val { color: var(--muted); }
+.fx-tile-top { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.fx-icon { font-size: 14px; }
+.fx-tile-val { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fx-tile-sub { font-size: 11px; color: var(--muted); }
+.fx-tile-sub .good, .fx-val.good { color: var(--ok); font-weight: 700; }
+.fx-tile-sub .bad, .fx-val.bad { color: var(--err); font-weight: 700; }
+.fx-bars { display: flex; flex-direction: column; gap: 4px; }
+.fx-row { display: grid; grid-template-columns: 110px 1fr 52px 70px; align-items: center; gap: 10px; font-size: 12px; }
+.fx-row.best .fx-label { color: var(--fg); font-weight: 800; }
+.fx-row.few { opacity: .45; }
+.fx-row.empty { opacity: .3; }
+.fx-label { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-track { position: relative; height: 16px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+.fx-mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--fg) 35%, transparent); }
+.fx-bar { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; }
+.fx-bar.good { background: color-mix(in srgb, var(--ok) 75%, transparent); }
+.fx-bar.bad { background: color-mix(in srgb, var(--err) 65%, transparent); }
+.fx-ci { position: absolute; top: 7px; height: 2px; background: color-mix(in srgb, var(--fg) 55%, transparent); }
+.fx-val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fx-n { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fx-conf { letter-spacing: -1px; font-size: 9px; cursor: help; }
+.fx-conf.clear { color: var(--ok); }
+.fx-conf.likely { color: var(--warn); }
+.fx-conf.few { color: var(--muted); }
+@media (max-width: 560px) { .fx-row { grid-template-columns: 80px 1fr 44px 56px; gap: 6px; } }
+
+/* heatmap: the best 3-hour window, outlined */
+.heatmap .hm.best { box-shadow: inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); }
+.heatmap .hm.best.best-first { box-shadow: inset 2px 0 0 var(--ok), inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); }
+.heatmap .hm.best.best-last { box-shadow: inset -2px 0 0 var(--ok), inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); }
+.heatmap .hh.best { color: var(--ok); font-weight: 800; }
+.compare-link { text-decoration: none; white-space: nowrap; }

@@ -510,8 +510,99 @@
     return { periods, pauses, lulls, pauseHours, lullHours, medianGapHours: medGap };
   }
 
+  // ---------------------------------------------------------------- "what works" (timing / pace)
+  /*
+   * Effect of a grouping (time window, weekday, posts per day ...) on performance.
+   * Input items: {group, ratio, store}, where ratio = views / typical views of that store at that
+   * time ("vs typical"), so stores of different size are comparable.
+   * Per group: median log-ratio per store, then the median over stores -> every store weighs the
+   * same, a big store cannot drown the others. An 80% interval comes from a (hierarchical)
+   * bootstrap: resample stores, then reels inside each store.
+   */
+  function seeded(seed) {
+    let s = seed >>> 0 || 1;
+    return () => {
+      s ^= s << 13;
+      s ^= s >>> 17;
+      s ^= s << 5;
+      return (s >>> 0) / 4294967296;
+    };
+  }
+
+  function groupEffect(items, opts) {
+    opts = opts || {};
+    const minN = opts.minN || 5;
+    // across several stores a pattern must show up in at least minStores of them
+    const minStores = opts.minStores || 1;
+    const iters = opts.iters || 400;
+    const byGroup = new Map();
+    for (const it of items) {
+      if (!(it.ratio > 0) || it.group == null) continue;
+      if (!byGroup.has(it.group)) byGroup.set(it.group, new Map());
+      const g = byGroup.get(it.group);
+      const k = it.store || "";
+      if (!g.has(k)) g.set(k, []);
+      g.get(k).push(Math.log(it.ratio));
+    }
+    const rnd = seeded(12345);
+    const est = (lists) => median(lists.map((l) => median(l)));
+    const out = [];
+    for (const [group, stores] of byGroup) {
+      const lists = [...stores.values()];
+      const n = lists.reduce((a, l) => a + l.length, 0);
+      const value = est(lists);
+      let lo = null;
+      let hi = null;
+      const enough = n >= minN && lists.length >= minStores;
+      if (enough) {
+        const sims = [];
+        for (let k = 0; k < iters; k++) {
+          const pick = lists.length > 1 ? lists.map(() => lists[Math.floor(rnd() * lists.length)]) : lists;
+          sims.push(est(pick.map((l) => l.map(() => l[Math.floor(rnd() * l.length)]))));
+        }
+        sims.sort((a, b) => a - b);
+        lo = Math.exp(quantile(sims, 0.1));
+        hi = Math.exp(quantile(sims, 0.9));
+      }
+      out.push({ group, n, stores: lists.length, ratio: Math.exp(value), lo, hi, enough });
+    }
+    return out;
+  }
+
+  /** "clear" = interval entirely above (or below) 1x, "likely" = enough reels, "few" = too few. */
+  function effectConfidence(e) {
+    if (!e.enough) return "few";
+    if (e.lo > 1 || e.hi < 1) return "clear";
+    return "likely";
+  }
+
+  /** Best group: highest LOWER bound among groups with enough reels (a sure 1.6x beats a lucky 3x). */
+  function bestEffect(effects) {
+    const ok = effects.filter((e) => e.enough);
+    if (!ok.length) return null;
+    return ok.reduce((b, e) => (e.lo > b.lo || (e.lo === b.lo && e.ratio > b.ratio) ? e : b));
+  }
+  function worstEffect(effects) {
+    const ok = effects.filter((e) => e.enough);
+    if (ok.length < 2) return null;
+    return ok.reduce((b, e) => (e.hi < b.hi ? e : b));
+  }
+
+  // groupings shared by the analyzer and the "Compare stores" page
+  const BUCKETS = {
+    window: { order: [0, 3, 6, 9, 12, 15, 18, 21], of: (hour) => Math.floor(hour / 3) * 3 },
+    weekday: { order: [0, 1, 2, 3, 4, 5, 6], of: (w) => w },
+    perDay: { order: ["1", "2", "3", "4+"], of: (n) => (n >= 4 ? "4+" : String(Math.max(1, n))) },
+    perWeek: { order: ["1–3", "4–7", "8–14", "15+"], of: (n) => (n <= 3 ? "1–3" : n <= 7 ? "4–7" : n <= 14 ? "8–14" : "15+") },
+    gap: {
+      order: ["< 3 h", "3–12 h", "12–24 h", "1–3 d", "3 d +"],
+      of: (h) => (h == null ? null : h < 3 ? "< 3 h" : h < 12 ? "3–12 h" : h < 24 ? "12–24 h" : h < 72 ? "1–3 d" : "3 d +"),
+    },
+  };
+
   PD.stats = {
     quantile, summarize, niceStep, linearBins, logBins, densestRange, compact,
     DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods,
+    groupEffect, effectConfidence, bestEffect, worstEffect, BUCKETS,
   };
 })(typeof globalThis !== "undefined" ? globalThis : self);

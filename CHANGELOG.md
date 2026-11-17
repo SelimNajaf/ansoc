@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.0
+
+- **What works** (Reels Analyzer, above *When do they post?*): best time window, weekday, posts per day, posts per week and gap between posts, each with how much better it does than usual and how sure that is (●●● clear · ●●○ likely · ●○○ too few reels). The best window is outlined on the heatmap.
+- **📊 Compare stores**: a new page. Drop the CSV files of several stores (Excel or Standard format) and see what works across all of them. Every store counts equally; a result needs 8+ reels from 2+ stores. **Copy summary for AI** gives a short text to paste into any free AI chat.
+- **Much less text:** the long lists of sentences are now short, clickable facts (🚀 viral, 🏆 winners, 🔥 hot …); explanations moved into tooltips; labels, legends and settings shortened.
+
 ## 2.4.7
 
 - **Download CSV** next to *When do they post?*: one row per reel of the selected time range with posting date, weekday, hour (local and UTC), results, **vs typical / z-score / tier** (comparable between stores of different size) and posting frequency (posts that day, posts in the last 7 days, hours since the previous post). Built for combining several stores' files to find the best posting hours and the best number of posts per day / week. Two formats: **Excel (;)** (decimal comma, opens correctly in Excel with Azerbaijani / Russian / Turkish settings) and **Standard (,)** (Google Sheets, Python).
