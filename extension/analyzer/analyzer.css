@@ -397,3 +397,6 @@ tr.sumrow td[title] { cursor: help; }
   .actionbar .field.inline { flex-basis: 100%; }
   .caption { max-width: 160px; }
 }
+/* heatmap: hours start at 12:00, a thin line marks midnight in the middle */
+.heatmap .hm.midnight, .heatmap .hh.midnight { box-shadow: -2px 0 0 0 color-mix(in srgb, var(--fg) 35%, transparent); }
+.heatmap .hh.midnight { font-weight: 700; color: var(--fg); }

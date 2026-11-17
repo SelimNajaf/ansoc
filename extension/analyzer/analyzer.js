@@ -978,6 +978,8 @@ function renderActivityChart() {
  * time is already factored out, so a growing account doesn't make late hours look better).
  * The extra row / column summarise each hour / weekday, where there is more data per cell.
  */
+const HEAT_HOURS = [...Array(24).keys()].map((i) => (i + 12) % 24); // 12, 13 … 23, 0, 1 … 11
+
 function renderHeatmap() {
   const box = $("heatmap");
   box.replaceChildren();
@@ -1034,13 +1036,15 @@ function renderHeatmap() {
 
   const grid = el("div", { class: "heatmap" + (perfMode ? " perf" : ""), role: "table", "aria-label": t("an_when_title") });
   grid.append(el("span"));
-  for (let h = 0; h < 24; h++) grid.append(el("span", { class: "hh", text: h % 3 === 0 ? String(h).padStart(2, "0") : "" }));
+  // columns run 12:00 -> 23:00 -> 00:00 -> 11:00: midnight sits in the middle, so a night of posting
+  // (evening into early morning) stays one block instead of being split over both edges
+  for (const h of HEAT_HOURS) grid.append(el("span", { class: "hh" + (h === 0 ? " midnight" : ""), text: h % 3 === 0 ? String(h).padStart(2, "0") : "" }));
   grid.append(el("span", { class: "hh", text: perfMode ? "×" : "Σ" }));
   for (let w = 0; w < 7; w++) {
     grid.append(el("span", { class: "hd", text: weekdayName(w) }));
-    for (let h = 0; h < 24; h++) {
+    for (const h of HEAT_HOURS) {
       const c = g[w][h];
-      const node = el("span", { class: "hm", title: tipOf(`${weekdayName(w, true)} ${hourRange(h)}`, c) });
+      const node = el("span", { class: "hm" + (h === 0 ? " midnight" : ""), title: tipOf(`${weekdayName(w, true)} ${hourRange(h)}`, c) });
       paint(node, c);
       grid.append(node);
     }
@@ -1050,9 +1054,9 @@ function renderHeatmap() {
   }
   // summary row: every weekday together, per hour
   grid.append(el("span", { class: "hd sum", text: t("an_heat_all_days") }));
-  for (let h = 0; h < 24; h++) {
+  for (const h of HEAT_HOURS) {
     const c = byHour[h];
-    const node = el("span", { class: "hm sumrow", title: tipOf(`${t("an_heat_all_days")} ${hourRange(h)}`, c) });
+    const node = el("span", { class: "hm sumrow" + (h === 0 ? " midnight" : ""), title: tipOf(`${t("an_heat_all_days")} ${hourRange(h)}`, c) });
     paint(node, c, true);
     if (!perfMode && c.n) node.style.opacity = String(0.18 + 0.82 * (c.n / Math.max(1, ...byHour.map((x) => x.n))));
     grid.append(node);
