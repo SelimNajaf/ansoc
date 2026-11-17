@@ -295,15 +295,31 @@ tr.clickable { cursor: pointer; }
 tr.clickable:hover td { background: color-mix(in srgb, var(--fg) 4%, transparent); }
 tr.open td { background: color-mix(in srgb, var(--act) 14%, var(--card)) !important; }
 tr.open td:first-child { box-shadow: inset 3px 0 0 var(--act); }
+/* The details panel floats over the page (no reflow): a card on the right, above the bottom
+   action bar (--ab-h is set from JS), resizable from its left edge (--dr-w, remembered). */
 .drawer {
-  position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); z-index: 30;
-  background: var(--card); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(0, 0, 0, .25);
-  display: flex; flex-direction: column; animation: dr-in .18s ease-out;
+  position: fixed; top: 12px; right: 12px; bottom: calc(var(--ab-h, 0px) + 12px); z-index: 30;
+  width: clamp(340px, var(--dr-w, 460px), calc(100vw - 24px));
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .2);
+  display: flex; flex-direction: column; animation: dr-in .2s cubic-bezier(.2, .8, .2, 1);
 }
-@keyframes dr-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dr-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .drawer { animation: none; } }
-body.drawer-open main, body.drawer-open .actionbar, body.drawer-open .top { padding-right: min(476px, 100vw); }
-@media (max-width: 1000px) { body.drawer-open main, body.drawer-open .actionbar, body.drawer-open .top { padding-right: 16px; } }
+@media (max-width: 760px) {
+  .drawer { top: 0; right: 0; bottom: var(--ab-h, 0px); width: 100vw; border-radius: 0; border-width: 0; }
+  .dr-resize { display: none; }
+}
+/* drag handle on the left edge */
+.dr-resize {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize; z-index: 2; touch-action: none;
+}
+.dr-resize::after {
+  content: ""; position: absolute; left: 3px; top: 50%; width: 3px; height: 40px; margin-top: -20px; border-radius: 2px;
+  background: var(--line); opacity: 0; transition: opacity .15s;
+}
+.drawer:hover .dr-resize::after, .dr-resize.dragging::after { opacity: 1; }
+body.dr-resizing { cursor: ew-resize; user-select: none; }
 .dr-head { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
 .dr-title { font-size: 17px; font-weight: 700; }
 .dr-nav { display: flex; gap: 4px; flex: none; }

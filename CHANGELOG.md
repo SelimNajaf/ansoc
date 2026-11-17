@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.3
+
+- **Reel details panel** no longer squeezes the page: it floats over the content as a card, stays above the bottom bar, and can be resized by dragging its left edge (double-click resets the width). Click outside to close; the selected row scrolls into view when moving with the arrow keys.
+
 ## 2.4.2
 
 - **When do they post?** The hours now run from 12:00 to 11:00 with midnight in the middle, so night-time posting shows as one block instead of being split over both edges.

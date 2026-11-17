@@ -182,7 +182,6 @@ function load(data, cachedAt) {
   state.data = data;
   state.openCode = null; // a new profile closes the details panel
   $("drawer").hidden = true;
-  document.body.classList.remove("drawer-open");
   state.filter = null;
   state.selected.clear();
   // "now" = when the data was fetched, so a cached result keeps its own frame of reference
@@ -1374,12 +1373,17 @@ async function loadDetailsCache() {
 }
 
 function openDetails(code) {
+  const wasOpen = !$("drawer").hidden;
   state.openCode = code;
   $("drawer").hidden = false;
-  document.body.classList.add("drawer-open");
+  if (wasOpen) $("drawer").style.animation = "none"; // switching reels: no slide-in again
   for (const tr of $("reelBody").children) tr.classList.remove("open");
   renderDetails();
   renderTable(); // marks the open row
+  $("drBody").scrollTop = 0;
+  // keep the open row visible (moving with the arrow keys can leave the screen)
+  const row = $("reelBody").querySelector("tr.open");
+  if (row) row.scrollIntoView({ block: "nearest" });
   const d = details.get(code);
   if (!d || (!d.data && !d.loading)) fetchDetails(code, false);
 }
@@ -1387,8 +1391,73 @@ function openDetails(code) {
 function closeDetails() {
   state.openCode = null;
   $("drawer").hidden = true;
-  document.body.classList.remove("drawer-open");
+  $("drawer").style.animation = "";
   renderTable();
+}
+
+// ---- panel geometry: float above the bottom action bar; width resizable and remembered
+const DR_MIN = 340;
+const DR_MAX = 900;
+
+function trackActionBarHeight() {
+  const bar = $("actionBar");
+  const set = () => {
+    const h = bar.hidden || getComputedStyle(bar).position !== "fixed" ? 0 : bar.getBoundingClientRect().height;
+    document.documentElement.style.setProperty("--ab-h", `${Math.round(h)}px`);
+  };
+  new ResizeObserver(set).observe(bar);
+  new MutationObserver(set).observe(bar, { attributes: true, attributeFilter: ["hidden"] });
+  window.addEventListener("resize", set);
+  set();
+}
+
+function setDrawerWidth(px, save) {
+  const w = Math.round(Math.max(DR_MIN, Math.min(DR_MAX, px)));
+  document.documentElement.style.setProperty("--dr-w", `${w}px`);
+  if (save) {
+    try {
+      localStorage.setItem("drawerWidth", String(w));
+    } catch (_e) { /* storage blocked: the width just isn't remembered */ }
+  }
+}
+
+function initDrawerResize() {
+  try {
+    const w = parseInt(localStorage.getItem("drawerWidth") || "", 10);
+    if (w) setDrawerWidth(w, false);
+  } catch (_e) { /* ignore */ }
+  const handle = $("drResize");
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add("dragging");
+    document.body.classList.add("dr-resizing");
+    const right = $("drawer").getBoundingClientRect().right;
+    const move = (ev) => setDrawerWidth(right - ev.clientX, false);
+    const up = (ev) => {
+      setDrawerWidth(right - ev.clientX, true);
+      handle.classList.remove("dragging");
+      document.body.classList.remove("dr-resizing");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  });
+  handle.addEventListener("dblclick", () => setDrawerWidth(460, true)); // double-click: default width
+}
+
+/** A click outside the panel closes it - except on a reel row (that switches reels) or the bottom bar. */
+function initDrawerOutsideClose() {
+  document.addEventListener("pointerdown", (e) => {
+    if (!state.openCode) return;
+    const t0 = e.target;
+    if (t0.closest && t0.closest("#drawer, #reelBody tr.clickable, #actionBar, dialog")) return;
+    closeDetails();
+  });
 }
 
 /** Previous / next reel in the order the table shows them. */
@@ -2041,6 +2110,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("capCopy").addEventListener("click", () => copyText($("capText").value, "an_cap_copied_short"));
   // details panel: buttons + keyboard (Esc closes, ← → move through the table's order)
   $("drClose").addEventListener("click", closeDetails);
+  trackActionBarHeight();
+  initDrawerResize();
+  initDrawerOutsideClose();
   $("drPrev").addEventListener("click", () => stepDetails(-1));
   $("drNext").addEventListener("click", () => stepDetails(1));
   document.addEventListener("keydown", (e) => {

@@ -1330,5 +1330,8 @@
   },
   "an_cap_save": {
     "message": "Save as .txt"
+  },
+  "an_dr_resize": {
+    "message": "Drag to resize the panel (double-click: default width)"
   }
 }
