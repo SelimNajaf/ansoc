@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.7
+
+- **Download CSV** next to *When do they post?*: one row per reel of the selected time range with posting date, weekday, hour (local and UTC), results, **vs typical / z-score / tier** (comparable between stores of different size) and posting frequency (posts that day, posts in the last 7 days, hours since the previous post). Built for combining several stores' files to find the best posting hours and the best number of posts per day / week. Two formats: **Excel (;)** (decimal comma, opens correctly in Excel with Azerbaijani / Russian / Turkish settings) and **Standard (,)** (Google Sheets, Python).
+
 ## 2.4.6
 
 - **Fixed: Copy descriptions** loaded nothing when the helper on the computer was older than the extension. It now falls back to loading descriptions one by one, and the popup / analyzer show **"Helper outdated"** with an **Update helper** button.

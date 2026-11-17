@@ -434,3 +434,7 @@ tr.sumrow td[title] { cursor: help; }
 tr.clickable td { user-select: none; } /* row clicks select; text is copied from the details panel */
 tr.clickable td.caption { user-select: text; }
 .badge.warn { color: var(--warn); cursor: help; }
+/* CSV export next to the heatmap mode switch */
+.csv-export { display: inline-flex; align-items: center; gap: 4px; }
+.csv-btn { background: var(--act); color: #fff; }
+.csv-fmt { padding: 4px 6px; font-size: 12px; border-radius: 8px; }

@@ -60,6 +60,7 @@ It follows [`CLAUDE.md`](CLAUDE.md): it runs the installer, checks that everythi
   - likes vs comments, engagement, and **views per day** (what's hot right now),
   - click any reel for its **full description** (calls to action, prices, hashtags, music used).
   - Select reels and download them into one folder. File names end with the view count, e.g. `…_3.1M-views.mp4`.
+  - **Download CSV** (next to *When do they post?*): one row per reel with posting time, results, *vs typical* and posting frequency. Export several stores and combine the files to find the best posting hours and posts per day. Pick **Excel (;)** or **Standard (,)** and use the same for all stores.
 - **Your files** go to **Desktop → MediaDownloader → Instagram / TikTok / Pinterest**.
 
 ---

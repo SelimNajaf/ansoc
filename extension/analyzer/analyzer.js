@@ -981,6 +981,116 @@ function renderActivityChart() {
  */
 const HEAT_HOURS = [...Array(24).keys()].map((i) => (i + 12) % 24); // 12, 13 … 23, 0, 1 … 11
 
+// ------------------------------------------------------------------ CSV export (timing + performance)
+/*
+ * One row per reel ("tidy" data): several stores' files can be stacked and pivoted any way
+ * (by hour, weekday, posting frequency). Raw views are not comparable between a big and a small
+ * store; vs_typical / z_score / tier are relative to the store itself, so they are.
+ * Format "excel": ";" separator and decimal comma (Excel with Azerbaijani / Russian / Turkish /
+ * most European regional settings); "standard": "," and decimal point (Google Sheets, Python).
+ */
+const CSV_COLUMNS = [
+  "store", "followers", "reel_code", "url",
+  "posted_date", "posted_time", "weekday", "hour", "hour_utc", "timezone",
+  "age_days", "is_new",
+  "views", "likes", "comments", "engagement_pct", "like_pct", "comment_pct", "likes_per_comment", "views_per_day",
+  "vs_typical", "z_score", "tier", "winner", "er_vs_expected_pct",
+  "posts_same_day", "posts_last_7_days", "hours_since_prev_post",
+  "duration_s",
+];
+
+function csvFormat() {
+  try {
+    return localStorage.getItem("csvFormat") === "standard" ? "standard" : "excel";
+  } catch (_e) {
+    return "excel";
+  }
+}
+
+function exportCsv() {
+  const fmt = csvFormat();
+  const sep = fmt === "excel" ? ";" : ",";
+  const num = (x, digits) => {
+    if (x == null || !isFinite(x)) return "";
+    const s = digits == null ? String(Math.round(x)) : x.toFixed(digits);
+    return fmt === "excel" ? s.replace(".", ",") : s;
+  };
+  // quote only when needed (the separator, a quote or a line break): "388,2" must stay a number
+  const cell = (v) => {
+    const s = v == null ? "" : String(v);
+    return s.includes(sep) || /["\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const p2 = (x) => String(x).padStart(2, "0");
+  const tzOf = (d) => {
+    const m = -d.getTimezoneOffset();
+    return `UTC${m >= 0 ? "+" : "-"}${p2(Math.floor(Math.abs(m) / 60))}:${p2(Math.abs(m) % 60)}`;
+  };
+
+  // posting frequency from ALL analyzed reels (not only the selected range), so the counts near
+  // the edges of the range are still correct
+  const allTs = state.allRows.map((r) => r.ts).filter((x) => x > 0).sort((a, b) => a - b);
+  const perDay = new Map();
+  for (const x of allTs) perDay.set(St.dayStart(x), (perDay.get(St.dayStart(x)) || 0) + 1);
+  const countBetween = (from, to) => {
+    let n = 0;
+    for (const x of allTs) if (x > from && x <= to) n++;
+    return n;
+  };
+
+  const rows = state.rows.filter((r) => r.ts).slice().sort((a, b) => a.ts - b.ts);
+  const store = state.data.username;
+  const followers = (state.data.profile || {}).followers;
+  const lines = [CSV_COLUMNS.join(sep)];
+  for (const r of rows) {
+    const d = new Date(r.ts);
+    const pf = r.perf;
+    const prev = allTs.filter((x) => x < r.ts).pop();
+    const det = (details.get(r.code) || {}).data;
+    const dur = (det && det.duration) || r.duration;
+    const vals = {
+      store, followers: num(followers), reel_code: r.code, url: r.url,
+      posted_date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`,
+      posted_time: `${p2(d.getHours())}:${p2(d.getMinutes())}`,
+      weekday: weekdayName(St.weekdayMon(r.ts), true),
+      hour: d.getHours(), hour_utc: d.getUTCHours(), timezone: tzOf(d),
+      age_days: num((state.now - r.ts) / St.DAY, 1),
+      is_new: pf && pf.isNew ? "yes" : "no",
+      views: num(r.views), likes: num(r.likes), comments: num(r.comments),
+      engagement_pct: r.er != null ? num(r.er * 100, 3) : "",
+      like_pct: r.likeRate != null ? num(r.likeRate * 100, 3) : "",
+      comment_pct: r.commentRate != null ? num(r.commentRate * 100, 4) : "",
+      likes_per_comment: r.likes != null && r.comments ? num(r.likes / r.comments, 1) : "",
+      views_per_day: num(r.vpd),
+      vs_typical: pf ? num(pf.ratio, 2) : "",
+      z_score: pf ? num(pf.z, 2) : "",
+      tier: pf ? pf.tier : "",
+      winner: pf ? (pf.winner ? "yes" : "no") : "",
+      er_vs_expected_pct: pf && pf.erVsExpected != null ? num((pf.erVsExpected - 1) * 100, 1) : "",
+      posts_same_day: perDay.get(St.dayStart(r.ts)) || 1,
+      posts_last_7_days: countBetween(r.ts - 7 * St.DAY, r.ts),
+      hours_since_prev_post: prev ? num((r.ts - prev) / St.HOUR, 1) : "",
+      duration_s: dur ? num(dur, 1) : "",
+    };
+    lines.push(CSV_COLUMNS.map((c) => cell(vals[c])).join(sep));
+  }
+  // BOM: Excel then reads the UTF-8 text (store names, captions) correctly
+  const blob = new Blob(["﻿" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" });
+  const range = state.range ? `_${dateKey(state.range.from)}_to_${dateKey(state.range.to - 1)}` : "";
+  const a = el("a", { href: URL.createObjectURL(blob), download: `${store}_reels${range}_${today()}.csv` });
+  document.body.append(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
+  setActionMsg(t("an_csv_done", [String(rows.length), fmt === "excel" ? "Excel (;)" : "Standard (,)"]), "ok");
+}
+
+function dateKey(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function renderHeatmap() {
   const box = $("heatmap");
   box.replaceChildren();
@@ -2103,6 +2213,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     b.textContent = t(`an_heat_${b.dataset.mode}`);
     b.classList.toggle("on", b.dataset.mode === state.heatMode);
   }
+  $("csvBtn").addEventListener("click", exportCsv);
+  $("csvFormat").value = csvFormat();
+  $("csvFormat").title = t("an_csv_format_tip");
+  $("csvFormat").addEventListener("change", () => {
+    try {
+      localStorage.setItem("csvFormat", $("csvFormat").value);
+    } catch (_e) { /* not remembered */ }
+  });
+  $("csvBtn").title = t("an_csv_tip");
   $("heatSeg").addEventListener("click", (e) => {
     const b = e.target.closest("[data-mode]");
     if (!b) return;

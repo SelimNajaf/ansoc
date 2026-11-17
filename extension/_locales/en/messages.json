@@ -1348,5 +1348,20 @@
   },
   "btn_update_helper": {
     "message": "Update helper"
+  },
+  "an_csv_btn": {
+    "message": "⬇ Download CSV"
+  },
+  "an_csv_tip": {
+    "message": "One row per reel in the selected time range: posting date, weekday and hour, results, how it did compared with this store's normal level (vs_typical, tier) and how often the store was posting at the time. Stack several stores' files to compare them."
+  },
+  "an_csv_format": {
+    "message": "CSV format"
+  },
+  "an_csv_format_tip": {
+    "message": "Excel (;) opens correctly in Excel with Azerbaijani, Russian, Turkish or most European settings. Standard (,) is for Google Sheets, Python and Excel with English (US) settings. Use the same format for all stores."
+  },
+  "an_csv_done": {
+    "message": "CSV saved: $1 reels ($2)."
   }
 }
