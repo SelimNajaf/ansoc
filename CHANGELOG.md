@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.1
+
+- **Fixed:** after an update, the popup kept showing "Updated to …" for a day and hid newer versions. A newer version is now always shown first with **Update now**.
+
 ## 2.5.0
 
 - **What works** (Reels Analyzer, above *When do they post?*): best time window, weekday, posts per day, posts per week and gap between posts, each with how much better it does than usual and how sure that is (●●● clear · ●●○ likely · ●○○ too few reels). The best window is outlined on the heatmap.

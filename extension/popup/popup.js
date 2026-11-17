@@ -405,15 +405,30 @@ async function renderUpdate() {
   const text = $("updateText");
   const btn = $("updateBtn");
   box.className = "update";
-  const fresh = st && Date.now() - st.at < 24 * 3600 * 1000;
-  if (fresh && st.status === "running") {
+  text.title = "";
+  const current = chrome.runtime.getManifest().version;
+  const age = st ? Date.now() - st.at : Infinity;
+  // 1) an update is running right now (stale after 30 min: it was interrupted)
+  if (st && st.status === "running" && age < 30 * 60 * 1000) {
     box.hidden = false;
     btn.hidden = true;
     const step = { "update:download": "update_step_download", "update:install": "update_step_install", "update:packages": "update_step_packages" }[st.step];
     text.textContent = t("update_running") + (step ? " " + t(step) : "") + (st.percent != null ? ` ${Math.round(st.percent)}%` : "");
     return;
   }
-  if (fresh && st.status === "done" && st.to === chrome.runtime.getManifest().version) {
+  // 2) a newer version always wins over older "done" / "failed" notes
+  if (info && info.available && info.current === current) {
+    box.hidden = false;
+    btn.hidden = false;
+    text.textContent = t("update_available", [info.latest, info.current]);
+    if (st && st.status === "failed" && age < 24 * 3600 * 1000) {
+      box.classList.add("bad");
+      text.textContent += " · " + (st.manual ? t("update_manual") : t("update_failed", [st.message || ""]));
+    }
+    return;
+  }
+  // 3) just updated: a short confirmation (10 minutes)
+  if (st && st.status === "done" && st.to === current && age < 10 * 60 * 1000) {
     box.hidden = false;
     btn.hidden = true;
     box.classList.add("ok");
@@ -421,17 +436,7 @@ async function renderUpdate() {
     text.title = (st.warnings || []).join("\n");
     return;
   }
-  if (fresh && st.status === "failed") {
-    box.hidden = false;
-    btn.hidden = false;
-    box.classList.add("bad");
-    text.textContent = st.manual ? t("update_manual") : t("update_failed", [st.message || ""]);
-    return;
-  }
-  const available = info && info.available;
-  box.hidden = !available;
-  btn.hidden = false;
-  if (available) text.textContent = t("update_available", [info.latest, info.current]);
+  box.hidden = true;
 }
 
 async function startUpdate() {
