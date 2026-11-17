@@ -21,7 +21,7 @@ const state = {
   heatMode: "posts", // "When do they post?" grid: "posts" | "perf"
   activity: null, // PD.stats.postingStats result
   // table: "strong" | "viral" | "winner" | "engaged" (statistical groups) | "mean" | "custom" | "all"
-  threshold: "strong",
+  threshold: "mean",
   custom: "", // typed custom threshold, e.g. "10K"
   sort: "views",
   selected: new Set(), // codes
@@ -100,8 +100,10 @@ async function refreshHelper() {
   const st = res.ok ? res.data : { ok: false };
   state.helperOk = !!st.ok;
   const b = $("helperBadge");
-  b.textContent = st.ok ? t("helper_ok") : t("helper_missing");
-  b.className = "badge " + (st.ok ? "ok" : "bad");
+  const old = st.ok ? PD.helperOutdated(st.info) : "";
+  b.textContent = !st.ok ? t("helper_missing") : old ? t("helper_outdated_short") : t("helper_ok");
+  b.className = "badge " + (!st.ok ? "bad" : old ? "warn" : "ok");
+  b.title = old ? t("helper_outdated", [old, chrome.runtime.getManifest().version]) : "";
   updateActionBar();
 }
 
@@ -1776,7 +1778,8 @@ function renderTable() {
     const preview = el("button", {
       type: "button", class: "thumb-btn" + (state.openCode === r.code ? " open" : ""),
       title: t("an_dr_preview_hint"), "aria-label": t("an_dr_preview_hint"),
-      onclick: () => openDetails(r.code),
+      // a second click on the open reel's preview closes the panel
+      onclick: () => (state.openCode === r.code && !$("drawer").hidden ? closeDetails() : openDetails(r.code)),
     }, [thumb, el("span", { class: "thumb-ov", "aria-hidden": "true", text: t("an_dr_preview_label") })]);
     const pf = r.perf;
     const scoreCls = pf ? pf.tier : "";

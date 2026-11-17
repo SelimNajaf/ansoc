@@ -1339,5 +1339,14 @@
   },
   "an_dr_preview_label": {
     "message": "Details"
+  },
+  "helper_outdated_short": {
+    "message": "Helper outdated"
+  },
+  "helper_outdated": {
+    "message": "The helper on this computer is version $1, the extension is $2. Some features (for example copying descriptions quickly) need the newer helper."
+  },
+  "btn_update_helper": {
+    "message": "Update helper"
   }
 }

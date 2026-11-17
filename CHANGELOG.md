@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.6
+
+- **Fixed: Copy descriptions** loaded nothing when the helper on the computer was older than the extension. It now falls back to loading descriptions one by one, and the popup / analyzer show **"Helper outdated"** with an **Update helper** button.
+- The reels table shows **Above average** by default (instead of Strong or viral).
+- Clicking the preview of the reel that is already open closes the details panel.
+
 ## 2.4.5
 
 - **Copy descriptions is much faster:** missing descriptions are now loaded in one go with a 1–2 second pause between Instagram requests (it used to wait 6–12 seconds per reel plus an extra pause). 4 reels take a few seconds instead of half a minute. It still stops at the first rate-limit answer from Instagram, and loaded descriptions are remembered.

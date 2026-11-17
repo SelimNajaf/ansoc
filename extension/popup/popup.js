@@ -134,6 +134,24 @@ async function refreshHelper(force) {
       help.append(el("div", { text: t("helper_missing_deps", [missing.join(", ")]) }));
       help.append(el("div", { class: "muted", text: t("helper_rerun_install") }));
     }
+    // the extension is newer than the installed helper: offer to update the helper
+    const old = PD.helperOutdated(st.info);
+    if (old) {
+      badge.textContent = t("helper_outdated_short");
+      badge.className = "badge warn";
+      help.hidden = false;
+      help.append(el("div", { text: t("helper_outdated", [old, chrome.runtime.getManifest().version]) }));
+      const btn = el("button", { class: "small primary", type: "button", text: t("btn_update_helper") });
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = t("update_running");
+        await send({ type: "applyUpdate" }); // updates the helper; the extension then reloads itself
+        btn.disabled = false;
+        btn.textContent = t("btn_update_helper");
+        renderUpdate();
+      });
+      help.append(btn);
+    }
   } else {
     const code = (st.error && st.error.code) || "HOST_NOT_INSTALLED";
     badge.textContent = t("helper_missing");

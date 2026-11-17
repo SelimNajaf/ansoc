@@ -433,3 +433,4 @@ tr.sumrow td[title] { cursor: help; }
 .thumb-btn.open { box-shadow: 0 0 0 2px var(--act); }
 tr.clickable td { user-select: none; } /* row clicks select; text is copied from the details panel */
 tr.clickable td.caption { user-select: text; }
+.badge.warn { color: var(--warn); cursor: help; }

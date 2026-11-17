@@ -602,6 +602,7 @@ function markCancelled(job) {
 }
 
 let detailsRequestId = null; // running "reels_details" helper request (cancellable)
+let detailsCancelled = false; // Stop pressed during the one-by-one fallback
 
 // ============================================================================ updates
 // The published version lives in the GitHub repo's manifest.json (raw.githubusercontent.com
@@ -939,14 +940,44 @@ const handlers = {
     const missing = codes.filter((c) => !items[c]);
     if (!missing.length) return { items, errors: {}, stopped: null };
     await load();
-    const res = await PD.native.request("reels_details", { codes: missing, ...(await loginParams("instagram")) }, {
-      timeout: 30 * 60 * 1000,
-      onId: (id) => (detailsRequestId = id),
-      onProgress: (m) => {
-        const p = /^details:(\d+)\/(\d+)$/.exec(m.text || "");
-        if (p) chrome.runtime.sendMessage({ type: "detailsProgress", done: Number(p[1]), total: Number(p[2]) }).catch(() => null);
-      },
-    }).finally(() => (detailsRequestId = null));
+    const login = await loginParams("instagram");
+    const progress = (done, total) => chrome.runtime.sendMessage({ type: "detailsProgress", done, total }).catch(() => null);
+    let res;
+    try {
+      res = await PD.native.request("reels_details", { codes: missing, ...login }, {
+        timeout: 30 * 60 * 1000,
+        onId: (id) => (detailsRequestId = id),
+        onProgress: (m) => {
+          const p = /^details:(\d+)\/(\d+)$/.exec(m.text || "");
+          if (p) progress(Number(p[1]), Number(p[2]));
+        },
+      }).finally(() => (detailsRequestId = null));
+    } catch (e) {
+      // a helper older than 2.4.5 has no batch action: fetch one by one with the single-reel action
+      if (!(e.code === E.BAD_REQUEST && /Unknown action/i.test(e.detail || e.message || ""))) throw e;
+      res = { items: {}, errors: {}, stopped: null };
+      detailsCancelled = false;
+      for (let i = 0; i < missing.length; i++) {
+        if (detailsCancelled) {
+          res.stopped = "CANCELLED";
+          break;
+        }
+        progress(i + 1, missing.length);
+        try {
+          res.items[missing[i]] = await PD.native.request("reel_details", { code: missing[i], ...login }, {
+            timeout: 120000, onId: (id) => (detailsRequestId = id),
+          });
+        } catch (err) {
+          res.errors[missing[i]] = { code: err.code || E.UNKNOWN, message: err.detail || err.message || "" };
+          if ([E.RATE_LIMITED, E.LOGIN_REQUIRED, E.CANCELLED].includes(err.code)) {
+            res.stopped = err.code;
+            break;
+          }
+        } finally {
+          detailsRequestId = null;
+        }
+      }
+    }
     const now = Date.now();
     for (const [c, data] of Object.entries(res.items || {})) {
       store[c] = { at: now, data };
@@ -958,6 +989,7 @@ const handlers = {
     return { items, errors: res.errors || {}, stopped: res.stopped || null };
   },
   async cancelDetails() {
+    detailsCancelled = true; // stops the one-by-one fallback between reels
     if (detailsRequestId) await PD.native.cancel(detailsRequestId);
     return {};
   },

@@ -108,3 +108,4 @@ button.link.danger { box-shadow: none; text-decoration: underline; margin-right:
 .update-text { font-size: 12px; flex: 1 1 200px; }
 .update-actions { display: flex; gap: 8px; align-items: center; }
 .update-actions a { color: var(--muted); }
+.badge.warn { color: var(--warn, #9a6700); }

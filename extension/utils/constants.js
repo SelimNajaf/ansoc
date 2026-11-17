@@ -78,6 +78,28 @@
     }
   };
 
+  /**
+   * Helper older than the extension (e.g. the extension was loaded from a newer folder than the
+   * installed helper)? Then new features that need the helper can fail. Returns the helper's
+   * version string when outdated, else "".
+   */
+  PD.helperOutdated = function (info) {
+    const hv = info && info.version;
+    if (!hv) return "";
+    let ev = "";
+    try {
+      ev = chrome.runtime.getManifest().version;
+    } catch (_e) {
+      return "";
+    }
+    const a = String(hv).split(".").map((x) => parseInt(x, 10) || 0);
+    const b = String(ev).split(".").map((x) => parseInt(x, 10) || 0);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) < (b[i] || 0) ? String(hv) : "";
+    }
+    return "";
+  };
+
   /** "Rate limited · retrying at 11:52" while the helper waits for the site, else "". */
   PD.waitText = function (job) {
     if (!job || !job.waitUntil) return "";
