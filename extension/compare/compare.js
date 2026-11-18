@@ -1,5 +1,5 @@
 /* Compare stores: load the CSV files exported by the Reels Analyzer ("Download CSV") from several
- * stores and show what works across all of them (best time window, weekday, posting pace, gap).
+ * stores and show what works across all of them (best time window, posting pace, gap).
  * Statistics: PD.stats.groupEffect on "vs typical" - every store weighs the same.
  * Everything stays on this computer (chrome.storage.local). */
 "use strict";
@@ -27,8 +27,7 @@ function el(tag, attrs, children) {
 let stores = new Map();
 
 // ------------------------------------------------------------------ CSV parsing
-const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-const NEEDED = ["store", "reel_code", "hour", "weekday", "vs_typical"];
+const NEEDED = ["store", "reel_code", "hour", "vs_typical"];
 
 /** RFC 4180-ish parser; the separator (";" or ",") is detected from the header line. */
 function parseCsv(text) {
@@ -72,13 +71,10 @@ function toRows(text, fileName) {
   const out = [];
   for (const r of rows.slice(1)) {
     const get = (name) => (col(name) >= 0 ? r[col(name)] : "");
-    const wdRaw = String(get("weekday")).trim().toLowerCase();
-    const wd = WEEKDAYS.indexOf(wdRaw) >= 0 ? WEEKDAYS.indexOf(wdRaw) : WEEKDAYS.findIndex((w) => w.startsWith(wdRaw.slice(0, 3)));
     const item = {
       store: String(get("store")).trim(),
       code: String(get("reel_code")).trim(),
       hour: num(get("hour")),
-      weekday: wd,
       ratio: num(get("vs_typical")),
       isNew: String(get("is_new")).trim().toLowerCase() === "yes",
       perDay: num(get("posts_same_day")),
@@ -131,16 +127,10 @@ async function restore() {
 const p2 = (h) => String(h).padStart(2, "0");
 const DIMS = {
   window: { icon: "⏰", title: "ww_time", order: [12, 15, 18, 21, 0, 3, 6, 9], label: (w) => `${p2(w)}–${p2((w + 3) % 24)}`, of: (r) => St.BUCKETS.window.of(r.hour) },
-  weekday: { icon: "📅", title: "ww_day", order: [0, 1, 2, 3, 4, 5, 6], label: (w) => dayName(w), of: (r) => (r.weekday >= 0 ? r.weekday : null) },
   perDay: { icon: "🔁", title: "ww_per_day", order: St.BUCKETS.perDay.order, label: (g) => t("ww_per_day_v", [g]), of: (r) => (r.perDay ? St.BUCKETS.perDay.of(r.perDay) : null) },
   perWeek: { icon: "📆", title: "ww_per_week", order: St.BUCKETS.perWeek.order, label: (g) => t("ww_per_week_v", [g]), of: (r) => (r.perWeek ? St.BUCKETS.perWeek.of(r.perWeek) : null) },
   gap: { icon: "⏱", title: "ww_gap", order: St.BUCKETS.gap.order, label: (g) => g, of: (r) => St.BUCKETS.gap.of(r.gapH) },
 };
-
-function dayName(i) {
-  const names = t("an_weekdays_long").split(",");
-  return names.length === 7 ? names[i] : WEEKDAYS[i];
-}
 
 function analyze() {
   const includeNew = $("includeNew").checked;
@@ -216,7 +206,7 @@ function summaryText() {
     if (best) lines.push(`  -> best: ${dim.label(best.group)}`);
     lines.push("");
   }
-  lines.push("Question: what posting schedule (time of day, weekday, posts per day/week, gap between posts) would you recommend for a dropshipping store, and how sure can we be?");
+  lines.push("Question: what posting schedule (time of day, posts per day/week, gap between posts) would you recommend for a dropshipping store, and how sure can we be?");
   return lines.join("\n");
 }
 

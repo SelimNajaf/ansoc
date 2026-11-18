@@ -612,7 +612,7 @@
     "message": "Click a bar → that period's reels in the table"
   },
   "an_when_title": {
-    "message": "When do they post? (weekday × hour)"
+    "message": "Posting hours"
   },
   "an_act_note": {
     "message": "Times are in your computer's time zone. Only analyzed reels are counted (regular posts and stories are not included)."
@@ -1052,32 +1052,11 @@
   "an_act_tip_total": {
     "message": "Total views: $1"
   },
-  "an_heat_color": {
-    "message": "Color:"
-  },
-  "an_heat_posts": {
-    "message": "Posts"
-  },
-  "an_heat_perf": {
-    "message": "Performance"
-  },
   "an_heat_tip_ratio": {
     "message": "Median: $1 typical views"
   },
   "an_heat_tip_single": {
     "message": "Only 1 reel: not a pattern."
-  },
-  "an_heat_all_days": {
-    "message": "All days"
-  },
-  "an_heat_lg_posts": {
-    "message": "Darker = more posts"
-  },
-  "an_heat_lg_below": {
-    "message": "Worse"
-  },
-  "an_heat_lg_above": {
-    "message": "Better than usual"
   },
   "an_heat_lg_thin": {
     "message": "· faded = 1 reel"
@@ -1424,9 +1403,6 @@
   "ww_time": {
     "message": "Best time"
   },
-  "ww_day": {
-    "message": "Best day"
-  },
   "ww_per_day": {
     "message": "Posts per day"
   },
@@ -1513,5 +1489,11 @@
   },
   "cmp_err_columns": {
     "message": "$1: not a Reels Analyzer CSV (missing: $2)."
+  },
+  "an_hours_lg_height": {
+    "message": "Taller = more reels"
+  },
+  "an_hours_lg_color": {
+    "message": "worse · usual · better"
   }
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.4
+
+- **Posting hours** (Reels Analyzer): the weekday × hour grid is replaced by one bar per hour. Bar height = how many reels were posted in that hour, color and number on top = how well they did (green = better than usual, red = worse). The best 3-hour window is outlined.
+- Weekdays are no longer analyzed: *Best day* is removed from *What works* and from **Compare stores** (the CSV still has a weekday column).
+
 ## 2.5.3
 
 - **Reels Analyzer:** the bar with *Download selected*, *Copy links* and *Copy descriptions* no longer sticks to the bottom of the screen. It now sits in the Reels section, right under the *Select* buttons.

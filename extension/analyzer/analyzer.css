@@ -496,3 +496,26 @@ button.fact:hover { filter: brightness(1.1); box-shadow: inset 0 0 0 1px var(--l
 .heatmap .hm.best.best-last { box-shadow: inset -2px 0 0 var(--ok), inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); }
 .heatmap .hh.best { color: var(--ok); font-weight: 800; }
 .compare-link { text-decoration: none; white-space: nowrap; }
+/* posting hours: one bar per hour (height = posts, color = how well they did) */
+:root { --h-neutral: #8a8a96; }
+.hours { display: grid; grid-template-columns: repeat(24, minmax(26px, 1fr)); gap: 3px; min-width: 640px; }
+.hcol { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 4px 1px 2px; border-radius: 6px; cursor: help; }
+.hcol:hover { background: var(--soft); }
+.hcol.thin .h-bar { opacity: .45; }
+.h-ratio { height: 16px; text-align: center; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.h-ratio.good { color: var(--ok); }
+.h-ratio.bad { color: var(--err); }
+.h-ratio.mid { color: var(--muted); font-weight: 600; }
+.h-track { height: 110px; display: flex; align-items: flex-end; background: color-mix(in srgb, var(--soft) 55%, transparent); border-radius: 4px; }
+.h-bar { width: 100%; background: var(--h-neutral); border-radius: 4px; display: flex; align-items: flex-start; justify-content: center; min-height: 6px; }
+.h-n { font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); line-height: 16px; }
+.h-hour { text-align: center; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hcol.midnight { box-shadow: -2px 0 0 0 color-mix(in srgb, var(--fg) 30%, transparent); }
+.hcol.midnight .h-hour { color: var(--fg); font-weight: 700; }
+.hcol.best { background: color-mix(in srgb, var(--ok) 10%, transparent); box-shadow: inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); border-radius: 0; }
+.hcol.best.best-first { box-shadow: inset 2px 0 0 var(--ok), inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); border-radius: 6px 0 0 6px; }
+.hcol.best.best-last { box-shadow: inset -2px 0 0 var(--ok), inset 0 2px 0 var(--ok), inset 0 -2px 0 var(--ok); border-radius: 0 6px 6px 0; }
+.hcol.best .h-hour { color: var(--ok); font-weight: 800; }
+.sw.h-sw { background: var(--h-neutral); margin-right: 1px; }
+.sw.h-sw.good { background: var(--ok); }
+.sw.h-sw.bad { background: var(--err); }

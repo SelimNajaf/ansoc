@@ -18,7 +18,6 @@ const state = {
   filter: null, // {kind: "views" | "date", from, to}
   interval: null, // activity chart bucket size in days (null = automatic)
   viewsLine: "median", // activity chart line: "median" | "total" | "off"
-  heatMode: "posts", // "When do they post?" grid: "posts" | "perf"
   activity: null, // PD.stats.postingStats result
   // table: "strong" | "viral" | "winner" | "engaged" (statistical groups) | "mean" | "custom" | "all"
   threshold: "mean",
@@ -1002,21 +1001,20 @@ function renderActivityChart() {
 }
 
 /**
- * Weekday x hour grid. "posts" mode: how often they post at that time. "perf" mode: how well
- * reels posted at that time did, as the median "vs typical" ratio (the profile's level at the
- * time is already factored out, so a growing account doesn't make late hours look better).
- * The extra row / column summarise each hour / weekday, where there is more data per cell.
+ * Posting hours: one column per hour of the day (weekdays are pooled - only the hour matters).
+ * Bar height = how many reels were posted in that hour; bar color + label = how well they did,
+ * as the median "vs typical" ratio (the profile's level at the time is already factored out, so a
+ * growing account doesn't make late hours look better). Green = better than usual, red = worse.
  */
 const HEAT_HOURS = [...Array(24).keys()].map((i) => (i + 12) % 24); // 12, 13 … 23, 0, 1 … 11
 
 // ------------------------------------------------------------------ "What works" (timing + pace)
 // Same groupings and statistics as the Compare stores page (PD.stats.groupEffect): every reel's
-// "vs typical" ratio, grouped by 3-hour window, weekday, posts that day / week, gap before it.
+// "vs typical" ratio, grouped by 3-hour window, posts that day / week, gap before it.
 const WW_WINDOWS = [12, 15, 18, 21, 0, 3, 6, 9]; // same order as the heatmap (midnight in the middle)
 const p2h = (h) => String(h).padStart(2, "0");
 const WW_DIMS = {
   window: { icon: "⏰", title: "ww_time", order: WW_WINDOWS, label: (w) => `${p2h(w)}–${p2h((w + 3) % 24)}` },
-  weekday: { icon: "📅", title: "ww_day", order: [0, 1, 2, 3, 4, 5, 6], label: (w) => weekdayName(w, true) },
   perDay: { icon: "🔁", title: "ww_per_day", order: St.BUCKETS.perDay.order, label: (g) => t("ww_per_day_v", [g]) },
   perWeek: { icon: "📆", title: "ww_per_week", order: St.BUCKETS.perWeek.order, label: (g) => t("ww_per_week_v", [g]) },
   gap: { icon: "⏱", title: "ww_gap", order: St.BUCKETS.gap.order, label: (g) => g },
@@ -1040,7 +1038,6 @@ function wwItems() {
     out.push({
       ratio: r.score,
       window: St.BUCKETS.window.of(d.getHours()),
-      weekday: St.weekdayMon(r.ts),
       perDay: St.BUCKETS.perDay.of(perDay.get(St.dayStart(r.ts)) || 1),
       perWeek: St.BUCKETS.perWeek.of(week),
       gap: prev ? St.BUCKETS.gap.of((r.ts - prev) / St.HOUR) : null,
@@ -1188,94 +1185,51 @@ function dateKey(ts) {
 function renderHeatmap() {
   const box = $("heatmap");
   box.replaceChildren();
-  const perfMode = state.heatMode === "perf";
-  $("heatLegendPosts").hidden = perfMode;
-  $("heatLegendPerf").hidden = !perfMode;
-  const cell = () => ({ n: 0, views: [], ratios: [] });
-  const g = Array.from({ length: 7 }, () => Array.from({ length: 24 }, cell));
-  const byDay = Array.from({ length: 7 }, cell);
-  const byHour = Array.from({ length: 24 }, cell);
+  const byHour = Array.from({ length: 24 }, () => ({ n: 0, views: [], ratios: [] }));
   for (const r of state.rows) {
     if (!r.ts) continue;
-    const w = St.weekdayMon(r.ts);
-    const h = new Date(r.ts).getHours();
-    for (const c of [g[w][h], byDay[w], byHour[h]]) {
-      c.n++;
-      if (r.views != null) c.views.push(r.views);
-      if (r.score != null) c.ratios.push(r.score);
-    }
+    const c = byHour[new Date(r.ts).getHours()];
+    c.n++;
+    if (r.views != null) c.views.push(r.views);
+    if (r.score != null) c.ratios.push(r.score);
   }
-  const maxN = Math.max(1, ...g.map((row) => Math.max(...row.map((c) => c.n))));
-
-  /** Paint one cell: posts mode = purple by count; perf mode = green above / red below typical. */
-  const paint = (node, c, summary) => {
-    if (!c.n) return;
-    if (!perfMode) {
-      node.classList.add("on");
-      if (!summary) node.style.opacity = String(0.18 + 0.82 * (c.n / maxN));
-      return;
-    }
-    const mr = median(c.ratios);
-    if (mr == null) return;
-    // log2 scale: 1x = neutral, 4x = full green, 1/4x = full red
-    const s = Math.max(-1, Math.min(1, Math.log2(mr) / 2));
-    const pctMix = Math.round(18 + Math.abs(s) * 72);
-    node.style.background = `color-mix(in srgb, ${s >= 0 ? "var(--ok)" : "var(--err)"} ${pctMix}%, var(--soft))`;
-    if (c.n === 1 && !summary) node.classList.add("thin"); // a single reel is an anecdote, not a pattern
-  };
-  const tipOf = (label, c) => {
-    const lines = [label, t("an_reels_count", [String(c.n)])];
-    const mr = median(c.ratios);
-    if (mr != null) lines.push(t("an_heat_tip_ratio", [`${mr.toFixed(1)}×`]));
-    const mv = median(c.views);
-    if (mv != null) lines.push(t("an_act_tip_views", [cmp(mv)]));
-    if (perfMode && c.n === 1) lines.push(t("an_heat_tip_single"));
-    return lines.join("\n");
-  };
-  const summaryText = (c) => {
-    if (!c.n) return "";
-    if (!perfMode) return String(c.n);
-    const mr = median(c.ratios);
-    return mr == null ? "" : `${mr.toFixed(1)}×`;
-  };
-
-  const grid = el("div", { class: "heatmap" + (perfMode ? " perf" : ""), role: "table", "aria-label": t("an_when_title") });
-  grid.append(el("span"));
+  const maxN = Math.max(1, ...byHour.map((c) => c.n));
   // columns run 12:00 -> 23:00 -> 00:00 -> 11:00: midnight sits in the middle, so a night of posting
   // (evening into early morning) stays one block instead of being split over both edges
   const inBest = (h) => state.bestWindow != null && h >= state.bestWindow && h < state.bestWindow + 3;
-  const hc = (h) => (h === 0 ? " midnight" : "") + (inBest(h) ? " best" + (h === state.bestWindow ? " best-first" : h === state.bestWindow + 2 ? " best-last" : "") : "");
-  for (const h of HEAT_HOURS) grid.append(el("span", { class: "hh" + hc(h), text: inBest(h) && h === state.bestWindow + 1 ? "★" : h % 3 === 0 ? String(h).padStart(2, "0") : "" }));
-  grid.append(el("span", { class: "hh", text: perfMode ? "×" : "Σ" }));
-  for (let w = 0; w < 7; w++) {
-    grid.append(el("span", { class: "hd", text: weekdayName(w) }));
-    for (const h of HEAT_HOURS) {
-      const c = g[w][h];
-      const node = el("span", { class: "hm" + hc(h), title: tipOf(`${weekdayName(w, true)} ${hourRange(h)}`, c) });
-      paint(node, c);
-      grid.append(node);
-    }
-    const sum = el("span", { class: "ht", text: summaryText(byDay[w]), title: tipOf(weekdayName(w, true), byDay[w]) });
-    if (perfMode) paintText(sum, byDay[w]);
-    grid.append(sum);
-  }
-  // summary row: every weekday together, per hour
-  grid.append(el("span", { class: "hd sum", text: t("an_heat_all_days") }));
+  const chart = el("div", { class: "hours", role: "list", "aria-label": t("an_when_title") });
   for (const h of HEAT_HOURS) {
     const c = byHour[h];
-    const node = el("span", { class: "hm sumrow" + hc(h), title: tipOf(`${t("an_heat_all_days")} ${hourRange(h)}`, c) });
-    paint(node, c, true);
-    if (!perfMode && c.n) node.style.opacity = String(0.18 + 0.82 * (c.n / Math.max(1, ...byHour.map((x) => x.n))));
-    grid.append(node);
-  }
-  grid.append(el("span"));
-  box.append(grid);
-
-  function paintText(node, c) {
     const mr = median(c.ratios);
-    if (mr == null) return;
-    node.classList.add(mr >= 1.2 ? "good" : mr <= 0.8 ? "bad" : "mid");
+    let cls = "hcol";
+    if (h === 0) cls += " midnight";
+    if (inBest(h)) cls += " best" + (h === state.bestWindow ? " best-first" : h === state.bestWindow + 2 ? " best-last" : "");
+    if (c.n === 1) cls += " thin"; // a single reel is an anecdote, not a pattern
+    const lines = [hourRange(h), t("an_reels_count", [String(c.n)])];
+    if (mr != null) lines.push(t("an_heat_tip_ratio", [`${mr.toFixed(1)}×`]));
+    const mv = median(c.views);
+    if (mv != null) lines.push(t("an_act_tip_views", [cmp(mv)]));
+    if (c.n === 1) lines.push(t("an_heat_tip_single"));
+    const col = el("div", { class: cls, role: "listitem", title: lines.join("\n") });
+    const tone = mr == null ? "" : mr >= 1.2 ? " good" : mr <= 0.8 ? " bad" : " mid";
+    col.append(el("span", { class: "h-ratio" + tone, text: mr == null ? "" : `${mr.toFixed(1)}×` }));
+    const track = el("div", { class: "h-track" });
+    if (c.n) {
+      const bar = el("div", { class: "h-bar" });
+      bar.style.height = `${Math.max(6, Math.round((c.n / maxN) * 100))}%`;
+      if (mr != null) {
+        // log2 scale: 1x = neutral grey, 4x = full green, 1/4x = full red
+        const sc = Math.max(-1, Math.min(1, Math.log2(mr) / 2));
+        bar.style.background = `color-mix(in srgb, ${sc >= 0 ? "var(--ok)" : "var(--err)"} ${Math.round(25 + Math.abs(sc) * 75)}%, var(--h-neutral))`;
+      }
+      bar.append(el("span", { class: "h-n", text: String(c.n) }));
+      track.append(bar);
+    }
+    col.append(track);
+    col.append(el("span", { class: "h-hour", text: inBest(h) && h === state.bestWindow + 1 ? "★" : p2h(h) }));
+    chart.append(col);
   }
+  box.append(chart);
 }
 
 function renderActivityInsights() {
@@ -2276,10 +2230,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderTable();
     });
   }
-  for (const b of $("heatSeg").children) {
-    b.textContent = t(`an_heat_${b.dataset.mode}`);
-    b.classList.toggle("on", b.dataset.mode === state.heatMode);
-  }
   $("csvBtn").addEventListener("click", exportCsv);
   $("csvFormat").value = csvFormat();
   $("csvFormat").title = t("an_csv_format_tip");
@@ -2289,13 +2239,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (_e) { /* not remembered */ }
   });
   $("csvBtn").title = t("an_csv_tip");
-  $("heatSeg").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-mode]");
-    if (!b) return;
-    state.heatMode = b.dataset.mode;
-    for (const x of $("heatSeg").children) x.classList.toggle("on", x === b);
-    if (state.activity && state.activity.n >= 2) renderHeatmap();
-  });
   for (const b of $("viewsLineSeg").children) {
     b.textContent = t(`an_line_${b.dataset.line}`);
     b.classList.toggle("on", b.dataset.line === state.viewsLine);

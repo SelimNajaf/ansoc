@@ -162,11 +162,6 @@
         <div class="heat-head">
           <h3 class="sub"><span data-i18n="an_when_title"></span> <span class="info" data-i18n-title="an_act_note">ⓘ</span></h3>
           <div class="controls small">
-            <span class="muted" data-i18n="an_heat_color"></span>
-            <div id="heatSeg" class="seg" role="group">
-              <button type="button" class="seg-btn" data-mode="posts"></button>
-              <button type="button" class="seg-btn" data-mode="perf"></button>
-            </div>
             <span class="csv-export">
               <button type="button" id="csvBtn" class="chipbtn csv-btn" data-i18n="an_csv_btn"></button>
               <select id="csvFormat" class="csv-fmt" data-i18n-aria="an_csv_format">
@@ -178,13 +173,9 @@
         </div>
         <div id="heatmap" class="heatmap-wrap"></div>
         <div class="legend small">
-          <span id="heatLegendPosts"><i class="sw act-sw"></i><span data-i18n="an_heat_lg_posts"></span></span>
-          <span id="heatLegendPerf" hidden>
-            <span data-i18n="an_heat_lg_below"></span>
-            <i class="heat-scale" aria-hidden="true"></i>
-            <span data-i18n="an_heat_lg_above"></span>
-            <span class="muted" data-i18n="an_heat_lg_thin"></span>
-          </span>
+          <span data-i18n="an_hours_lg_height"></span>
+          <span><i class="sw h-sw bad"></i><i class="sw h-sw"></i><i class="sw h-sw good"></i> <span data-i18n="an_hours_lg_color"></span></span>
+          <span class="muted" data-i18n="an_heat_lg_thin"></span>
         </div>
       </section>
 
