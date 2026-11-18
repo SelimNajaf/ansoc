@@ -51,7 +51,6 @@ body {
   background: var(--bg);
   color: var(--fg);
   font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  padding-bottom: 96px;
 }
 main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 h1 { font-size: 18px; margin: 0; }
@@ -397,8 +396,8 @@ tr.sumrow td[title] { cursor: help; }
 .st.duplicate { color: var(--warn); }
 .pin { font-size: 10px; color: var(--muted); margin-left: 4px; }
 .actionbar {
-  position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
-  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 16px; box-shadow: 0 -4px 16px rgba(0,0,0,.08);
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 12px;
+  background: var(--soft); border: 1px solid var(--line); border-radius: 12px;
 }
 .sel-info { white-space: nowrap; }
 .action-msg { flex-basis: 100%; color: var(--muted); }
@@ -408,8 +407,6 @@ tr.sumrow td[title] { cursor: help; }
   body { padding-bottom: 0; }
   .top { flex-wrap: wrap; }
   .top .grow { flex-basis: calc(100% - 48px); }
-  /* on narrow screens the action bar sits at the end of the page instead of covering it */
-  .actionbar { position: static; box-shadow: none; border: 1px solid var(--line); border-radius: 14px; margin: 0 16px 16px; }
   .actionbar .field.inline { flex-basis: 100%; }
   .caption { max-width: 160px; }
 }

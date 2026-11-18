@@ -1564,7 +1564,7 @@ function closeDetails() {
   renderTable();
 }
 
-// ---- panel geometry: float above the bottom action bar; width resizable and remembered
+// ---- panel geometry: width resizable and remembered
 const DR_MIN = 340;
 const DR_MAX = 900;
 

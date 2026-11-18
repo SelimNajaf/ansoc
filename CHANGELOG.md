@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.3
+
+- **Reels Analyzer:** the bar with *Download selected*, *Copy links* and *Copy descriptions* no longer sticks to the bottom of the screen. It now sits in the Reels section, right under the *Select* buttons.
+
 ## 2.5.2
 
 - **Fixed:** in the Reels Analyzer, clicking a row did nothing while some text was selected anywhere on the page. A click anywhere on a row selects it again; dragging across a caption to copy text still does not.

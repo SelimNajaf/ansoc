@@ -235,6 +235,21 @@
           <button type="button" class="chipbtn" id="selShown" data-i18n="an_sel_shown"></button>
           <button type="button" class="chipbtn" id="selNone" data-i18n="an_sel_none"></button>
         </div>
+        <div id="actionBar" class="actionbar" hidden>
+          <div class="sel-info">
+            <strong id="selCount">0</strong> <span data-i18n="an_selected"></span>
+            <span id="selViews" class="muted small"></span>
+          </div>
+          <label class="field inline grow">
+            <span class="small" data-i18n="an_folder"></span>
+            <input id="collectionInput" type="text" spellcheck="false">
+          </label>
+          <button type="button" id="copyLinks" data-i18n="an_copy_links"></button>
+          <button type="button" id="copyCaptions" data-i18n="an_copy_captions"></button>
+          <button type="button" id="cancelAll" class="danger" hidden></button>
+          <button type="button" id="downloadSel" class="primary" data-i18n="an_download_selected"></button>
+          <div id="actionMsg" class="small action-msg" aria-live="polite"></div>
+        </div>
         <div class="legend small er-legend">
           <span data-i18n="an_lg_score"></span>
           <span><i class="lg-score viral">12×</i> <span data-i18n="an_sig_viral"></span></span>
@@ -303,21 +318,6 @@
     <div id="drBody" class="dr-body"></div>
   </aside>
 
-  <footer id="actionBar" class="actionbar" hidden>
-    <div class="sel-info">
-      <strong id="selCount">0</strong> <span data-i18n="an_selected"></span>
-      <span id="selViews" class="muted small"></span>
-    </div>
-    <label class="field inline grow">
-      <span class="small" data-i18n="an_folder"></span>
-      <input id="collectionInput" type="text" spellcheck="false">
-    </label>
-    <button type="button" id="copyLinks" data-i18n="an_copy_links"></button>
-    <button type="button" id="copyCaptions" data-i18n="an_copy_captions"></button>
-    <button type="button" id="cancelAll" class="danger" hidden></button>
-    <button type="button" id="downloadSel" class="primary" data-i18n="an_download_selected"></button>
-    <div id="actionMsg" class="small action-msg" aria-live="polite"></div>
-  </footer>
 
   <script src="../utils/constants.js"></script>
   <script src="../utils/platforms.js"></script>
