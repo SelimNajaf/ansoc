@@ -341,11 +341,8 @@
   "an_analyze": {
     "message": "Analyze"
   },
-  "an_fetching": {
-    "message": "Fetching reels… $1 found"
-  },
   "an_fetching_details": {
-    "message": "Fetching missing view counts… $1 / $2"
+    "message": "Getting missing view counts… $1 / $2"
   },
   "an_err_profile": {
     "message": "Enter a username or profile link."
@@ -1495,5 +1492,23 @@
   },
   "an_hours_lg_color": {
     "message": "worse · usual · better"
+  },
+  "an_ld_reels": {
+    "message": "reels found"
+  },
+  "an_ld_connect": {
+    "message": "Connect"
+  },
+  "an_ld_read": {
+    "message": "Read reels"
+  },
+  "an_ld_fill": {
+    "message": "Fill gaps"
+  },
+  "an_ld_followers": {
+    "message": "$1 followers"
+  },
+  "an_ld_hint": {
+    "message": "Each bar is a reel: taller = more views, gold = a hit."
   }
 }

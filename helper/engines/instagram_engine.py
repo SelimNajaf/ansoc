@@ -392,6 +392,7 @@ class InstagramEngine(BaseEngine):
                 ex = extractor.find(f"https://www.instagram.com/reel/{codes[0]}/")
                 if ex is None:
                     raise HelperError(E_BAD_REQUEST, f"gallery-dl cannot handle {codes[0]}")
+                self.dl.progress(None, "stage:connect", force=True)
                 ex.initialize()
                 ex.login()
                 for i, code in enumerate(codes, 1):
@@ -493,6 +494,9 @@ class InstagramEngine(BaseEngine):
                     "is_private": bool(user.get("is_private")),
                     "is_verified": bool(user.get("is_verified")),
                 }
+                # "profile:<name>:<followers>" lets the page show who it is reading while it waits
+                self.dl.progress(None, f"profile:{profile_info['username']}:{profile_info['followers'] or ''}",
+                                 force=True)
                 rows: List[Dict[str, Any]] = []
                 seen = set()
                 truncated = False
@@ -503,7 +507,10 @@ class InstagramEngine(BaseEngine):
                         continue
                     seen.add(row["code"])
                     rows.append(row)
-                    self.dl.progress(len(rows) * 100.0 / limit, f"reels:{len(rows)}")
+                    # every reel is reported (not throttled): the page draws one bar per reel, height = views
+                    views = row["views"]
+                    self.dl.progress(len(rows) * 100.0 / limit,
+                                     f"reels:{len(rows)}:{-1 if views is None else int(views)}", force=True)
                     if len(rows) >= limit:
                         truncated = True
                         break
@@ -520,7 +527,7 @@ class InstagramEngine(BaseEngine):
                                 self._first_num(info, "comment_count")
                         except Exception as exc:  # keep the row, just without views
                             self.log.info("media info failed for %s: %s", r["code"], exc)
-                        self.dl.progress(i * 100.0 / len(missing), f"details:{i}/{len(missing)}")
+                        self.dl.progress(i * 100.0 / len(missing), f"details:{i}/{len(missing)}", force=True)
                         time.sleep(0.8)
             except HelperError:
                 raise

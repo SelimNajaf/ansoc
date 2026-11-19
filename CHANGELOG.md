@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.5
+
+- **New loading screen** for *Analyze*: a big counter of reels found, the profile and follower count, the three steps (Connect → Read reels → Fill gaps) and a live strip where every reel found appears as a bar (taller = more views, gold = a hit).
+- **Fixed:** the old loading bar started over from zero halfway through, stopped half-full when a profile had fewer reels than asked for, and showed nothing while connecting.
+
 ## 2.5.4
 
 - **Posting hours** (Reels Analyzer): the weekday × hour grid is replaced by one bar per hour. Bar height = how many reels were posted in that hour, color and number on top = how well they did (green = better than usual, red = worse). The best 3-hour window is outlined.

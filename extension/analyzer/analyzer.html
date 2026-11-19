@@ -44,9 +44,21 @@
       <button id="fetchBtn" type="submit" class="primary" data-i18n="an_analyze"></button>
     </form>
 
-    <section id="progressBox" class="card" hidden>
-      <div id="progressText" class="small"></div>
-      <div class="bar"><div id="progressFill" class="fill indet"></div></div>
+    <section id="progressBox" class="card loader" hidden aria-live="polite">
+      <div class="ld-head">
+        <div class="ld-count"><span id="ldCount">0</span><small data-i18n="an_ld_reels"></small></div>
+        <div class="ld-mid">
+          <div id="ldProfile" class="ld-profile"></div>
+          <ol id="ldSteps" class="ld-steps">
+            <li data-step="connect" data-i18n="an_ld_connect"></li>
+            <li data-step="reels" data-i18n="an_ld_read"></li>
+            <li data-step="details" data-i18n="an_ld_fill"></li>
+          </ol>
+        </div>
+        <div id="ldTime" class="ld-time">0:00</div>
+      </div>
+      <div id="ldStrip" class="ld-strip" aria-hidden="true"></div>
+      <div id="progressText" class="small muted ld-text"></div>
     </section>
 
     <div id="errorBox" class="error" hidden></div>

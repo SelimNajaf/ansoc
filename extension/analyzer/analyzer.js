@@ -122,13 +122,11 @@ async function analyze(e) {
     return;
   }
   $("fetchBtn").disabled = true;
-  $("progressBox").hidden = false;
-  $("progressText").textContent = t("an_fetching", ["0"]);
-  $("progressFill").className = "fill indet";
   const limit = parseInt($("limitSelect").value, 10);
+  loaderStart(profile, limit);
   const res = await send({ type: "listReels", profile, limit });
   $("fetchBtn").disabled = false;
-  $("progressBox").hidden = true;
+  loaderStop();
   if (!res.ok) {
     showError(`${res.error.message}${res.error.detail ? "\n" + res.error.detail : ""}`);
     return;
@@ -140,15 +138,114 @@ async function analyze(e) {
   load(res.data, null);
 }
 
+// ------------------------------------------------------------------ loading view
+// One slot per reel asked for. Every reel the helper reports fills the next slot with a bar:
+// height = its views (log scale against the biggest so far), gold = a hit (3x the running median).
+// So the strip is the progress bar and a first look at the profile at the same time.
+const loader = { slots: [], views: [], shown: 0, target: 0, t0: 0, timer: 0, raf: 0, step: "" };
+
+function loaderStart(profile, limit) {
+  const L = loader;
+  L.views = [];
+  L.shown = 0;
+  L.target = 0;
+  L.t0 = Date.now();
+  const strip = $("ldStrip");
+  strip.replaceChildren();
+  L.slots = Array.from({ length: Math.max(1, Math.min(500, limit || 120)) }, () => {
+    const s = el("div", { class: "ld-slot" });
+    strip.append(s);
+    return s;
+  });
+  $("ldCount").textContent = "0";
+  $("ldProfile").replaceChildren(document.createTextNode("@" + profile.replace(/^.*instagram\.com\//, "").replace(/[/?#].*$/, "").replace(/^@/, "")));
+  $("progressText").textContent = "";
+  loaderStep("connect");
+  $("ldTime").textContent = "0:00";
+  clearInterval(L.timer);
+  L.timer = setInterval(() => {
+    const sec = Math.floor((Date.now() - L.t0) / 1000);
+    $("ldTime").textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+  }, 1000);
+  $("progressBox").hidden = false;
+}
+
+function loaderStop() {
+  clearInterval(loader.timer);
+  cancelAnimationFrame(loader.raf);
+  $("progressBox").hidden = true;
+}
+
+function loaderStep(step) {
+  if (loader.step === step) return;
+  loader.step = step;
+  const order = ["connect", "reels", "details"];
+  const at = order.indexOf(step);
+  for (const li of $("ldSteps").children) {
+    const i = order.indexOf(li.dataset.step);
+    li.classList.toggle("on", i === at);
+    li.classList.toggle("done", i < at);
+  }
+  // reading is over: drop the empty slots so the strip shows only the reels that exist
+  if (step === "details") for (const s of loader.slots.slice(loader.views.length)) s.classList.add("gone");
+}
+
+/** The count rolls up to the target instead of jumping (reels arrive 12 at a time). */
+function loaderCount(n) {
+  const L = loader;
+  L.target = n;
+  if (L.raf) return;
+  const tick = () => {
+    L.shown += Math.max(1, Math.ceil((L.target - L.shown) / 6));
+    if (L.shown > L.target) L.shown = L.target;
+    $("ldCount").textContent = String(L.shown);
+    L.raf = L.shown < L.target ? requestAnimationFrame(tick) : 0;
+  };
+  L.raf = requestAnimationFrame(tick);
+}
+
+function loaderAdd(n, views) {
+  const L = loader;
+  while (L.views.length < n) L.views.push(L.views.length === n - 1 ? views : null);
+  const known = L.views.filter((v) => v != null && v >= 0);
+  const max = Math.max(1, ...known);
+  const lo = Math.log10(max / 1000);
+  const span = Math.log10(max) - lo || 1;
+  const med = median(known);
+  L.views.forEach((v, i) => {
+    const s = L.slots[i];
+    if (!s) return;
+    s.classList.add("in");
+    if (v == null || v < 0) {
+      s.classList.add("unk");
+      s.style.height = "18%";
+      return;
+    }
+    const h = Math.max(0.06, Math.min(1, (Math.log10(Math.max(v, 1)) - lo) / span));
+    s.style.height = `${Math.round(h * 100)}%`;
+    s.classList.toggle("hit", known.length >= 6 && med > 0 && v >= 3 * med);
+  });
+  loaderCount(n);
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
-  if (!msg || msg.type !== "reelsProgress") return;
-  const m = /^reels:(\d+)/.exec(msg.text || "");
-  const d = /^details:(\d+)\/(\d+)/.exec(msg.text || "");
-  if (m) $("progressText").textContent = t("an_fetching", [m[1]]);
-  if (d) $("progressText").textContent = t("an_fetching_details", [d[1], d[2]]);
-  if (msg.percent != null) {
-    $("progressFill").className = "fill";
-    $("progressFill").style.width = Math.max(2, Math.min(100, msg.percent)) + "%";
+  if (!msg || msg.type !== "reelsProgress" || $("progressBox").hidden) return;
+  const text = msg.text || "";
+  let m;
+  if (text.startsWith("stage:connect")) loaderStep("connect");
+  else if ((m = /^profile:([^:]*):(\d*)/.exec(text))) {
+    const box = $("ldProfile");
+    box.replaceChildren(document.createTextNode("@" + m[1]));
+    if (m[2]) box.append(el("span", { class: "muted", text: t("an_ld_followers", [cmp(Number(m[2]))]) }));
+    loaderStep("reels");
+    $("progressText").textContent = t("an_ld_hint");
+  } else if ((m = /^reels:(\d+)(?::(-?\d+))?/.exec(text))) {
+    loaderStep("reels");
+    if (!$("progressText").textContent) $("progressText").textContent = t("an_ld_hint");
+    loaderAdd(Number(m[1]), m[2] == null ? null : Number(m[2]));
+  } else if ((m = /^details:(\d+)\/(\d+)/.exec(text))) {
+    loaderStep("details");
+    $("progressText").textContent = t("an_fetching_details", [m[1], m[2]]);
   }
 });
 
