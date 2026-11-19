@@ -750,7 +750,7 @@
     "message": "Activity"
   },
   "an_rb_lg_viral": {
-    "message": "Viral"
+    "message": "Hit"
   },
   "an_rb_hint": {
     "message": "Drag the handles or the window · click to move a handle · ← → keys"
@@ -1360,5 +1360,35 @@
   },
   "an_exp_done": {
     "message": "Exported $1 reels ($2 with details)."
+  },
+  "an_col_success": {
+    "message": "Success"
+  },
+  "an_hit_word": {
+    "message": "Hit"
+  },
+  "an_tier_hit": {
+    "message": "Hit"
+  },
+  "an_tier_good": {
+    "message": "Good"
+  },
+  "an_sig_hit": {
+    "message": "🎯 HIT"
+  },
+  "an_sig_good": {
+    "message": "✓ GOOD"
+  },
+  "an_act_tip_hit": {
+    "message": "$1 hit(s)"
+  },
+  "an_succ_tip": {
+    "message": "Success $1 / 100 — comments and like rate, vs this store's other reels"
+  },
+  "an_succ_tip_c": {
+    "message": "💬 Comments $1 · top $2 of the store"
+  },
+  "an_succ_tip_l": {
+    "message": "❤ Like rate $1 · top $2 of the store"
   }
 }

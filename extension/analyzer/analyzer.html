@@ -128,7 +128,7 @@
         <div id="chartWrap" class="chart-wrap"></div>
         <div class="legend small">
           <span><i class="sw bar-sw"></i><span data-i18n="an_legend_bars"></span></span>
-          <span><i class="sw hit-sw"></i><span data-i18n="an_viral_word"></span></span>
+          <span><i class="sw hit-sw"></i><span data-i18n="an_hit_word"></span></span>
           <span><i class="sw typ-sw"></i><span data-i18n="an_stat_typical"></span></span>
           <span><i class="sw line mean"></i><span data-i18n="an_mean"></span></span>
           <span><i class="sw line median"></i><span data-i18n="an_median"></span></span>
@@ -165,7 +165,7 @@
         <div id="activityWrap" class="chart-wrap"></div>
         <div class="legend small">
           <span><i class="sw act-sw"></i><span data-i18n="an_act_legend_bars"></span></span>
-          <span><i class="sw hit-sw"></i><span data-i18n="an_viral_word"></span></span>
+          <span><i class="sw hit-sw"></i><span data-i18n="an_hit_word"></span></span>
           <span id="viewsLegend"><i class="sw line views"></i><span id="viewsLegendText"></span></span>
         </div>
 
@@ -229,7 +229,7 @@
               <col class="col-c-rank">
               <col class="col-c-reel">
               <col class="col-views">
-              <col class="col-score">
+              <col class="col-success">
               <col class="col-vpd">
               <col class="col-likes">
               <col class="col-comments">
@@ -245,7 +245,7 @@
                 <th class="num c-rank">#</th>
                 <th class="fh c-reel" data-key="date"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_reel"></span><i class="fh-sort"></i></button></th>
                 <th class="num fh" data-key="views"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_views"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="score"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_score"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="success"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_success"></span><i class="fh-sort"></i></button></th>
                 <th class="num fh" data-key="vpd"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_vpd"></span><i class="fh-sort"></i></button></th>
                 <th class="num fh grp" data-key="likes"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likes"></span><i class="fh-sort"></i></button></th>
                 <th class="num fh" data-key="comments"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_comments"></span><i class="fh-sort"></i></button></th>
@@ -260,10 +260,9 @@
           </table>
         </div>
         <div class="legend small er-legend table-foot">
-          <span data-i18n="an_lg_score"></span>
-          <span><i class="lg-score viral">12×</i> <span data-i18n="an_sig_viral"></span></span>
-          <span><i class="lg-score strong">3×</i> <span data-i18n="an_sig_strong"></span></span>
-          <span><i class="lg-score winner">3×</i> <span data-i18n="an_sig_winner"></span></span>
+          <span data-i18n="an_col_success"></span>
+          <span><i class="succ hit" style="--p:90"><span class="succ-i">🎯</span>90</i> <span data-i18n="an_tier_hit"></span> ≥ 80</span>
+          <span><i class="succ good" style="--p:60">60</i> <span data-i18n="an_tier_good"></span> ≥ 50</span>
           <span><i class="fresh rising"></i><span data-i18n="an_sig_rising"></span></span>
           <span><i class="fresh"></i><span data-i18n="an_sig_new"></span></span>
           <span class="lg-sep" aria-hidden="true">|</span>

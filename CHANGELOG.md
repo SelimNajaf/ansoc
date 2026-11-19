@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.11.0
+
+- **The brain — Success score (0–100)** replaces *vs typical* in the Reels table. Learned from the reels you picked as successful in 4 stores: what sets them apart is **many comments** (with "Comment X" calls to action, every comment is a lead) and a **high like rate**, both compared with the store's own reels. Tested on stores it did not learn from, it puts your picks on top far better than views alone (23 of 28 vs 12 of 28).
+  - 🎯 **Hit** = 80+ (gold), ✓ **Good** = 50+ (green). Hover the chip to see why (comments: top 2 % of the store · like rate: top 10 % …).
+  - Filter it like any column: *✓ Good ≥ 50 · 🎯 Hit ≥ 80 · ≥ 90*.
+  - Gold in the charts and on the time range now means a hit (not "viral by views").
+  - *Export data* includes the score.
+
 ## 2.10.1
 
 - **Reels table:** keeps room for about 10 rows, so the filter panel never gets squeezed at the bottom when only a few reels are left.

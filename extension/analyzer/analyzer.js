@@ -315,8 +315,8 @@ function load(data, cachedAt) {
     });
   });
   // whole-history classification: only for the dots on the timeline strip
-  const whole = St.performance(state.allRows, state.now);
-  state.allRows.forEach((r, i) => (r.wholeTier = whole.items[i] ? whole.items[i].tier : null));
+  const whole = St.success(state.allRows);
+  state.allRows.forEach((r, i) => (r.wholeHit = !!whole.items[i] && whole.items[i].tier === "hit"));
   state.periods = St.activePeriods(state.allRows.map((r) => r.ts));
   state.range = null; // {from, to} in ms (local day boundaries); null = everything
   $("collectionInput").value = `${data.username}_reels_${today()}`;
@@ -347,6 +347,12 @@ function applyRange() {
     r.score = r.perf ? r.perf.ratio : null;
     r.erAdj = r.perf ? r.perf.erVsExpected : null;
     r.rank = null;
+  });
+  // the brain: success score of every reel, judged against the reels of this range
+  state.success = St.success(state.rows);
+  state.rows.forEach((r, i) => {
+    r.success = state.success.items[i];
+    r.successScore = r.success ? r.success.score : null;
   });
   state.activity = St.postingStats(state.rows.map((r) => r.ts), state.windowEnd);
   state.interval = null; // pick a readable interval for this range again
@@ -456,9 +462,9 @@ function drawRangeStrip() {
   sel.append(svg("path", { class: "rb-area", d: area }), svg("path", { class: "rb-line", d: line }));
   root.append(sel);
 
-  // viral reels: a thin gold tick each on the baseline (grey outside the selection)
+  // hits (success score >= 80): a thin gold tick each on the baseline (grey outside the selection)
   for (const r of state.allRows) {
-    if (r.wholeTier !== "viral" || !r.ts) continue;
+    if (!r.wholeHit || !r.ts) continue;
     const xx = x(r.ts).toFixed(1);
     root.append(svg("line", { class: "rb-rug-base", x1: xx, x2: xx, y1: CH - 9, y2: CH - 2 }));
     sel.append(svg("line", { class: "rb-rug", x1: xx, x2: xx, y1: CH - 9, y2: CH - 2 }));
@@ -793,15 +799,6 @@ function renderChart() {
     root.append(svg("text", { class: "axis", x: m.l - 6, y: yy + 4, "text-anchor": "end" }, String(y)));
   }
   root.append(svg("text", { class: "axis", x: 4, y: 14 }, t("an_axis_y")));
-
-  // the approximate viral line: typical views x viral multiplier; bins past it are gold (hits)
-  const p = state.perf;
-  let viralAt = null;
-  if (p && p.enough) {
-    const v = p.typicalViews * p.viralMult;
-    const lastBin = bins[bins.length - 1];
-    if (v <= s.max && (lastBin.to === Infinity || v < lastBin.to)) viralAt = v;
-  }
   // typical range (middle 50% of the reels) as a soft band behind the bars
   const tx0 = xOf(s.p25, bins, m.l, bw);
   const tx1 = xOf(s.p75, bins, m.l, bw);
@@ -817,7 +814,7 @@ function renderChart() {
     const y = m.t + ph - h;
     const active = !state.filter || state.filter.kind !== "views" || (state.filter.from === b.from && state.filter.to === b.to);
     const rect = svg("rect", {
-      class: "bin" + (viralAt != null && b.from >= viralAt * 0.999 ? " hit" : "") + (active ? "" : " dim"),
+      class: "bin" + (active ? "" : " dim"),
       x, y, width: Math.max(1, bw - 4), height: Math.max(b.count ? 2 : 0, h),
       rx: 3, tabindex: b.count ? "0" : "-1", role: "button",
       "aria-label": `${rangeLabel(b.from, b.to)}: ${b.count}`,
@@ -839,6 +836,14 @@ function renderChart() {
       }
     });
     root.append(rect);
+    // the hits (success >= 80) among the reels of this bin, in gold at the bottom of the bar
+    const nHit = state.rows.filter((r) => r.views != null && r.views >= b.from && (r.views < b.to || i === bins.length - 1) && TIER_FILTERS.hit(r)).length;
+    if (nHit) {
+      const hh = Math.max(2, (nHit / yMax) * ph);
+      const hr = svg("rect", { class: "abin-hit", x, y: m.t + ph - hh, width: Math.max(1, bw - 4), height: hh, rx: 3 });
+      hr.append(svg("title", {}, `🎯 ${t("an_act_tip_hit", [String(nHit)])}`));
+      root.append(hr);
+    }
     if (b.count) root.append(svg("text", { class: "count", x: x + (bw - 4) / 2, y: y - 4, "text-anchor": "middle" }, String(b.count)));
     if (i % labelEvery === 0 || b.to === Infinity) {
       const lx = m.l + i * bw;
@@ -854,20 +859,15 @@ function renderChart() {
   root.append(svg("text", { class: "axis", x: m.l + pw / 2, y: H - 4, "text-anchor": "middle" },
     state.scale === "log" ? t("an_axis_x_log") : t("an_axis_x", [cmp(bins.step || 0)])));
 
-  // mean & median lines + the viral line (its label shows how many, a click lists them in the table)
+  // mean & median lines
   const lines = [["median", s.median, `${t("an_median")} ${cmp(s.median)}`], ["mean", s.mean, `${t("an_mean")} ${cmp(s.mean)}`]];
-  if (viralAt != null) lines.push(["viral", viralAt, `🚀 ${t("an_viral_word")} ≥ ${cmp(viralAt)} · ${p.nViral}`]);
+
   for (const [cls, value, label] of lines) {
     const x = xOf(value, bins, m.l, bw);
     root.append(svg("line", { class: `vline ${cls}`, x1: x, x2: x, y1: m.t - 6, y2: m.t + ph }));
     const anchor = x > W - 170 ? "end" : "start";
     const ly = cls === "mean" ? m.t - 10 : cls === "viral" ? m.t + 18 : m.t + 4;
     const text = svg("text", { class: `vlabel ${cls}`, x: x + (anchor === "end" ? -4 : 4), y: ly, "text-anchor": anchor }, label);
-    if (cls === "viral" && p.nViral) {
-      text.classList.add("clickable");
-      text.append(svg("title", {}, t("an_viral_click")));
-      text.addEventListener("click", () => showInTable("viral"));
-    }
     root.append(text);
   }
   wrap.append(root);
@@ -1067,13 +1067,13 @@ function renderActivityChart() {
       }
     });
     root.append(rect);
-    // the viral reels of this interval, stacked at the bottom of the bar in gold
-    const nViral = b.items.filter((k) => state.rows[k].perf && state.rows[k].perf.tier === "viral").length;
+    // the hits of this interval, stacked at the bottom of the bar in gold
+    const nViral = b.items.filter((k) => TIER_FILTERS.hit(state.rows[k])).length;
     if (nViral) {
       const vh = Math.max(2, (nViral / yMax) * ph);
       const vr = svg("rect", { class: "abin-hit", x, y: m.t + ph - vh, width: Math.max(1, bw - (bw > 6 ? 4 : 1)), height: vh, rx: bw > 6 ? 3 : 0 });
       vr.append(svg("title", {}, `${dateRangeLabel(b.from, b.to)}
-🚀 ${t("an_act_tip_viral", [String(nViral)])}`));
+🎯 ${t("an_act_tip_hit", [String(nViral)])}`));
       root.append(vr);
     }
     if (b.count && bw >= 14) root.append(svg("text", { class: "count", x: x + (bw - 4) / 2, y: y - 4, "text-anchor": "middle" }, String(b.count)));
@@ -1337,16 +1337,18 @@ function renderHeatmap() {
 // Click a column header -> a slider for that column. Filters run in the order they were added:
 // step 2 only sees the reels that step 1 kept, so its slider and histogram span what is left.
 const isNum = (x) => typeof x === "number" && isFinite(x);
-const metricVal = (r, key) => (key === "date" ? r.ts || null : r[key]);
+const metricVal = (r, key) => (key === "date" ? r.ts || null : key === "success" ? r.successScore : r[key]);
 // statistical groups (from the clickable facts): a step without a slider
 const TIER_FILTERS = {
+  hit: (r) => !!r.success && r.success.tier === "hit",
+  good: (r) => !!r.success && !!r.success.tier,
   viral: (r) => !!r.perf && r.perf.tier === "viral",
   strong: (r) => !!r.perf && (r.perf.tier === "viral" || r.perf.tier === "strong"),
   winner: (r) => !!r.perf && r.perf.winner,
   engaged: (r) => !!r.perf && (r.perf.highEr || r.perf.talk),
   rising: (r) => !!r.perf && r.perf.rising,
 };
-const TIER_ICON = { viral: "🚀", strong: "💪", winner: "🏆", engaged: "💬", rising: "🌱" };
+const TIER_ICON = { hit: "🎯", good: "✓", viral: "🚀", strong: "💪", winner: "🏆", engaged: "💬", rising: "🌱" };
 // metrics shown in percent
 const PCT_KEYS = new Set(["er", "likeRate", "commentRate", "commentShare"]);
 // counts spread over orders of magnitude: the slider moves on a log scale
@@ -1354,7 +1356,7 @@ const LOG_KEYS = new Set(["views", "likes", "comments", "vpd"]);
 // "Standard" slider range (the other choice is the min - max of the reels left)
 const STD_RANGE = {
   views: [1e3, 1e7], likes: [10, 1e6], comments: [1, 1e5], vpd: [1, 1e6],
-  er: [0, 0.1], likeRate: [0, 0.1], commentRate: [0, 0.01], score: [0, 10], erAdj: [0, 3],
+  er: [0, 0.1], likeRate: [0, 0.1], commentRate: [0, 0.01], score: [0, 10], erAdj: [0, 3], success: [0, 100],
 };
 /** Percent with enough digits for tiny rates: 2.1% / 0.35% / 0.062% */
 function pctFine(x) {
@@ -1364,6 +1366,7 @@ function pctFine(x) {
   return `${p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1) : p >= 0.1 ? p.toFixed(2) : p.toFixed(3)}%`;
 }
 function metricText(v, key) {
+  if (key === "success") return String(Math.round(v));
   if (PCT_KEYS.has(key)) return pctFine(v);
   if (key === "score" || key === "erAdj") return `${v.toFixed(v < 10 ? 1 : 0)}×`;
   return v >= 1000 ? cmp(v) : String(Math.round(v * 10) / 10);
@@ -1430,6 +1433,13 @@ function quickPicks(key, vals) {
   }
   const fixed = (list) => list.map((x) => ({ label: `≥ ${metricText(x, key)}`, preset: `v:${x}`, min: x }));
   if (key === "score") return fixed([1, 1.5, 2, 3, 5]);
+  if (key === "success") {
+    return [
+      { label: `✓ ${t("an_tier_good")} ≥ 50`, preset: "v:50", min: 50 },
+      { label: `🎯 ${t("an_tier_hit")} ≥ 80`, preset: "v:80", min: 80 },
+      { label: "≥ 90", preset: "v:90", min: 90 },
+    ];
+  }
   if (key === "erAdj") return fixed([1, 1.25, 1.5, 2]);
   const v = vals.filter(isNum).map((x) => (PCT_KEYS.has(key) ? x * 100 : x)).sort((a, b) => a - b);
   if (v.length < 2) return [];
@@ -1949,6 +1959,27 @@ function viewsCell(r) {
   return td;
 }
 
+/** The brain's verdict: a 0-100 chip (gold = hit, green = good) explained in its tooltip. */
+function successText(r) {
+  const s = r.success;
+  if (!s) return "";
+  const top = (x) => (x == null ? "–" : `${Math.max(1, Math.round((1 - x) * 100))}%`);
+  return [
+    t("an_succ_tip", [String(s.score)]),
+    t("an_succ_tip_c", [r.comments != null ? cmp(r.comments) : "–", top(s.commentsRank)]),
+    t("an_succ_tip_l", [r.likeRate != null ? pctFine(r.likeRate) : "–", top(s.likeRateRank)]),
+  ].join("\n");
+}
+function successCell(r, extraTip) {
+  const s = r.success;
+  if (!s) return el("td", { class: "num muted", text: "–" });
+  return el("td", { class: "num" }, [el("span", {
+    class: "succ" + (s.tier ? " " + s.tier : ""),
+    title: [successText(r), extraTip].filter(Boolean).join("\n\n"),
+    style: `--p:${s.score}`,
+  }, [s.tier === "hit" ? el("span", { class: "succ-i", text: "🎯" }) : null, el("span", { text: String(s.score) })])]);
+}
+
 /** Tooltip for the "vs typical" cell: the score explained plus every signal of the reel, one per line. */
 function signalsText(r) {
   const pf = r.perf;
@@ -2197,6 +2228,7 @@ function renderDetails() {
   // signals as small badges under the title
   const badges = el("div", { class: "dr-badges" });
   const badge = (cls, key) => badges.append(el("span", { class: `sig ${cls}`, text: t(key) }));
+  if (r.success && r.success.tier) badge(r.success.tier === "hit" ? "winner" : "strong", r.success.tier === "hit" ? "an_sig_hit" : "an_sig_good");
   if (pf) {
     if (pf.tier === "viral") badge("viral", "an_sig_viral");
     else if (pf.tier === "strong") badge("strong", "an_sig_strong");
@@ -2249,6 +2281,7 @@ function renderDetails() {
   const cell = (key, value, sub, cls) => grid.append(el("div", { class: "dr-cell" + (cls ? " " + cls : "") }, [
     el("div", { class: "k", text: t(key) }), el("div", { class: "v", text: value }), sub ? el("div", { class: "s", text: sub }) : null,
   ]));
+  if (r.success) cell("an_col_success", String(r.success.score), successText(r).split("\n").slice(1).join(" · "), r.success.tier || "");
   cell("an_col_views", r.views != null ? fmt(r.views) : "–", r.vpd != null ? t("an_dr_per_day", [cmp(Math.round(r.vpd))]) : "");
   if (pf) cell("an_col_score", `${pf.ratio.toFixed(1)}×`, t("an_dr_typical", [cmp(Math.round(pf.baseline)), pf.z.toFixed(1)]), pf.tier);
   cell("an_col_likes", r.likes != null ? fmt(r.likes) : "–", r.likeRate != null ? pctFine(r.likeRate) : "");
@@ -2360,7 +2393,7 @@ function summaryRow(rows) {
       ]),
     ])]),
     cellOf((r) => r.views, (x) => cmp(Math.round(x))),
-    cellOf((r) => r.score, (x) => `${x.toFixed(1)}×`),
+    cellOf((r) => r.successScore, (x) => String(Math.round(x))),
     cellOf((r) => r.vpd, (x) => cmp(Math.round(x))),
     ((c) => (c.classList.add("grp"), c))(cellOf((r) => r.likes, (x) => cmp(Math.round(x)))),
     cellOf((r) => r.comments, (x) => cmp(Math.round(x))),
@@ -2434,9 +2467,7 @@ function renderTable() {
       el("td", { class: "num muted c-rank", text: r.rank ? String(r.rank) : String(i + 1) }),
       reel,
       viewsCell(r),
-      el("td", { class: "num" }, [r.score != null ? el("span", {
-        class: "score " + scoreCls + (pf && pf.winner ? " winner" : ""), title: scoreTip, text: `${r.score.toFixed(1)}×`,
-      }) : null]),
+      successCell(r, scoreTip),
       el("td", { class: "num", title: t("an_tip_vpd"), text: r.vpd != null ? cmp(Math.round(r.vpd)) : "–" }),
       el("td", { class: "num grp", text: r.likes != null ? cmp(r.likes) : "–" }),
       el("td", { class: "num", text: r.comments != null ? cmp(r.comments) : "–" }),
@@ -2686,6 +2717,7 @@ function reelRecord(r, timing, full) {
     views: r.views ?? null, likes: r.likes ?? null, comments: r.comments ?? null,
     er: round(r.er, 5), like_rate: round(r.likeRate, 5), comment_rate: round(r.commentRate, 6), comment_share: round(r.commentShare, 4),
     views_per_day: round(r.vpd, 1),
+    success_score: r.success ? r.success.score : null, success_tier: r.success ? r.success.tier : null,
     vs_typical: round(pf.ratio, 3), z: round(pf.z, 2), baseline_views: round(pf.baseline, 0),
     tier: pf.tier || null, winner: !!pf.winner, rising: !!pf.rising, is_new: !!pf.isNew,
     high_er: !!pf.highEr, talked_about: !!pf.talk, er_vs_expected: round(pf.erVsExpected, 3),

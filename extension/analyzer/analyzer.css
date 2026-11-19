@@ -686,7 +686,7 @@ button.kpi:hover { filter: none; border-color: var(--line); }
 .col-c-rank { width: 32px; }
 .col-c-reel { width: 25%; }
 .col-views { width: 7.5%; }
-.col-score { width: 8%; }
+.col-success { width: 8%; }
 .col-vpd { width: 8%; }
 .col-likes { width: 7%; }
 .col-comments { width: 8%; }
@@ -696,3 +696,16 @@ button.kpi:hover { filter: none; border-color: var(--line); }
 .col-erAdj { width: 8%; }
 .col-c-st { width: 110px; }
 #reelTable.no-jobs .col-c-st { width: 0; }
+
+/* Success score chip (the brain): a small ring that fills with the score; gold = hit, green = good */
+.succ {
+  --p: 0; display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 46px;
+  padding: 2px 8px; border-radius: var(--r-pill); font-style: normal; font-size: var(--fs-s); font-weight: 800;
+  font-variant-numeric: tabular-nums; color: var(--muted); cursor: help;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fg) 10%, transparent) calc(var(--p) * 1%), var(--soft) 0);
+}
+.succ.good { color: var(--good); background: linear-gradient(90deg, color-mix(in srgb, var(--good) 22%, transparent) calc(var(--p) * 1%), var(--soft) 0); }
+.succ.hit { color: var(--on-hit); background: var(--hit-grad); box-shadow: var(--hit-glow); }
+.succ-i { font-size: 10px; }
+.dr-cell.hit .v { color: var(--hit); }
+.dr-cell.good .v { color: var(--good); }

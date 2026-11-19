@@ -97,6 +97,7 @@ Update-*  Uninstall-*    end-user update / uninstall scripts
 - Instagram's Reels-tab GraphQL returns **no captions and no `taken_at`**. Dates are decoded from the shortcode (`codeTime` in `stats.js`, `_code_time` in the engine); captions come from `reel_details` (one request per opened reel, cached).
 - Instagram rate-limits quickly: keep Instagram downloads to one at a time (`PLATFORM_CONCURRENCY` in background.js), never prefetch details in bulk.
 - Temporary download folders live in the system temp dir, not the (often OneDrive-synced) Desktop.
+- **Success score ("the brain")** is the main verdict: `success()` in `extension/analyzer/stats.js` (z of log comments + z of log like rate within the store, logistic weights). It was fitted on the user's picks with `tools/brain_model.py` on `research/*.json` (Export data files, git-ignored); refit and update the constants there when new picks arrive.
 - Statistics (viral / strong / winner) are documented at the top of `performance()` in `extension/analyzer/stats.js`: robust z-score on log views against a time-local baseline; engagement judged against a Theil–Sen fit on reach.
 
 - **Design:** follow `DESIGN.md`. Colors, gradients, radii and font sizes come only from `extension/ui/tokens.css` (`var(--token)`); never hard-code a color. Gold = hit, green/rose = better/worse, brand gradient = actions.

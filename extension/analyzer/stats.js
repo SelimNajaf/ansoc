@@ -600,9 +600,82 @@
     },
   };
 
+  /**
+   * SUCCESS ("the brain"): which reels did what a dropshipping store wants?
+   *
+   * Learned from reels the user picked as successful in 4 competitor stores (28 picks out of 388
+   * reels, research/ + tools/brain_model.py). Stores use "Comment X" calls to action, so a comment
+   * is a lead. Of everything measured, two things separate the picks from the rest, each judged
+   * against the store's own reels (robust z-score on a log scale, so big and small stores count
+   * the same):
+   *   - comments  (how many leads the reel brought; = reach x how well it converts viewers)
+   *   - like rate (how much the people who saw it liked it)
+   * Validation, training on 3 stores and testing on the 4th: AUC 0.97; 23 of the 28 picks were in
+   * their store's top-N. Raw views alone: AUC 0.86, 12/28.
+   *
+   *   S = -5.31 + 3.10 * z(log comments) + 1.34 * z(log like rate),   p = 1 / (1 + e^-S)
+   *
+   * p is shown as a 0-100 "Success" score. Tiers: hit >= 80, good >= 50 (every pick scored >= 53;
+   * about 10-20 % of a store's reels reach 50).
+   */
+  const SUCCESS = { bias: -5.31, comments: 3.10, likeRate: 1.34, hit: 0.8, good: 0.5 };
+
+  function robustZ(values) {
+    const v = values.filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
+    if (v.length < 3) return () => 0;
+    const m = quantile(v, 0.5);
+    const dev = v.map((x) => Math.abs(x - m)).sort((a, b) => a - b);
+    let s = quantile(dev, 0.5) * 1.4826;
+    if (!(s > 0)) {
+      const mean = v.reduce((a, b) => a + b, 0) / v.length;
+      s = Math.sqrt(v.reduce((a, b) => a + (b - mean) ** 2, 0) / v.length) || 1;
+    }
+    return (x) => (Number.isFinite(x) ? (x - m) / s : 0);
+  }
+  /** Share of values below x (0..1): "top 3 %" style explanations. */
+  function rankOf(values) {
+    const v = values.filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
+    return (x) => {
+      if (!Number.isFinite(x) || !v.length) return null;
+      let lo = 0;
+      let hi = v.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (v[mid] < x) lo = mid + 1;
+        else hi = mid;
+      }
+      let eq = lo;
+      while (eq < v.length && v[eq] === x) eq++;
+      return (lo + (eq - lo) / 2) / v.length;
+    };
+  }
+
+  /**
+   * @param rows [{views, likes, comments}] - the store's reels being judged together
+   * @returns items[i] = {p, score 0-100, tier "hit"|"good"|null, commentsRank, likeRateRank} or null
+   */
+  function success(rows) {
+    const lc = rows.map((r) => (Number.isFinite(r.comments) ? Math.log10(r.comments + 1) : NaN));
+    const lr = rows.map((r) => (r.views > 0 && Number.isFinite(r.likes) ? Math.log10(r.likes / r.views + 1e-4) : NaN));
+    const zc = robustZ(lc);
+    const zl = robustZ(lr);
+    const rc = rankOf(lc);
+    const rl = rankOf(lr);
+    const items = rows.map((r, i) => {
+      if (!Number.isFinite(lc[i])) return null;
+      const s = SUCCESS.bias + SUCCESS.comments * zc(lc[i]) + SUCCESS.likeRate * zl(lr[i]);
+      const p = 1 / (1 + Math.exp(-s));
+      return {
+        p, score: Math.round(p * 100), tier: p >= SUCCESS.hit ? "hit" : p >= SUCCESS.good ? "good" : null,
+        commentsRank: rc(lc[i]), likeRateRank: Number.isFinite(lr[i]) ? rl(lr[i]) : null,
+      };
+    });
+    return { items, nHit: items.filter((x) => x && x.tier === "hit").length, nGood: items.filter((x) => x && x.tier === "good").length };
+  }
+
   PD.stats = {
     quantile, summarize, niceStep, linearBins, logBins, densestRange, compact,
     DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods,
-    groupEffect, effectConfidence, bestEffect, worstEffect, BUCKETS,
+    groupEffect, effectConfidence, bestEffect, worstEffect, BUCKETS, success, SUCCESS,
   };
 })(typeof globalThis !== "undefined" ? globalThis : self);
