@@ -2709,6 +2709,7 @@ async function captureFullPage() {
   const target = { tabId: tab.id };
   const cmd = (method, params) => chrome.debugger.sendCommand(target, method, params || {});
   let attached = false;
+  let overridden = false;
   try {
     try {
       await chrome.debugger.attach(target, "1.3");
@@ -2717,30 +2718,43 @@ async function captureFullPage() {
       // Chrome refused the debugger (policy, DevTools already open …): scroll and stitch instead
       return await captureByScrolling(tab);
     }
-    const metrics = await cmd("Page.getLayoutMetrics");
-    const size = metrics.cssContentSize || metrics.contentSize;
-    const W = Math.ceil(size.width);
-    const H = Math.ceil(size.height);
+    // Chrome now slides in its "started debugging" bar, which changes the window height: let it settle
+    await new Promise((r) => setTimeout(r, 700));
+    document.body.classList.add("shooting"); // keep "Capturing…" and the busy button out of the picture
+    // Same method as DevTools' "Capture full size screenshot": make the viewport as tall as the page
+    // (and 2x sharp) for a moment, so nothing depends on the window size or the scroll position.
     const dpr = window.devicePixelRatio || 1;
-    // >= 2 pixels per CSS pixel; lower only if the image would pass Chrome's canvas limits
+    const vw = document.documentElement.clientWidth;
+    let H = 0;
     let out = Math.max(2, dpr);
-    while (out > 1 && (H * out > 32000 || W * H * out * out > 250e6)) out -= 0.25;
+    for (let pass = 0; pass < 3; pass++) {
+      const metrics = await cmd("Page.getLayoutMetrics");
+      const h = Math.ceil((metrics.cssContentSize || metrics.contentSize).height);
+      if (h === H) break;
+      H = h;
+      out = Math.max(2, dpr);
+      // stay under Chrome's canvas limits on very long pages
+      while (out > 1 && (H * out > 32000 || vw * H * out * out > 250e6)) out -= 0.25;
+      await cmd("Emulation.setDeviceMetricsOverride", { width: vw, height: H, deviceScaleFactor: out, mobile: false });
+      await new Promise((r) => setTimeout(r, 500)); // charts redraw for the new size
+    }
+    overridden = true;
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round(W * out);
+    canvas.width = Math.round(vw * out);
     canvas.height = Math.round(H * out);
     const ctx = canvas.getContext("2d");
     const SLICE = 3000; // CSS px per capture: keeps every piece well under the GPU texture limit
     for (let y = 0; y < H; y += SLICE) {
       const h = Math.min(SLICE, H - y);
-      const res = await cmd("Page.captureScreenshot", {
-        format: "png", fromSurface: true, captureBeyondViewport: true,
-        clip: { x: 0, y, width: W, height: h, scale: out / dpr },
-      });
+      const res = await cmd("Page.captureScreenshot", { format: "png", fromSurface: true, clip: { x: 0, y, width: vw, height: h, scale: 1 } });
       const img = new Image();
       img.src = "data:image/png;base64," + res.data;
       await img.decode();
-      ctx.drawImage(img, 0, Math.round(y * out), canvas.width, Math.round(h * out));
+      ctx.drawImage(img, 0, Math.round(y * out)); // natural size: never stretched
     }
+    await cmd("Emulation.clearDeviceMetricsOverride");
+    overridden = false;
+    document.body.classList.remove("shooting");
     await chrome.debugger.detach(target);
     attached = false;
     await saveShot(canvas);
@@ -2749,9 +2763,11 @@ async function captureFullPage() {
   } finally {
     if (attached) {
       try {
+        if (overridden) await cmd("Emulation.clearDeviceMetricsOverride");
         await chrome.debugger.detach(target);
       } catch (_e) { /* already gone */ }
     }
+    document.body.classList.remove("shooting");
     shotRun = false;
     $("shotBtn").disabled = false;
   }

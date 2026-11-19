@@ -718,3 +718,5 @@ button.kpi:hover { filter: none; border-color: var(--line); }
 .shot-msg.err { color: var(--bad); }
 body.shot-flash::after { content: ""; position: fixed; inset: 0; z-index: 99; background: #fff; pointer-events: none; animation: shot-flash .4s ease-out forwards; }
 @keyframes shot-flash { from { opacity: .7; } to { opacity: 0; } }
+body.shooting .shot-msg { visibility: hidden; }
+body.shooting .shot-btn { animation: none; }
