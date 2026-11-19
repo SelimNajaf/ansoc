@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.14.2
+
+- **📷 screenshot:** the picture now ends where the page ends (no empty dark strip at the bottom).
+
 ## 2.14.1
 
 - **Fixed: 📷 screenshot** came out as the top of the page repeated many times. It now works like DevTools' full-size capture: the page is laid out at full height for a moment and captured in one go (2× sharp), after Chrome's "started debugging" bar has appeared. The "Capturing…" text no longer shows up in the picture.

@@ -2738,6 +2738,16 @@ async function captureFullPage() {
       await cmd("Emulation.setDeviceMetricsOverride", { width: vw, height: H, deviceScaleFactor: out, mobile: false });
       await new Promise((r) => setTimeout(r, 500)); // charts redraw for the new size
     }
+    // Chrome never reports a page shorter than the viewport: measure where the content really ends,
+    // so the picture has no empty strip at the bottom
+    const bottom = Math.ceil(Math.max(...[...document.body.children]
+      .filter((n) => !n.hidden && getComputedStyle(n).position !== "fixed" && getComputedStyle(n).display !== "none")
+      .map((n) => n.getBoundingClientRect().bottom + window.scrollY)) + 16);
+    if (bottom > 100 && bottom < H - 4) {
+      H = bottom;
+      await cmd("Emulation.setDeviceMetricsOverride", { width: vw, height: H, deviceScaleFactor: out, mobile: false });
+      await new Promise((r) => setTimeout(r, 300));
+    }
     overridden = true;
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(vw * out);
