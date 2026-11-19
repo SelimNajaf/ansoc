@@ -25,3 +25,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# exported store data for analysis (personal, never commit)
+research/*
+!research/README.txt

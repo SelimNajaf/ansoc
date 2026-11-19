@@ -1348,5 +1348,17 @@
   },
   "an_pinned": {
     "message": "Pinned"
+  },
+  "an_exp_btn": {
+    "message": "⬇ Export data"
+  },
+  "an_exp_tip": {
+    "message": "Selected reels with all their numbers and details (description, audio, tags …) plus every reel's numbers, as one JSON file"
+  },
+  "an_exp_loading": {
+    "message": "Loading details of $1 reels…"
+  },
+  "an_exp_done": {
+    "message": "Exported $1 reels ($2 with details)."
   }
 }

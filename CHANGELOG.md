@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.10.0
+
+- **⬇ Export data** (Reels table toolbar, temporary research tool): saves the selected reels as one JSON file — every number (views, engagement, vs typical, viral / winner …), posting time and pace, and their details (description, audio, location, tagged accounts, duration; missing details are loaded first) — plus the numbers of every reel of the store for comparison.
+
 ## 2.9.1
 
 - **Reels table:** fixed column widths. The number columns now share the space (no empty gap next to *Views*), and the columns no longer change width when you filter or values change.

@@ -2450,6 +2450,7 @@ function updateActionBar() {
   $("downloadSel").disabled = !sel.length || !state.helperOk;
   $("copyLinks").disabled = !sel.length;
   $("copyCaptions").disabled = !sel.length && !captionRun;
+  $("exportSel").disabled = !sel.length || exportRun;
   updateCancelAll();
 }
 
@@ -2590,6 +2591,136 @@ function saveCaptionsTxt() {
   }, 1000);
 }
 
+// ------------------------------------------------------------------ data export (temporary research tool)
+/*
+ * "Export data": one JSON file per store with
+ *   store     - profile + the statistics every verdict is relative to (typical views, thresholds),
+ *   selected  - the selected reels with every number we have + their details (description, audio,
+ *               location, tags …; missing details are loaded first, one request per reel),
+ *   all_reels - every analyzed reel, numbers only (no extra requests), to compare the selected ones
+ *               against the rest of the store.
+ * Several stores' files can be merged and studied together.
+ */
+let exportRun = false;
+
+function timingIndex() {
+  const allTs = state.allRows.map((r) => r.ts).filter((x) => x > 0).sort((a, b) => a - b);
+  const perDay = new Map();
+  for (const x of allTs) perDay.set(St.dayStart(x), (perDay.get(St.dayStart(x)) || 0) + 1);
+  return (r) => {
+    if (!r.ts) return {};
+    let week = 0;
+    let prev = null;
+    for (const x of allTs) {
+      if (x > r.ts - 7 * St.DAY && x <= r.ts) week++;
+      if (x < r.ts) prev = x;
+    }
+    return { posts_same_day: perDay.get(St.dayStart(r.ts)) || 1, posts_last_7_days: week, hours_since_prev: prev ? +((r.ts - prev) / St.HOUR).toFixed(1) : null };
+  };
+}
+
+function reelRecord(r, timing, full) {
+  const pf = r.perf || {};
+  const d = r.ts ? new Date(r.ts) : null;
+  const round = (x, k) => (isNum(x) ? +x.toFixed(k) : null);
+  const det = (details.get(r.code) || {}).data || null;
+  const rec = {
+    code: r.code, url: r.url, rank: r.rank || null, pinned: !!r.pinned,
+    posted_local: d ? `${dateKey(r.ts)} ${p2(d.getHours())}:${p2(d.getMinutes())}` : null,
+    hour: d ? d.getHours() : null,
+    age_days: r.ts ? round((state.now - r.ts) / St.DAY, 1) : null,
+    views: r.views ?? null, likes: r.likes ?? null, comments: r.comments ?? null,
+    er: round(r.er, 5), like_rate: round(r.likeRate, 5), comment_rate: round(r.commentRate, 6), comment_share: round(r.commentShare, 4),
+    views_per_day: round(r.vpd, 1),
+    vs_typical: round(pf.ratio, 3), z: round(pf.z, 2), baseline_views: round(pf.baseline, 0),
+    tier: pf.tier || null, winner: !!pf.winner, rising: !!pf.rising, is_new: !!pf.isNew,
+    high_er: !!pf.highEr, talked_about: !!pf.talk, er_vs_expected: round(pf.erVsExpected, 3),
+    duration_s: round((det && det.duration) || r.duration, 1),
+    selected: state.selected.has(r.code),
+  };
+  Object.assign(rec, timing(r));
+  const cap = captionOf(r);
+  if (full) {
+    rec.caption = cap || null;
+    rec.details_loaded = !!det;
+    if (det) {
+      rec.audio = det.audio || null;
+      rec.location = det.location || null;
+      rec.tagged = det.tagged || [];
+      rec.coauthors = det.coauthors || [];
+      rec.paid_partnership = !!det.paid_partnership;
+      rec.comments_disabled = !!det.comments_disabled;
+      rec.like_count_hidden = !!det.like_count_hidden;
+    }
+  } else if (cap) rec.caption = cap; // already known: costs nothing
+  return rec;
+}
+
+async function exportSelected() {
+  if (exportRun) return;
+  const sel = selectedRows();
+  if (!sel.length) return;
+  exportRun = true;
+  $("exportSel").disabled = true;
+  let failed = 0;
+  let stopped = "";
+  const missing = sel.filter((r) => !((details.get(r.code) || {}).data));
+  if (missing.length) {
+    setActionMsg(t("an_exp_loading", [String(missing.length)]));
+    const res = await send({ type: "reelDetailsMany", codes: missing.map((r) => r.code) });
+    if (res.ok) {
+      for (const [code, data] of Object.entries(res.data.items || {})) details.set(code, { data, at: Date.now() });
+      failed = Object.keys(res.data.errors || {}).length;
+      stopped = res.data.stopped || "";
+    } else {
+      failed = missing.length;
+      stopped = (res.error || {}).code || "ERROR";
+    }
+  }
+  const timing = timingIndex();
+  const s = state.stats || {};
+  const p = state.perf || {};
+  const prof = state.data.profile || {};
+  const ers = state.rows.map((r) => r.er).filter(isNum).sort((a, b) => a - b);
+  const ts = state.rows.map((r) => r.ts).filter((x) => x > 0);
+  const out = {
+    format: "media-downloader-export/1",
+    exported_at: new Date().toISOString(),
+    timezone_offset_min: -new Date().getTimezoneOffset(),
+    store: {
+      username: state.data.username, full_name: prof.full_name || null, followers: prof.followers ?? null,
+      analyzed_at: new Date(state.now).toISOString(),
+      range: ts.length ? { from: dateKey(Math.min(...ts)), to: dateKey(Math.max(...ts)) } : null,
+      reels: state.rows.length,
+      views: Object.fromEntries(["sum", "mean", "median", "p25", "p75", "p90", "min", "max"].map((k) => [k === "sum" ? "total" : k, isNum(s[k]) ? Math.round(s[k]) : null])),
+      er_median: ers.length ? +St.quantile(ers, 0.5).toFixed(5) : null,
+      typical_views: isNum(p.typicalViews) ? Math.round(p.typicalViews) : null,
+      viral_mult: isNum(p.viralMult) ? +p.viralMult.toFixed(2) : null, strong_mult: isNum(p.strongMult) ? +p.strongMult.toFixed(2) : null,
+      viral_threshold_views: p.typicalViews && p.viralMult ? Math.round(p.typicalViews * p.viralMult) : null,
+      counts: { viral: p.nViral ?? null, strong: p.nStrong ?? null, winner: p.nWinner ?? null },
+      filters: state.filters.map((f) => (f.tier ? { group: f.tier } : { column: f.key, min: isFinite(f.min) ? f.min : null, max: isFinite(f.max) ? f.max : null })),
+    },
+    selected: sel.map((r) => reelRecord(r, timing, true)),
+    all_reels: state.rows.map((r) => reelRecord(r, timing, false)),
+  };
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: "application/json" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: `${state.data.username}_selected_${sel.length}_${today()}.json` });
+  document.body.append(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
+  const withDet = out.selected.filter((x) => x.details_loaded).length;
+  let msg = t("an_exp_done", [String(sel.length), String(withDet)]);
+  if (/RATE_LIMITED|LOGIN_REQUIRED/.test(stopped)) msg += " " + t("an_cap_stopped_ig");
+  else if (failed) msg += " " + t("an_cap_failed", [String(failed)]);
+  setActionMsg(msg, withDet === sel.length ? "ok" : "");
+  exportRun = false;
+  updateActionBar();
+  renderTable();
+}
+
 async function copyLinks() {
   const sel = selectedRows().sort((a, b) => (b.views || 0) - (a.views || 0));
   const text = sel.map((r) => `${r.url}\t${r.views ?? ""}`).join("\n");
@@ -2707,6 +2838,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("copyLinks").addEventListener("click", copyLinks);
   $("cancelAll").addEventListener("click", cancelAll);
   $("copyCaptions").addEventListener("click", copyCaptions);
+  $("exportSel").addEventListener("click", exportSelected);
   $("capClose").addEventListener("click", () => $("capDialog").close());
   $("capSave").addEventListener("click", saveCaptionsTxt);
   $("capCopy").addEventListener("click", () => copyText($("capText").value, "an_cap_copied_short"));
