@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.10.1
+
+- **Reels table:** keeps room for about 10 rows, so the filter panel never gets squeezed at the bottom when only a few reels are left.
+- **Starts with Views ≥ average** as the first filter. *Above avg / Top 25% / Top 10%* now follow the reels in front of them (date range, earlier filters).
+- **Smart quick picks:** rates get round thresholds chosen from the data — e.g. *≥ 0.5% · 1.0% · 1.5% …* for engagement, *≥ 0.05% · 0.10% …* (or smaller) for comment rate; *vs typical* gets *≥ 1× 1.5× 2× 3× 5×*. Counts keep *Above avg / Top 25% / Top 10%*.
+- **Finer sliders** for tiny rates (comment rate moves in 0.005 % steps when needed).
+- **Fixed:** the *Export data* button could show its internal name instead of the label.
+
 ## 2.10.0
 
 - **⬇ Export data** (Reels table toolbar, temporary research tool): saves the selected reels as one JSON file — every number (views, engagement, vs typical, viral / winner …), posting time and pace, and their details (description, audio, location, tagged accounts, duration; missing details are loaded first) — plus the numbers of every reel of the store for comparison.

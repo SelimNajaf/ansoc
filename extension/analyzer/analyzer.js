@@ -67,7 +67,10 @@ function rangeLabel(from, to) {
   return to === Infinity ? `≥ ${cmp(from)}` : `${cmp(from)} – ${cmp(to)}`;
 }
 function i18nize() {
-  for (const n of document.querySelectorAll("[data-i18n]")) n.textContent = t(n.dataset.i18n);
+  for (const n of document.querySelectorAll("[data-i18n]")) {
+    const v = t(n.dataset.i18n);
+    if (v !== n.dataset.i18n || !n.textContent.trim()) n.textContent = v; // a missing message keeps the HTML text
+  }
   for (const n of document.querySelectorAll("[data-i18n-aria]")) n.setAttribute("aria-label", t(n.dataset.i18nAria));
   for (const n of document.querySelectorAll("[data-i18n-title]")) n.title = t(n.dataset.i18nTitle);
   document.documentElement.lang = chrome.i18n.getUILanguage();
@@ -281,7 +284,8 @@ function load(data, cachedAt) {
   state.openCode = null; // a new profile closes the details panel
   $("drawer").hidden = true;
   state.filter = null;
-  state.filters = []; // a new profile starts unfiltered
+  // a new profile starts with the reels above the average views (a relative pick: it follows the date range)
+  state.filters = [{ key: "views", min: -Infinity, max: Infinity, preset: "avg" }];
   state.sort = null;
   closeFilterPop();
   state.selected.clear();
@@ -1392,8 +1396,58 @@ function baseRows() {
 /** pools[i] = the reels step i sees; the last one = what the table shows. */
 function chainPools() {
   const pools = [baseRows()];
-  for (const f of state.filters) pools.push(pools[pools.length - 1].filter(stepTest(f)));
+  for (const f of state.filters) {
+    const pool = pools[pools.length - 1];
+    // relative picks (Above avg, Top 25%, Top 10%) follow the reels this step sees
+    if (f.key && f.preset && !f.preset.startsWith("v:")) f.min = presetValue(f.key, f.preset, pool);
+    pools.push(pool.filter(stepTest(f)));
+  }
   return pools;
+}
+/** The value behind a relative pick: the average or a quantile of the column in this pool. */
+function presetValue(key, q, pool) {
+  const v = pool.map((r) => metricVal(r, key)).filter(isNum).sort((a, b) => a - b);
+  if (!v.length) return -Infinity;
+  if (q === "avg") return v.reduce((a, b) => a + b, 0) / v.length;
+  return v[Math.min(v.length - 1, Math.floor(Number(q) * v.length))];
+}
+/** "Nice" round step near x: 1, 2, 2.5 or 5 times a power of ten. */
+function niceNum(x) {
+  if (!(x > 0)) return 1;
+  const e = Math.pow(10, Math.floor(Math.log10(x)));
+  const m = x / e;
+  return (m < 1.5 ? 1 : m < 2.25 ? 2 : m < 3.5 ? 2.5 : m < 7.5 ? 5 : 10) * e;
+}
+/**
+ * Quick picks for a column, chosen from the data:
+ *  counts (views, likes …): Above avg / Top 25% / Top 10% (relative, follow the pool);
+ *  rates (%): up to 6 round thresholds spread over the usual range, e.g. 0.5 1.0 1.5 … % for
+ *  engagement or 0.02 0.04 0.06 … % for comments;  × columns: fixed 1× 1.5× 2× 3× 5×.
+ */
+function quickPicks(key, vals) {
+  if (LOG_KEYS.has(key)) {
+    return [{ label: t("an_fp_avg_up"), preset: "avg" }, { label: t("an_fp_top", ["25"]), preset: "0.75" }, { label: t("an_fp_top", ["10"]), preset: "0.9" }];
+  }
+  const fixed = (list) => list.map((x) => ({ label: `≥ ${metricText(x, key)}`, preset: `v:${x}`, min: x }));
+  if (key === "score") return fixed([1, 1.5, 2, 3, 5]);
+  if (key === "erAdj") return fixed([1, 1.25, 1.5, 2]);
+  const v = vals.filter(isNum).map((x) => (PCT_KEYS.has(key) ? x * 100 : x)).sort((a, b) => a - b);
+  if (v.length < 2) return [];
+  const lo = St.quantile(v, 0.05);
+  const hi = St.quantile(v, 0.9);
+  let step = niceNum((hi - lo) / 5 || hi / 5);
+  let out = [];
+  for (let x = Math.max(step, Math.ceil(lo / step) * step); x <= hi + 1e-9 && out.length < 6; x += step) out.push(+x.toFixed(6));
+  if (out.length < 3) {
+    step /= 2;
+    out = [];
+    for (let x = Math.max(step, Math.ceil(lo / step) * step); x <= hi + 1e-9 && out.length < 6; x += step) out.push(+x.toFixed(6));
+  }
+  const dec = (String(+step.toFixed(6)).split(".")[1] || "").length; // as many decimals as the step has
+  return out.map((x) => {
+    const val = PCT_KEYS.has(key) ? x / 100 : x;
+    return { label: `≥ ${x.toFixed(Math.min(4, Math.max(dec, 1)))}${PCT_KEYS.has(key) ? "%" : ""}`, preset: `v:${val}`, min: val };
+  });
 }
 /** Sort: chosen in a column's panel; otherwise by the first filter's column, else views. */
 function currentSort() {
@@ -1524,8 +1578,9 @@ function popScale(key, pool) {
     hi = vals.length ? toU(Math.max(...vals), key) : 1;
   }
   const spanU = hi - lo || 1;
-  // step: 0.1 for rates and ×, 0.01 when the range is tiny (comment rate), ~200 stops on log scales
-  const step = LOG_KEYS.has(key) ? spanU / 200 : spanU < 2 ? 0.01 : 0.1;
+  // ~200 stops on log scales; a round step (0.1 / 0.01 / 0.005 …) giving ~150 stops otherwise,
+  // so tiny rates (comment rate 0.0x %) still move in fine steps
+  const step = LOG_KEYS.has(key) ? spanU / 200 : niceNum(spanU / 150);
   lo = Math.floor(lo / step) * step;
   hi = Math.ceil(hi / step) * step;
   if (hi <= lo) hi = lo + step;
@@ -1752,22 +1807,21 @@ function renderFilterPop() {
   sync(false);
 
   // quick picks (stay highlighted while they are the filter; a second click clears it) + the slider's range
-  const qp = (label, q) => el("button", {
-    type: "button", class: "chipbtn", text: label, "data-q": q,
+  const qp = (item) => el("button", {
+    type: "button", class: "chipbtn", text: item.label, "data-q": item.preset,
     onclick: () => {
-      const v = sc.vals.slice().sort((x, y) => x - y);
-      if (!v.length) return;
+      if (!sc.vals.length) return;
       hi = sc.hi;
-      if (fpop.step && fpop.step.preset === q) {
+      if (fpop.step && fpop.step.preset === item.preset) {
         lo = sc.lo;
         return sync(true);
       }
-      const val = q === "avg" ? mean : v[Math.min(v.length - 1, Math.floor(Number(q) * v.length))];
-      lo = Math.min(snap(toU(val, key)), sc.hi);
-      sync({ preset: q, min: val });
+      const val = item.min != null ? item.min : presetValue(key, item.preset, pool);
+      lo = Math.max(sc.lo, Math.min(snap(toU(val, key)), sc.hi));
+      sync({ preset: item.preset, min: val });
     },
   });
-  const quick = el("div", { class: "fp-quick" }, [qp(t("an_fp_avg_up"), "avg"), qp(t("an_fp_top", ["25"]), "0.75"), qp(t("an_fp_top", ["10"]), "0.9")]);
+  const quick = el("div", { class: "fp-quick" }, quickPicks(key, sc.vals).map(qp));
   function markPresets() {
     for (const b of quick.children) b.classList.toggle("on", !!fpop.step && fpop.step.preset === b.dataset.q);
   }
