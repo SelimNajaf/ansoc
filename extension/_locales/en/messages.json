@@ -1092,7 +1092,7 @@
     "message": "What works"
   },
   "ww_info": {
-    "message": "Each reel vs this store's normal level (1× = usual). Bars: green = better, red = worse; thin line = likely range. ●●● clear · ●●○ likely · ●○○ too few reels. New reels (< 3 days) are left out."
+    "message": "Success (comments + like rate) of each group vs this store's average reel: 1× = usual, 2× = twice the success. Bars: green = better, red = worse; thin line = likely range. ●●● clear · ●●○ likely · ●○○ too few reels. Reels younger than 3 days are left out."
   },
   "ww_note": {
     "message": "$1 reels"
@@ -1390,5 +1390,8 @@
   },
   "an_succ_tip_l": {
     "message": "❤ Like rate $1 · top $2 of the store"
+  },
+  "an_hours_tip_succ": {
+    "message": "Success $1 vs usual · 🎯 $2 hit(s)"
   }
 }

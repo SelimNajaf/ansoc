@@ -569,6 +569,50 @@
     return out;
   }
 
+  /*
+   * Same idea, measured with the brain: how much SUCCESS a group of reels brings compared with the
+   * store's average reel. Input items: {group, p} with p = success probability (0..1).
+   *   ratio = mean p of the group / mean p of all reels   (2× = twice as many hits as usual)
+   * A mean, not a median: success is rare (most reels score near 0), and a group that produces the
+   * hits is exactly what matters. 80% interval: bootstrap of the reels in the group.
+   */
+  function successEffect(items, opts) {
+    opts = opts || {};
+    const minN = opts.minN || 5;
+    const iters = opts.iters || 400;
+    const ok = items.filter((it) => it.group != null && Number.isFinite(it.p));
+    const all = ok.reduce((a, it) => a + it.p, 0) / (ok.length || 1);
+    if (!(all > 0)) return [];
+    const byGroup = new Map();
+    for (const it of ok) {
+      if (!byGroup.has(it.group)) byGroup.set(it.group, []);
+      byGroup.get(it.group).push(it.p);
+    }
+    const rnd = seeded(54321);
+    const mean = (l) => l.reduce((a, b) => a + b, 0) / l.length;
+    const out = [];
+    for (const [group, l] of byGroup) {
+      const n = l.length;
+      const enough = n >= minN;
+      let lo = null;
+      let hi = null;
+      if (enough) {
+        const sims = [];
+        for (let k = 0; k < iters; k++) {
+          let sum = 0;
+          for (let j = 0; j < n; j++) sum += l[Math.floor(rnd() * n)];
+          sims.push(sum / n / all);
+        }
+        sims.sort((a, b) => a - b);
+        // floor at 1 % of the average: a group with no success at all is "0.0x", not -infinity
+        lo = Math.max(0.01, quantile(sims, 0.1));
+        hi = Math.max(0.01, quantile(sims, 0.9));
+      }
+      out.push({ group, n, stores: 1, ratio: Math.max(0.01, mean(l) / all), lo, hi, enough });
+    }
+    return out;
+  }
+
   /** "clear" = interval entirely above (or below) 1x, "likely" = enough reels, "few" = too few. */
   function effectConfidence(e) {
     if (!e.enough) return "few";
@@ -676,6 +720,6 @@
   PD.stats = {
     quantile, summarize, niceStep, linearBins, logBins, densestRange, compact,
     DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods,
-    groupEffect, effectConfidence, bestEffect, worstEffect, BUCKETS, success, SUCCESS,
+    groupEffect, effectConfidence, bestEffect, worstEffect, BUCKETS, success, SUCCESS, successEffect,
   };
 })(typeof globalThis !== "undefined" ? globalThis : self);

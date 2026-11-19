@@ -1127,7 +1127,8 @@ function wwItems() {
   for (const x of allTs) perDay.set(St.dayStart(x), (perDay.get(St.dayStart(x)) || 0) + 1);
   const out = [];
   for (const r of state.rows) {
-    if (!r.ts || r.score == null || !r.perf || r.perf.isNew) continue;
+    // judged by the brain; reels younger than 3 days are left out (their comments are still coming)
+    if (!r.ts || !r.success || (r.perf && r.perf.isNew)) continue;
     const d = new Date(r.ts);
     let week = 0;
     let prev = null;
@@ -1136,7 +1137,7 @@ function wwItems() {
       if (x < r.ts) prev = x;
     }
     out.push({
-      ratio: r.score,
+      p: r.success.p,
       window: St.BUCKETS.window.of(d.getHours()),
       perDay: St.BUCKETS.perDay.of(perDay.get(St.dayStart(r.ts)) || 1),
       perWeek: St.BUCKETS.perWeek.of(week),
@@ -1153,7 +1154,7 @@ function renderWhatWorks() {
   $("wwChart").replaceChildren();
   state.wwEffects = {};
   for (const [key, dim] of Object.entries(WW_DIMS)) {
-    state.wwEffects[key] = St.groupEffect(items.map((it) => ({ group: it[key], ratio: it.ratio })));
+    state.wwEffects[key] = St.successEffect(items.map((it) => ({ group: it[key], p: it.p })));
   }
   $("wwNote").textContent = t("ww_note", [String(items.length)]);
   if (!state.wwDim) state.wwDim = "window";
@@ -1185,6 +1186,7 @@ const CSV_COLUMNS = [
   "posted_date", "posted_time", "weekday", "hour", "hour_utc", "timezone",
   "age_days", "is_new",
   "views", "likes", "comments", "engagement_pct", "like_pct", "comment_pct", "likes_per_comment", "views_per_day",
+  "success_score", "success_tier",
   "vs_typical", "z_score", "tier", "winner", "er_vs_expected_pct",
   "posts_same_day", "posts_last_7_days", "hours_since_prev_post",
   "duration_s",
@@ -1252,6 +1254,7 @@ function exportCsv() {
       comment_pct: r.commentRate != null ? num(r.commentRate * 100, 4) : "",
       likes_per_comment: r.likes != null && r.comments ? num(r.likes / r.comments, 1) : "",
       views_per_day: num(r.vpd),
+      success_score: r.success ? r.success.score : "", success_tier: r.success ? r.success.tier || "" : "",
       vs_typical: pf ? num(pf.ratio, 2) : "",
       z_score: pf ? num(pf.z, 2) : "",
       tier: pf ? pf.tier : "",
@@ -1285,14 +1288,17 @@ function dateKey(ts) {
 function renderHeatmap() {
   const box = $("heatmap");
   box.replaceChildren();
-  const byHour = Array.from({ length: 24 }, () => ({ n: 0, views: [], ratios: [] }));
+  const byHour = Array.from({ length: 24 }, () => ({ n: 0, views: [], ps: [] }));
   for (const r of state.rows) {
     if (!r.ts) continue;
     const c = byHour[new Date(r.ts).getHours()];
     c.n++;
     if (r.views != null) c.views.push(r.views);
-    if (r.score != null) c.ratios.push(r.score);
+    if (r.success && !(r.perf && r.perf.isNew)) c.ps.push(r.success.p);
   }
+  // success of an hour vs the average reel (1× = usual), the same measure as "What works"
+  const allPs = byHour.flatMap((c) => c.ps);
+  const avgP = allPs.length ? allPs.reduce((a, b) => a + b, 0) / allPs.length : 0;
   const maxN = Math.max(1, ...byHour.map((c) => c.n));
   // columns run 12:00 -> 23:00 -> 00:00 -> 11:00: midnight sits in the middle, so a night of posting
   // (evening into early morning) stays one block instead of being split over both edges
@@ -1300,13 +1306,13 @@ function renderHeatmap() {
   const chart = el("div", { class: "hours", role: "list", "aria-label": t("an_when_title") });
   for (const h of HEAT_HOURS) {
     const c = byHour[h];
-    const mr = median(c.ratios);
+    const mr = c.ps.length && avgP > 0 ? c.ps.reduce((a, b) => a + b, 0) / c.ps.length / avgP : null;
     let cls = "hcol";
     if (h === 0) cls += " midnight";
     if (inBest(h)) cls += " best" + (h === state.bestWindow ? " best-first" : h === state.bestWindow + 2 ? " best-last" : "");
     if (c.n === 1) cls += " thin"; // a single reel is an anecdote, not a pattern
     const lines = [hourRange(h), t("an_reels_count", [String(c.n)])];
-    if (mr != null) lines.push(t("an_heat_tip_ratio", [`${mr.toFixed(1)}×`]));
+    if (mr != null) lines.push(t("an_hours_tip_succ", [`${mr.toFixed(1)}×`, String(c.ps.filter((x) => x >= St.SUCCESS.hit).length)]));
     const mv = median(c.views);
     if (mv != null) lines.push(t("an_act_tip_views", [cmp(mv)]));
     if (c.n === 1) lines.push(t("an_heat_tip_single"));

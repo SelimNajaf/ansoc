@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.12.0
+
+- **What works** and **Posting hours** now use the brain: every time window, posts-per-day, posts-per-week and gap is judged by the **Success** of its reels (comments + like rate), not by views. *2×* = that group brings twice the success of the store's average reel. Reels younger than 3 days are left out (their comments are still coming).
+- Posting hours tooltip shows how many 🎯 hits each hour had.
+- The CSV export has *success_score* and *success_tier* columns.
+
 ## 2.11.0
 
 - **The brain — Success score (0–100)** replaces *vs typical* in the Reels table. Learned from the reels you picked as successful in 4 stores: what sets them apart is **many comments** (with "Comment X" calls to action, every comment is a lead) and a **high like rate**, both compared with the store's own reels. Tested on stores it did not learn from, it puts your picks on top far better than views alone (23 of 28 vs 12 of 28).
