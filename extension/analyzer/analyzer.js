@@ -1820,7 +1820,7 @@ function initFilterPop() {
 }
 
 function jobStatusCell(row) {
-  const td = el("td", { class: "st" });
+  const td = el("td", { class: "st c-st" });
   const jobId = state.jobs.get(row.code);
   const job = jobId && state.jobById.get(jobId);
   if (!job) return td;
@@ -1836,7 +1836,7 @@ function jobStatusCell(row) {
     case S.CANCELLED: txt = t("status_cancelled"); break;
     default: txt = job.status;
   }
-  td.className = "st " + job.status;
+  td.className = "st c-st " + job.status;
   td.textContent = txt;
   td.title = job.errorDetail || txt;
   if (job.status === S.DUPLICATE) {
@@ -2297,24 +2297,24 @@ function summaryRow(rows) {
   const ts = rows.map((r) => r.ts).filter((x) => x > 0);
   return el("tr", { class: "sumrow" }, [
     el("td"),
-    el("td", { colspan: "2", class: "sum-label" }, [
+    el("td", { colspan: "2", class: "sum-label" }, [el("div", { class: "sum-flex" }, [
       // the two lines here name the two lines of every value cell: average, then median
-      el("div", { text: t("an_sum_label") }),
-      el("div", { class: "sum-med", text: t("an_sum_median") }),
-      el("div", { class: "sum-n", title: t("an_sum_count", [String(rows.length), cmp(tViews)]), text: t("an_sum_count", [String(rows.length), cmp(tViews)]) }),
-    ]),
+      el("div", {}, [el("div", { text: t("an_sum_label") }), el("div", { class: "sum-med", text: t("an_sum_median") })]),
+      el("div", { class: "sum-meta" }, [
+        el("div", { class: "sum-n", text: t("an_sum_count", [String(rows.length), cmp(tViews)]) }),
+        el("div", { class: "sum-med", text: ts.length ? `${dateShort(Math.min(...ts))} – ${dateShort(Math.max(...ts))}` : "" }),
+      ]),
+    ])]),
     cellOf((r) => r.views, (x) => cmp(Math.round(x))),
     cellOf((r) => r.score, (x) => `${x.toFixed(1)}×`),
-    cellOf((r) => r.likes, (x) => cmp(Math.round(x))),
+    cellOf((r) => r.vpd, (x) => cmp(Math.round(x))),
+    ((c) => (c.classList.add("grp"), c))(cellOf((r) => r.likes, (x) => cmp(Math.round(x)))),
     cellOf((r) => r.comments, (x) => cmp(Math.round(x))),
     cellOf((r) => r.er, pctFine, tViews ? t("an_sum_pooled", [pctFine(pooled(tLikes + tComments))]) : ""),
     cellOf((r) => r.likeRate, pctFine, tViews ? t("an_sum_pooled", [pctFine(pooled(tLikes))]) : ""),
     cellOf((r) => r.commentRate, pctFine, tViews ? t("an_sum_pooled", [pctFine(pooled(tComments))]) : ""),
     cellOf((r) => r.erAdj, signed),
-    cellOf((r) => r.vpd, (x) => cmp(Math.round(x))),
-    el("td", { class: "muted small", text: ts.length ? `${dateShort(Math.min(...ts))} – ${dateShort(Math.max(...ts))}` : "" }),
-    el("td"),
-    el("td"),
+    el("td", { class: "c-st" }),
   ]);
 }
 
@@ -2346,8 +2346,8 @@ function renderTable() {
     if (r.thumbnail && /^https:\/\/[^/]*(cdninstagram\.com|fbcdn\.net)\//.test(r.thumbnail)) {
       thumb = el("img", { class: "thumb", alt: "", loading: "lazy", referrerpolicy: "no-referrer" });
       thumb.src = r.thumbnail;
-      thumb.addEventListener("error", () => thumb.replaceWith(el("span", { class: "thumb ph", text: "Reel" })));
-    } else thumb = el("span", { class: "thumb ph", text: "Reel" });
+      thumb.addEventListener("error", () => thumb.replaceWith(el("span", { class: "thumb ph", "aria-hidden": "true", text: "▶" })));
+    } else thumb = el("span", { class: "thumb ph", "aria-hidden": "true", text: "▶" });
     // the preview opens the details panel; the rest of the row selects
     const preview = el("button", {
       type: "button", class: "thumb-btn" + (state.openCode === r.code ? " open" : ""),
@@ -2358,28 +2358,38 @@ function renderTable() {
     const pf = r.perf;
     const scoreCls = pf ? pf.tier : "";
     const scoreTip = signalsText(r);
-    const caption = el("td", { class: "caption" }, [
-      // the list API has no captions any more: show the one fetched for the details panel, if any
-      el("a", { href: r.url, target: "_blank", rel: "noopener noreferrer", title: captionOf(r) || r.url, text: captionOf(r) || r.url }),
-      r.pinned ? el("span", { class: "pin", text: "📌" }) : null,
-    ]);
+    // one "Reel" cell: preview, date + time, and the caption (or a short link when it isn't loaded yet)
+    const cap = (captionOf(r) || "").replace(/\s+/g, " ").trim();
+    const d = r.ts ? new Date(r.ts) : null;
+    const reel = el("td", { class: "c-reel" }, [el("div", { class: "reel" }, [
+      preview,
+      el("div", { class: "reel-txt" }, [
+        el("div", { class: "reel-date", title: d ? d.toLocaleString(LANG) : "" }, [
+          el("span", { text: d ? dateLong(r.ts) : "–" }),
+          d ? el("span", { class: "reel-time", text: `${p2(d.getHours())}:${p2(d.getMinutes())}` }) : null,
+          r.pinned ? el("span", { class: "pin", title: t("an_pinned"), text: "📌" }) : null,
+        ]),
+        el("a", {
+          class: "reel-cap" + (cap ? "" : " empty"), href: r.url, target: "_blank", rel: "noopener noreferrer",
+          title: cap || r.url, text: cap || t("an_open_ig"),
+        }),
+      ]),
+    ])]);
     const tr = el("tr", { class: "clickable" + (state.selected.has(r.code) ? " sel" : "") + (state.openCode === r.code ? " open" : ""), title: t("an_row_hint") }, [
       el("td", { class: "c-check" }, [cb]),
-      el("td", { class: "num muted", text: r.rank ? String(r.rank) : String(i + 1) }),
-      el("td", { class: "c-thumb" }, [preview]),
+      el("td", { class: "num muted c-rank", text: r.rank ? String(r.rank) : String(i + 1) }),
+      reel,
       viewsCell(r),
       el("td", { class: "num" }, [r.score != null ? el("span", {
         class: "score " + scoreCls + (pf && pf.winner ? " winner" : ""), title: scoreTip, text: `${r.score.toFixed(1)}×`,
       }) : null]),
-      el("td", { class: "num", text: r.likes != null ? cmp(r.likes) : "–" }),
+      el("td", { class: "num", title: t("an_tip_vpd"), text: r.vpd != null ? cmp(Math.round(r.vpd)) : "–" }),
+      el("td", { class: "num grp", text: r.likes != null ? cmp(r.likes) : "–" }),
       el("td", { class: "num", text: r.comments != null ? cmp(r.comments) : "–" }),
       erCell(r),
       el("td", { class: "num", text: r.likeRate != null ? pctFine(r.likeRate) : "–" }),
       el("td", { class: "num", text: r.commentRate != null ? pctFine(r.commentRate) : "–" }),
       erAdjCell(r),
-      el("td", { class: "num", title: t("an_tip_vpd"), text: r.vpd != null ? cmp(Math.round(r.vpd)) : "–" }),
-      el("td", { class: "muted", title: r.ts ? new Date(r.ts).toLocaleString(LANG) : "", text: r.ts ? dateLong(r.ts) : "" }),
-      caption,
       jobStatusCell(r),
     ]);
     // click anywhere else on the row ticks / unticks it (Shift+click: the whole range from the last click)
@@ -2420,6 +2430,7 @@ function renderTable() {
     body.append(tr);
   });
   if (rows.length > 1) body.prepend(summaryRow(rows));
+  $("reelTable").classList.toggle("no-jobs", !state.jobs.size);
   renderHeads();
   const all = rows.length > 0 && rows.every((r) => state.selected.has(r.code));
   $("checkAll").checked = all;

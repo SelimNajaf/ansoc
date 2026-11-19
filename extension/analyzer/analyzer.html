@@ -211,9 +211,9 @@
             <strong id="selCount">0</strong> <span data-i18n="an_selected"></span>
             <span id="selViews" class="muted small"></span>
           </div>
-          <label class="field inline grow">
-            <span class="small" data-i18n="an_folder"></span>
-            <input id="collectionInput" type="text" spellcheck="false">
+          <label class="ab-folder" data-i18n-title="an_folder">
+            <span class="ab-folder-i" aria-hidden="true">📁</span>
+            <input id="collectionInput" type="text" spellcheck="false" data-i18n-aria="an_folder">
           </label>
           <button type="button" id="copyLinks" data-i18n="an_copy_links"></button>
           <button type="button" id="copyCaptions" data-i18n="an_copy_captions"></button>
@@ -221,7 +221,29 @@
           <button type="button" id="downloadSel" class="primary" data-i18n="an_download_selected"></button>
           <div id="actionMsg" class="small action-msg" aria-live="polite"></div>
         </div>
-        <div class="legend small er-legend">
+        <div class="table-wrap">
+          <table id="reelTable">
+            <thead>
+              <tr>
+                <th class="c-check"><input type="checkbox" id="checkAll" aria-label="Select all shown"></th>
+                <th class="num c-rank">#</th>
+                <th class="fh c-reel" data-key="date"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_reel"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="views"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_views"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="score"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_score"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="vpd"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_vpd"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh grp" data-key="likes"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likes"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="comments"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_comments"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="er"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_er"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="likeRate"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likeRate"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="commentRate"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_commentRate"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="erAdj"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_erAdj"></span><i class="fh-sort"></i></button></th>
+                <th class="c-st" data-i18n="an_col_status"></th>
+              </tr>
+            </thead>
+            <tbody id="reelBody"></tbody>
+          </table>
+        </div>
+        <div class="legend small er-legend table-foot">
           <span data-i18n="an_lg_score"></span>
           <span><i class="lg-score viral">12×</i> <span data-i18n="an_sig_viral"></span></span>
           <span><i class="lg-score strong">3×</i> <span data-i18n="an_sig_strong"></span></span>
@@ -232,30 +254,6 @@
           <span data-i18n="an_er_bar"></span>
           <span><i class="sw like"></i><span data-i18n="an_col_likes"></span></span>
           <span><i class="sw comment"></i><span data-i18n="an_col_comments"></span></span>
-        </div>
-        <div class="table-wrap">
-          <table id="reelTable">
-            <thead>
-              <tr>
-                <th class="c-check"><input type="checkbox" id="checkAll" aria-label="Select all shown"></th>
-                <th class="num">#</th>
-                <th></th>
-                <th class="num fh" data-key="views"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_views"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="score"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_score"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="likes"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likes"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="comments"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_comments"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="er"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_er"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="likeRate"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likeRate"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="commentRate"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_commentRate"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="erAdj"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_erAdj"></span><i class="fh-sort"></i></button></th>
-                <th class="num fh" data-key="vpd"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_vpd"></span><i class="fh-sort"></i></button></th>
-                <th class="fh" data-key="date"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_date"></span><i class="fh-sort"></i></button></th>
-                <th data-i18n="an_col_caption"></th>
-                <th data-i18n="an_col_status"></th>
-              </tr>
-            </thead>
-            <tbody id="reelBody"></tbody>
-          </table>
         </div>
       </section>
     </div>

@@ -669,7 +669,7 @@
     "message": "Comments per view z = $1 (≥ 2) for this reach, and at least 5 comments."
   },
   "an_col_erAdj": {
-    "message": "ER vs expected"
+    "message": "ER vs exp."
   },
   "an_tip_eradj": {
     "message": "ER $1 · expected for this reach $2 · z = $3"
@@ -810,7 +810,7 @@
     "message": "Average"
   },
   "an_sum_count": {
-    "message": "$1 · $2 views"
+    "message": "$1 reels · $2 views"
   },
   "an_sum_tip": {
     "message": "Average $1 · median $2 · $3 reels"
@@ -1339,5 +1339,14 @@
   },
   "an_fp_sort_auto": {
     "message": "Current order (automatic)"
+  },
+  "an_col_reel": {
+    "message": "Reel"
+  },
+  "an_open_ig": {
+    "message": "Open on Instagram ↗"
+  },
+  "an_pinned": {
+    "message": "Pinned"
   }
 }

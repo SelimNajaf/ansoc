@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.9.0
+
+- **Reels table, rebuilt:** the table fits the page, no sideways scrolling and no cut-off links.
+  - One **Reel** column: preview, date + time, and the description on one line (or *Open on Instagram ↗* when it isn't loaded yet). Click its header to sort by date.
+  - Columns in two groups with a thin divider: *Views · vs typical · Views/day* | *Likes · Comments · Engagement · Like rate · Comment rate · ER vs exp.*
+  - The *Average* row keeps *Average / Median* on the left and the number of reels, total views and the dates on the right, on one line each.
+  - The *Download* column only appears once you download something from this page.
+  - Slimmer toolbar (📁 folder field instead of a label); the colour legend moved under the table.
+
 ## 2.8.1
 
 - **No empty spaces:** the top tiles, the posting tiles and the *What works* tiles stretch to fill their row. Short one-line subtitles everywhere.
