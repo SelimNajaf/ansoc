@@ -565,6 +565,112 @@
     return out;
   }
 
+  /*
+   * IDEAL POSTING TIME (brain 2): the store's own best stretch of hours, any length from 1 to 12
+   * hours, wrapping past midnight. Every contiguous window is scored by the LOWER bound of its
+   * success lift (mean success of its reels / store mean, minus 1.28 standard errors = the 10th
+   * percentile): a narrow window must be clearly better to beat a wide one with more reels behind
+   * it, so the window widens or narrows with the evidence. A window needs >= 10 % of the reels
+   * (min 6) and posts at both edges. A second, separate window is reported when it is also good.
+   * Input: items {hour 0-23, p}. Also returns a smooth hourly curve (circular kernel, sigma 1.5 h).
+   */
+  function bestTimeWindows(items, opts) {
+    opts = opts || {};
+    const ok = items.filter((it) => Number.isInteger(it.hour) && Number.isFinite(it.p));
+    const N = ok.length;
+    const all = N ? ok.reduce((a, it) => a + it.p, 0) / N : 0;
+    const hours = Array.from({ length: 24 }, () => []);
+    for (const it of ok) hours[it.hour].push(it.p);
+    const hourly = hours.map((l) => ({ n: l.length, lift: l.length && all > 0 ? l.reduce((a, b) => a + b, 0) / l.length / all : null }));
+    // smooth curve: kernel-weighted mean success around each hour (circular)
+    const curve = hours.map((_, h) => {
+      let w = 0;
+      let sp = 0;
+      for (let k = 0; k < 24; k++) {
+        const d = Math.min(Math.abs(k - h), 24 - Math.abs(k - h));
+        const g = Math.exp(-0.5 * (d / 1.5) ** 2);
+        for (const p of hours[k]) { w += g; sp += g * p; }
+      }
+      // only where there are posts in that hour or the next one on either side (no guessing in gaps)
+      const near = hours[h].length || hours[(h + 1) % 24].length || hours[(h + 23) % 24].length;
+      return near && w > 0.5 && all > 0 ? sp / w / all : null;
+    });
+    if (N < 8 || !(all > 0)) return { best: null, second: null, hourly, curve, n: N };
+    const minN = Math.max(6, Math.round(N * 0.1));
+    const maxLen = opts.maxLen || 12;
+    const cands = [];
+    for (let start = 0; start < 24; start++) {
+      if (!hours[start].length) continue;
+      const ps = [];
+      for (let len = 1; len <= maxLen; len++) {
+        const h = (start + len - 1) % 24;
+        ps.push(...hours[h]);
+        if (ps.length < minN || !hours[h].length) continue;
+        const m = ps.reduce((a, b) => a + b, 0) / ps.length;
+        const sd = Math.sqrt(ps.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, ps.length - 1));
+        const se = sd / Math.sqrt(ps.length);
+        cands.push({ start, len, n: ps.length, lift: m / all, lo: Math.max(0, (m - 1.28 * se) / all), hi: (m + 1.28 * se) / all });
+      }
+    }
+    cands.sort((a, b) => b.lo - a.lo || b.lift - a.lift);
+    const best = cands.find((c) => c.lift > 1) || null;
+    const inside = (w, h) => ((h - w.start + 24) % 24) < w.len;
+    const overlaps = (a, b) => { for (let k = 0; k < b.len; k++) if (inside(a, (b.start + k) % 24)) return true; return false; };
+    const second = best ? cands.find((c) => !overlaps(best, c) && c.lift >= 1.15 && c.lo >= 0.85) || null : null;
+    const conf = (w) => (w ? (w.lo > 1 ? "clear" : w.lift >= 1.15 ? "likely" : "few") : "few");
+    if (best) best.confidence = conf(best);
+    if (second) second.confidence = conf(second);
+    return { best, second, hourly, curve, n: N };
+  }
+
+  /*
+   * IDEAL POSTS PER DAY (brain 3): how does a reel's success change with the number of reels
+   * posted that day? A straight line on log(posts that day), fitted on every reel:
+   *   success per reel(n) = a + b * ln(n),   success per day(n) = n * success per reel(n)
+   * (the expected number of hits that day). Ideal = the smallest n that already gives 90 % of the
+   * best day the curve allows (more posts beyond that add little), within the counts the store
+   * actually used. Days are also grouped as they really happened, to draw next to the curve.
+   * Input: items {day "YYYY-MM-DD", n = posts that day, p}. Caution: busy days can coincide
+   * with a hot product, so this is a pattern, not proof.
+   */
+  function postsPerDay(items) {
+    const ok = items.filter((it) => it.n >= 1 && Number.isFinite(it.p));
+    const N = ok.length;
+    if (N < 8) return null;
+    const maxN = Math.min(15, Math.max(...ok.map((it) => it.n)));
+    const xs = ok.map((it) => Math.log(it.n));
+    const ys = ok.map((it) => it.p);
+    const mx = xs.reduce((a, b) => a + b, 0) / N;
+    const my = ys.reduce((a, b) => a + b, 0) / N;
+    const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0);
+    const b = sxx > 0 ? xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / sxx : 0;
+    const a = my - b * mx;
+    const curve = [];
+    for (let n = 1; n <= maxN; n++) {
+      const per = Math.max(0, a + b * Math.log(n));
+      curve.push({ n, perReel: per, perDay: per * n });
+    }
+    const top = curve.reduce((m, c) => (c.perDay > m.perDay ? c : m));
+    const ideal = curve.find((c) => c.perDay >= 0.9 * top.perDay) || top;
+    // real days grouped by how many reels they had
+    const days = new Map();
+    for (const it of ok) {
+      if (!days.has(it.day)) days.set(it.day, { n: it.n, sum: 0 });
+      days.get(it.day).sum += it.p;
+    }
+    const groups = new Map();
+    for (const d of days.values()) {
+      const n = Math.min(d.n, maxN);
+      if (!groups.has(n)) groups.set(n, []);
+      groups.get(n).push(d.sum);
+    }
+    const actual = [...groups.entries()].sort((x, y) => x[0] - y[0])
+      .map(([n, l]) => ({ n, days: l.length, perDay: l.reduce((s, x) => s + x, 0) / l.length }));
+    const nDays = days.size;
+    const confidence = nDays >= 20 && actual.filter((g) => g.days >= 3).length >= 3 ? "likely" : "few";
+    return { a, b, curve, ideal, top, actual, maxN, days: nDays, confidence, mean: my };
+  }
+
   /** "clear" = interval entirely above (or below) 1x, "likely" = enough reels, "few" = too few. */
   function effectConfidence(e) {
     if (!e.enough) return "few";
@@ -668,6 +774,6 @@
   PD.stats = {
     quantile, summarize, niceStep, linearBins, logBins, densestRange, compact,
     DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods,
-    effectConfidence, bestEffect, BUCKETS, success, SUCCESS, successEffect,
+    effectConfidence, bestEffect, BUCKETS, success, SUCCESS, successEffect, bestTimeWindows, postsPerDay,
   };
 })(typeof globalThis !== "undefined" ? globalThis : self);

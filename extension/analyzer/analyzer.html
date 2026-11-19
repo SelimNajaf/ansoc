@@ -173,28 +173,19 @@
         <div class="ww">
           <div class="heat-head">
             <h3 class="sub"><span data-i18n="ww_title"></span> <span class="info" data-i18n-title="ww_info">ⓘ</span></h3>
-            <span id="wwNote" class="muted small"></span>
+            <div class="controls small">
+              <span id="wwNote" class="muted small"></span>
+              <span class="csv-export">
+                <button type="button" id="csvBtn" class="chipbtn csv-btn" data-i18n="an_csv_btn"></button>
+                <select id="csvFormat" class="csv-fmt" data-i18n-aria="an_csv_format">
+                  <option value="excel">Excel (;)</option>
+                  <option value="standard">Standard (,)</option>
+                </select>
+              </span>
+            </div>
           </div>
           <div id="wwTiles" class="fx-tiles"></div>
           <div id="wwChart" class="ww-chart"></div>
-        </div>
-        <div class="heat-head">
-          <h3 class="sub"><span data-i18n="an_when_title"></span> <span class="info" data-i18n-title="an_act_note">ⓘ</span></h3>
-          <div class="controls small">
-            <span class="csv-export">
-              <button type="button" id="csvBtn" class="chipbtn csv-btn" data-i18n="an_csv_btn"></button>
-              <select id="csvFormat" class="csv-fmt" data-i18n-aria="an_csv_format">
-                <option value="excel">Excel (;)</option>
-                <option value="standard">Standard (,)</option>
-              </select>
-            </span>
-          </div>
-        </div>
-        <div id="heatmap" class="heatmap-wrap"></div>
-        <div class="legend small">
-          <span data-i18n="an_hours_lg_height"></span>
-          <span><i class="sw h-sw bad"></i><i class="sw h-sw"></i><i class="sw h-sw good"></i> <span data-i18n="an_hours_lg_color"></span></span>
-          <span class="muted" data-i18n="an_heat_lg_thin"></span>
         </div>
       </section>
 

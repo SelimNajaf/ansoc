@@ -720,3 +720,28 @@ body.shot-flash::after { content: ""; position: fixed; inset: 0; z-index: 99; ba
 @keyframes shot-flash { from { opacity: .7; } to { opacity: 0; } }
 body.shooting .shot-msg { visibility: hidden; }
 body.shooting .shot-btn { animation: none; }
+
+/* What works: flexible best-window hours chart + posts-per-day chart */
+.hc-wrap svg { min-width: 640px; }
+.hc .hc-band.best { fill: color-mix(in srgb, var(--good) 13%, transparent); stroke: color-mix(in srgb, var(--good) 70%, transparent); stroke-width: 1.5; }
+.hc .hc-band.also { fill: color-mix(in srgb, var(--good) 6%, transparent); stroke: color-mix(in srgb, var(--good) 35%, transparent); stroke-dasharray: 4 3; }
+.hc .hc-label { font-size: 12px; font-weight: 800; }
+.hc .hc-label.best { fill: var(--good); }
+.hc .hc-label.also { fill: color-mix(in srgb, var(--good) 75%, var(--muted)); font-weight: 600; }
+.hc .hc-bar { fill: var(--neutral); }
+.hc .hc-bar.good { fill: var(--good); }
+.hc .hc-bar.bad { fill: var(--bad); }
+.hc .hc-bar.day { fill: url(#gData) var(--data); }
+.hc .hc-bar.thin { opacity: .4; }
+.hc .hc-n { fill: var(--muted); font-size: 10.5px; font-weight: 700; }
+.hc .hc-hour.midnight { fill: var(--fg); font-weight: 800; }
+.hc .hc-one { stroke: color-mix(in srgb, var(--fg) 35%, transparent); stroke-dasharray: 4 4; }
+.hc .hc-mid { stroke: color-mix(in srgb, var(--fg) 25%, transparent); }
+.hc .hc-curve { fill: none; stroke: var(--info); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.hc .hc-dot { fill: var(--surface); stroke: var(--info); stroke-width: 2; }
+.hc .succ-axis { fill: var(--info); }
+.hc .hc-hit { fill: transparent; cursor: help; }
+.hc .hc-hit:hover { fill: color-mix(in srgb, var(--fg) 5%, transparent); }
+.hc-sw-bar { background: var(--good); }
+.sw.line.hc-sw-curve { border-top: 2.5px solid var(--info); }
+.hc-sw-band { background: color-mix(in srgb, var(--good) 20%, transparent); box-shadow: inset 0 0 0 1px var(--good); }

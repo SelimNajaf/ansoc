@@ -931,8 +931,7 @@ function renderActivity() {
   $("activityRange").textContent = t("an_act_range", [dateLong(a.first), dateLong(state.windowEnd), String(a.spanDays), String(a.n)]);
   renderActivityCards();
   renderActivityChart();
-  renderWhatWorks(); // before the heatmap: it outlines the best window
-  renderHeatmap();
+  renderWhatWorks();
 }
 
 /** Posting KPIs: pace, last 30 days vs the 30 before, gaps, last post, hot reel (click = open it). */
@@ -1138,6 +1137,9 @@ function wwItems() {
     }
     out.push({
       p: r.success.p,
+      hour: d.getHours(),
+      day: dateKey(r.ts),
+      nDay: perDay.get(St.dayStart(r.ts)) || 1,
       window: St.BUCKETS.window.of(d.getHours()),
       perDay: St.BUCKETS.perDay.of(perDay.get(St.dayStart(r.ts)) || 1),
       perWeek: St.BUCKETS.perWeek.of(week),
@@ -1153,24 +1155,191 @@ function renderWhatWorks() {
   tiles.replaceChildren();
   $("wwChart").replaceChildren();
   state.wwEffects = {};
-  for (const [key, dim] of Object.entries(WW_DIMS)) {
-    state.wwEffects[key] = St.successEffect(items.map((it) => ({ group: it[key], p: it.p })));
-  }
+  for (const key of ["perWeek", "gap"]) state.wwEffects[key] = St.successEffect(items.map((it) => ({ group: it[key], p: it.p })));
+  // the two timing brains: the store's own best stretch of hours, and the best number of reels a day
+  state.wwTime = St.bestTimeWindows(items.map((it) => ({ hour: it.hour, p: it.p })));
+  state.wwDay = St.postsPerDay(items.map((it) => ({ day: it.day, n: it.nDay, p: it.p })));
   $("wwNote").textContent = t("ww_note", [String(items.length)]);
-  if (!state.wwDim) state.wwDim = "window";
-  for (const [key, dim] of Object.entries(WW_DIMS)) {
-    const node = PD.effectsUI.tile(dim.icon, dim.title, state.wwEffects[key], dim.label, () => {
-      state.wwDim = key;
-      renderWhatWorks();
-    });
+  if (!state.wwDim || !["window", "perDay", "perWeek", "gap"].includes(state.wwDim)) state.wwDim = "window";
+  const pick = (key) => () => {
+    state.wwDim = key;
+    renderWhatWorks();
+  };
+  const conf = (c) => el("span", { class: `fx-conf ${c}`, title: t(`fx_conf_${c}`), text: c === "clear" ? "●●●" : c === "likely" ? "●●○" : "●○○" });
+  const tile = (key, icon, titleKey, value, pill, pillTone, sub, c) => {
+    const node = el("button", { type: "button", class: "fx-tile" + (value ? "" : " empty") + (state.wwDim === key ? " on" : ""), onclick: pick(key) }, [
+      el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon", text: icon }), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
+      el("div", { class: "fx-tile-val", text: value || t("fx_not_enough") }),
+      value ? el("div", { class: "fx-tile-sub" }, [pill ? el("span", { class: "fx-pill " + pillTone, text: pill }) : null, el("span", { class: "fx-tile-n", text: sub }), conf(c)])
+        : el("div", { class: "fx-tile-sub muted", text: t("fx_need_more") }),
+    ]);
+    tiles.append(node);
+  };
+  const w = state.wwTime.best;
+  tile("window", "⏰", "ww_time", w ? windowLabel(w) : "", w ? PD.effectsUI.fmt(w.lift) : "", w ? (w.lift >= 1.05 ? "good" : "mid") : "",
+    w ? t("ww_window_sub", [String(w.len), String(w.n)]) : "", w ? w.confidence : "few");
+  const dd = state.wwDay;
+  tile("perDay", "🔁", "ww_per_day", dd ? t(dd.ideal.n >= dd.maxN && dd.top.n === dd.maxN ? "ww_per_day_edge" : "ww_per_day_v2", [String(dd.ideal.n)]) : "",
+    dd ? t("ww_hits_day", [dd.ideal.perDay.toFixed(1)]) : "", "good", dd ? t("ww_days", [String(dd.days)]) : "", dd ? dd.confidence : "few");
+  for (const key of ["perWeek", "gap"]) {
+    const dim = WW_DIMS[key];
+    const node = PD.effectsUI.tile(dim.icon, dim.title, state.wwEffects[key], dim.label, pick(key));
     node.classList.toggle("on", state.wwDim === key);
     tiles.append(node);
   }
-  const dim = WW_DIMS[state.wwDim];
-  $("wwChart").append(PD.effectsUI.bars(state.wwEffects[state.wwDim], { order: dim.order, label: dim.label }));
-  // the best time window is also outlined on the heatmap
-  const best = St.bestEffect(state.wwEffects.window);
-  state.bestWindow = best ? best.group : null;
+  const box = $("wwChart");
+  if (state.wwDim === "window") box.append(hoursChart(state.wwTime));
+  else if (state.wwDim === "perDay") box.append(perDayChart(state.wwDay));
+  else {
+    const dim = WW_DIMS[state.wwDim];
+    box.append(PD.effectsUI.bars(state.wwEffects[state.wwDim], { order: dim.order, label: dim.label }));
+  }
+}
+
+const windowLabel = (w) => `${p2h(w.start)}:00–${p2h((w.start + w.len) % 24)}:00`;
+
+/**
+ * Posting hours, 12:00 -> 11:00 (midnight in the middle). Bars: reels posted in that hour, colored
+ * by their success vs usual. Line: smooth success curve (right axis, log scale, 1x dashed).
+ * The best window (any width) is a green band; a second good window a lighter one.
+ */
+function hoursChart(tw) {
+  const W = 900;
+  const H = 260;
+  const m = { l: 34, r: 44, t: 40, b: 28 };
+  const pw = W - m.l - m.r;
+  const ph = H - m.t - m.b;
+  const cw = pw / 24;
+  const col = (h) => HEAT_HOURS.indexOf(h);
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, class: "hc", role: "img", "aria-label": t("ww_time") });
+  const maxN = Math.max(1, ...tw.hourly.map((x) => x.n));
+  const yStep = Math.max(1, Math.round(St.niceStep(maxN, 4)));
+  const yMax = Math.ceil(maxN / yStep) * yStep;
+  // success axis: log2 from 1/4x to 4x
+  const LIM = 2;
+  const ly = (lift) => m.t + ph / 2 - (Math.max(-LIM, Math.min(LIM, Math.log2(Math.max(lift, 1e-3)))) / LIM) * (ph / 2);
+  for (let y = 0; y <= yMax; y += yStep) {
+    const yy = m.t + ph - (y / yMax) * ph;
+    root.append(svg("line", { class: "grid", x1: m.l, x2: W - m.r, y1: yy, y2: yy }));
+    root.append(svg("text", { class: "axis", x: m.l - 6, y: yy + 4, "text-anchor": "end" }, String(y)));
+  }
+  root.append(svg("text", { class: "axis", x: 4, y: 12 }, t("an_act_axis_y")));
+  for (const [v, lab] of [[0.5, "0.5×"], [1, "1×"], [2, "2×"]]) {
+    root.append(svg("text", { class: "axis succ-axis", x: W - m.r + 6, y: ly(v) + 4 }, lab));
+  }
+  root.append(svg("text", { class: "axis succ-axis", x: W - 4, y: 12, "text-anchor": "end" }, t("ww_axis_success")));
+  // windows as bands (a window crossing 12:00 is drawn in two parts)
+  const band = (w, cls, label) => {
+    const cols = [];
+    for (let k = 0; k < w.len; k++) cols.push(col((w.start + k) % 24));
+    cols.sort((a, b) => a - b);
+    const runs = [];
+    for (const c of cols) {
+      if (runs.length && runs[runs.length - 1][1] === c - 1) runs[runs.length - 1][1] = c;
+      else runs.push([c, c]);
+    }
+    for (const [a, b] of runs) {
+      root.append(svg("rect", { class: `hc-band ${cls}`, x: m.l + a * cw + 1, y: m.t - 22, width: (b - a + 1) * cw - 2, height: ph + 22, rx: 8 }));
+    }
+    const first = runs.reduce((x, r) => (r[1] - r[0] > x[1] - x[0] ? r : x));
+    const cx = m.l + ((first[0] + first[1] + 1) / 2) * cw;
+    const tx = Math.max(m.l + 90, Math.min(W - m.r - 90, cx));
+    root.append(svg("text", { class: `hc-label ${cls}`, x: tx, y: m.t - 8, "text-anchor": "middle" }, label));
+  };
+  if (tw.second) band(tw.second, "also", `${t("ww_also")} ${windowLabel(tw.second)} · ${PD.effectsUI.fmt(tw.second.lift)}`);
+  if (tw.best) band(tw.best, "best", `★ ${windowLabel(tw.best)} · ${PD.effectsUI.fmt(tw.best.lift)}`);
+  // 1x reference
+  root.append(svg("line", { class: "hc-one", x1: m.l, x2: W - m.r, y1: ly(1), y2: ly(1) }));
+  // bars
+  HEAT_HOURS.forEach((h, i) => {
+    const c = tw.hourly[h];
+    const x = m.l + i * cw;
+    if (c.n) {
+      const bh = Math.max(3, (c.n / yMax) * ph);
+      const tone = c.lift == null ? "" : c.lift >= 1.2 ? " good" : c.lift <= 0.8 ? " bad" : "";
+      const strength = c.lift == null ? 0 : Math.min(1, Math.abs(Math.log2(Math.max(c.lift, 0.01))) / 2);
+      const r = svg("rect", { class: "hc-bar" + tone + (c.n === 1 ? " thin" : ""), x: x + 3, y: m.t + ph - bh, width: cw - 6, height: bh, rx: 3 });
+      if (tone) r.style.opacity = String(0.45 + 0.55 * strength);
+      root.append(r);
+      root.append(svg("text", { class: "hc-n", x: x + cw / 2, y: m.t + ph - bh - 4, "text-anchor": "middle" }, String(c.n)));
+    }
+    const lab = svg("text", { class: "axis hc-hour" + (h === 0 ? " midnight" : ""), x: x + cw / 2, y: H - 10, "text-anchor": "middle" }, p2h(h));
+    root.append(lab);
+    // hover target with the hour's numbers
+    const hit = svg("rect", { class: "hc-hit", x, y: m.t - 22, width: cw, height: ph + 22 });
+    const lines = [hourRange(h), t("an_reels_count", [String(c.n)])];
+    if (c.lift != null) lines.push(t("an_hours_tip_succ", [`${c.lift.toFixed(1)}×`, String(state.rows.filter((r) => r.ts && new Date(r.ts).getHours() === h && TIER_FILTERS.hit(r)).length)]));
+    hit.append(svg("title", {}, lines.join("\n")));
+    root.append(hit);
+  });
+  // midnight divider
+  const mx = m.l + col(0) * cw;
+  root.append(svg("line", { class: "hc-mid", x1: mx, x2: mx, y1: m.t, y2: m.t + ph }));
+  // smooth success curve
+  // the curve breaks where there is no data instead of drawing across the gap
+  let seg = [];
+  const flush = () => {
+    if (seg.length > 1) root.append(svg("polyline", { class: "hc-curve", points: seg.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ") }));
+    seg = [];
+  };
+  HEAT_HOURS.forEach((h, i) => {
+    if (tw.curve[h] == null) flush();
+    else seg.push([m.l + i * cw + cw / 2, ly(tw.curve[h])]);
+  });
+  flush();
+  const wrap = el("div", { class: "chart-wrap hc-wrap" }, [root]);
+  const legend = el("div", { class: "legend small" }, [
+    el("span", {}, [el("i", { class: "sw hc-sw-bar" }), el("span", { text: t("ww_lg_bars") })]),
+    el("span", {}, [el("i", { class: "sw line hc-sw-curve" }), el("span", { text: t("ww_lg_curve") })]),
+    el("span", {}, [el("i", { class: "sw hc-sw-band" }), el("span", { text: t("ww_lg_band") })]),
+  ]);
+  return el("div", {}, [wrap, legend]);
+}
+
+/** Reels per day: real days (bars, hits per day on average) next to the fitted curve; ideal = green. */
+function perDayChart(dd) {
+  if (!dd) return el("p", { class: "muted small", text: t("fx_need_more") });
+  const W = 900;
+  const H = 240;
+  const m = { l: 40, r: 16, t: 40, b: 40 };
+  const pw = W - m.l - m.r;
+  const ph = H - m.t - m.b;
+  const cw = pw / dd.maxN;
+  const yMaxRaw = Math.max(0.1, ...dd.actual.map((g) => g.perDay), ...dd.curve.map((c) => c.perDay));
+  const yStep = St.niceStep(yMaxRaw, 4);
+  const yMax = Math.ceil(yMaxRaw / yStep) * yStep;
+  const y = (v) => m.t + ph - (v / yMax) * ph;
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, class: "hc", role: "img", "aria-label": t("ww_per_day") });
+  for (let v = 0; v <= yMax + 1e-9; v += yStep) {
+    root.append(svg("line", { class: "grid", x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }));
+    root.append(svg("text", { class: "axis", x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, v < 1 ? v.toFixed(1) : String(Math.round(v * 10) / 10)));
+  }
+  root.append(svg("text", { class: "axis", x: 4, y: 12 }, t("ww_axis_hits_day")));
+  const ix = dd.ideal.n - 1;
+  root.append(svg("rect", { class: "hc-band best", x: m.l + ix * cw + 1, y: m.t - 22, width: cw - 2, height: ph + 22, rx: 8 }));
+  root.append(svg("text", { class: "hc-label best", x: Math.max(m.l + 80, Math.min(W - m.r - 80, m.l + (ix + 0.5) * cw)), y: m.t - 8, "text-anchor": "middle" },
+    `★ ${t("ww_per_day_v2", [String(dd.ideal.n)])} · ${t("ww_hits_day", [dd.ideal.perDay.toFixed(1)])}`));
+  const byN = new Map(dd.actual.map((g) => [g.n, g]));
+  for (let n = 1; n <= dd.maxN; n++) {
+    const x = m.l + (n - 1) * cw;
+    const g = byN.get(n);
+    if (g) {
+      const r = svg("rect", { class: "hc-bar day" + (g.days < 2 ? " thin" : ""), x: x + cw * 0.2, y: y(g.perDay), width: cw * 0.6, height: Math.max(2, m.t + ph - y(g.perDay)), rx: 3 });
+      r.append(svg("title", {}, t("ww_day_tip", [String(n), String(g.days), g.perDay.toFixed(2)])));
+      root.append(r);
+      root.append(svg("text", { class: "hc-n", x: x + cw / 2, y: m.t + ph + 28, "text-anchor": "middle" }, t("ww_days_short", [String(g.days)])));
+    }
+    root.append(svg("text", { class: "axis hc-hour" + (n === dd.ideal.n ? " midnight" : ""), x: x + cw / 2, y: m.t + ph + 14, "text-anchor": "middle" }, String(n)));
+  }
+  const pts = dd.curve.map((c) => [m.l + (c.n - 0.5) * cw, y(c.perDay)]);
+  root.append(svg("polyline", { class: "hc-curve", points: pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ") }));
+  for (const [px, py] of pts) root.append(svg("circle", { class: "hc-dot", cx: px, cy: py, r: 3 }));
+  const legend = el("div", { class: "legend small" }, [
+    el("span", {}, [el("i", { class: "sw hc-sw-bar" }), el("span", { text: t("ww_lg_days") })]),
+    el("span", {}, [el("i", { class: "sw line hc-sw-curve" }), el("span", { text: t("ww_lg_fit") })]),
+    el("span", { class: "muted", text: t("ww_lg_caution") }),
+  ]);
+  return el("div", {}, [el("div", { class: "chart-wrap hc-wrap" }, [root]), legend]);
 }
 
 // ------------------------------------------------------------------ CSV export (timing + performance)
@@ -1285,59 +1454,6 @@ function dateKey(ts) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function renderHeatmap() {
-  const box = $("heatmap");
-  box.replaceChildren();
-  const byHour = Array.from({ length: 24 }, () => ({ n: 0, views: [], ps: [] }));
-  for (const r of state.rows) {
-    if (!r.ts) continue;
-    const c = byHour[new Date(r.ts).getHours()];
-    c.n++;
-    if (r.views != null) c.views.push(r.views);
-    if (r.success && !(r.perf && r.perf.isNew)) c.ps.push(r.success.p);
-  }
-  // success of an hour vs the average reel (1× = usual), the same measure as "What works"
-  const allPs = byHour.flatMap((c) => c.ps);
-  const avgP = allPs.length ? allPs.reduce((a, b) => a + b, 0) / allPs.length : 0;
-  const maxN = Math.max(1, ...byHour.map((c) => c.n));
-  // columns run 12:00 -> 23:00 -> 00:00 -> 11:00: midnight sits in the middle, so a night of posting
-  // (evening into early morning) stays one block instead of being split over both edges
-  const inBest = (h) => state.bestWindow != null && h >= state.bestWindow && h < state.bestWindow + 3;
-  const chart = el("div", { class: "hours", role: "list", "aria-label": t("an_when_title") });
-  for (const h of HEAT_HOURS) {
-    const c = byHour[h];
-    const mr = c.ps.length && avgP > 0 ? c.ps.reduce((a, b) => a + b, 0) / c.ps.length / avgP : null;
-    let cls = "hcol";
-    if (h === 0) cls += " midnight";
-    if (inBest(h)) cls += " best" + (h === state.bestWindow ? " best-first" : h === state.bestWindow + 2 ? " best-last" : "");
-    if (c.n === 1) cls += " thin"; // a single reel is an anecdote, not a pattern
-    const lines = [hourRange(h), t("an_reels_count", [String(c.n)])];
-    if (mr != null) lines.push(t("an_hours_tip_succ", [`${mr.toFixed(1)}×`, String(c.ps.filter((x) => x >= St.SUCCESS.hit).length)]));
-    const mv = median(c.views);
-    if (mv != null) lines.push(t("an_act_tip_views", [cmp(mv)]));
-    if (c.n === 1) lines.push(t("an_heat_tip_single"));
-    const col = el("div", { class: cls, role: "listitem", title: lines.join("\n") });
-    const tone = mr == null ? "" : mr >= 1.2 ? " good" : mr <= 0.8 ? " bad" : " mid";
-    col.append(el("span", { class: "h-ratio" + tone, text: mr == null ? "" : `${mr.toFixed(1)}×` }));
-    const track = el("div", { class: "h-track" });
-    if (c.n) {
-      const bar = el("div", { class: "h-bar" });
-      bar.style.height = `${Math.max(6, Math.round((c.n / maxN) * 100))}%`;
-      if (mr != null && tone !== " mid") {
-        // log2 scale: the further from 1x, the stronger the green / red (4x or 1/4x = full color)
-        const sc = Math.min(1, Math.abs(Math.log2(mr)) / 2);
-        bar.classList.add(tone.trim());
-        bar.style.setProperty("--s", `${Math.round(45 + sc * 55)}%`);
-      }
-      bar.append(el("span", { class: "h-n", text: String(c.n) }));
-      track.append(bar);
-    }
-    col.append(track);
-    col.append(el("span", { class: "h-hour", text: inBest(h) && h === state.bestWindow + 1 ? "★" : p2h(h) }));
-    chart.append(col);
-  }
-  box.append(chart);
-}
 
 // ------------------------------------------------------------------ table: an ordered chain of filters
 // Click a column header -> a slider for that column. Filters run in the order they were added:

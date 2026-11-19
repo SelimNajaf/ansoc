@@ -1092,7 +1092,7 @@
     "message": "What works"
   },
   "ww_info": {
-    "message": "Success (comments + like rate) of each group vs this store's average reel: 1× = usual, 2× = twice the success. Bars: green = better, red = worse; thin line = likely range. ●●● clear · ●●○ likely · ●○○ too few reels. Reels younger than 3 days are left out."
+    "message": "Judged by success (comments + like rate) vs this store's average reel. Best time: the store's own best stretch of hours — 1 to 12 hours wide, chosen by how sure it is. Posts per day: the fewest reels a day that already bring ~90 % of the best day. ●●● clear · ●●○ likely · ●○○ too few reels. Reels younger than 3 days are left out."
   },
   "ww_note": {
     "message": "$1 reels"
@@ -1357,5 +1357,53 @@
   },
   "an_shot_err": {
     "message": "Screenshot failed: $1"
+  },
+  "ww_window_sub": {
+    "message": "$1 h · $2 reels"
+  },
+  "ww_per_day_v2": {
+    "message": "$1 / day"
+  },
+  "ww_per_day_edge": {
+    "message": "$1+ / day"
+  },
+  "ww_hits_day": {
+    "message": "≈ $1 hits/day"
+  },
+  "ww_days": {
+    "message": "$1 days"
+  },
+  "ww_days_short": {
+    "message": "$1 d"
+  },
+  "ww_also": {
+    "message": "Also good"
+  },
+  "ww_axis_success": {
+    "message": "success"
+  },
+  "ww_axis_hits_day": {
+    "message": "hits / day"
+  },
+  "ww_lg_bars": {
+    "message": "Reels posted (color = success)"
+  },
+  "ww_lg_curve": {
+    "message": "Success vs usual"
+  },
+  "ww_lg_band": {
+    "message": "Best window (any width)"
+  },
+  "ww_lg_days": {
+    "message": "Real days: hits per day"
+  },
+  "ww_lg_fit": {
+    "message": "Trend"
+  },
+  "ww_lg_caution": {
+    "message": "busy days can also be days with a hot product"
+  },
+  "ww_day_tip": {
+    "message": "$1 reels that day · $2 days · ≈ $3 hits/day"
   }
 }

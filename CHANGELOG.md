@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.15.0
+
+- **Best time, found per store and any width:** What works now finds the store's own best stretch of posting hours — from 1 to 12 hours wide, also across midnight (e.g. *21:00–04:00* or *03:00–11:00*). A narrow window has to be clearly better to win over a wide one with more reels behind it, so the window widens or narrows with the evidence. A second good window is shown when there is one.
+- **New hours chart** (replaces *Posting hours*): bars = reels posted per hour (green / red = more / less success than usual), a blue success curve, and the best window as a green band of any width.
+- **Ideal posts per day:** the fewest reels a day that already bring about 90 % of the best day (in expected hits per day), with a chart of the real days and the trend. "4+ / day" means it was still rising at the most they ever posted.
+- The CSV button moved next to *What works*.
+
 ## 2.14.2
 
 - **📷 screenshot:** the picture now ends where the page ends (no empty dark strip at the bottom).
