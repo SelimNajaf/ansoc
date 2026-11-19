@@ -393,7 +393,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (area === "local" && (changes.updateState || changes.updateInfo)) renderUpdate();
   });
   renderUpdate();
-  send({ type: "updateInfo", force: false, maxAgeMs: 30 * 60 * 1000 }).then(renderUpdate); // popup: at most every 30 min
+  send({ type: "updateInfo", force: false, maxAgeMs: 60 * 1000 }).then(renderUpdate); // popup: fresh every time it opens (max 1 min old)
 });
 
 // ------------------------------------------------------------------------ updates

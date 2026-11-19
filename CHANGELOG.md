@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.15.1
+
+- **Updates show up right away:** the popup now checks for a new version every time you open it (it used to wait up to 30 minutes).
+
 ## 2.15.0
 
 - **Best time, found per store and any width:** What works now finds the store's own best stretch of posting hours — from 1 to 12 hours wide, also across midnight (e.g. *21:00–04:00* or *03:00–11:00*). A narrow window has to be clearly better to win over a wide one with more reels behind it, so the window widens or narrows with the evidence. A second good window is shown when there is one.
