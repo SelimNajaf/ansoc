@@ -585,7 +585,7 @@
     "message": "Active days"
   },
   "an_act_active_sub": {
-    "message": "posted on $1 of $2 days"
+    "message": "$1 of $2 days"
   },
   "an_tip_active": {
     "message": "Share of days with at least one reel."
@@ -810,7 +810,7 @@
     "message": "Average"
   },
   "an_sum_count": {
-    "message": "$1 reels, $2 views"
+    "message": "$1 · $2 views"
   },
   "an_sum_tip": {
     "message": "Average $1 · median $2 · $3 reels"
@@ -1320,7 +1320,7 @@
     "message": "Hot now"
   },
   "an_kpi_hot_sub": {
-    "message": "views / day · best new reel"
+    "message": "views / day"
   },
   "an_viral_word": {
     "message": "Viral"
@@ -1336,5 +1336,8 @@
   },
   "fx_better": {
     "message": "better"
+  },
+  "an_fp_sort_auto": {
+    "message": "Current order (automatic)"
   }
 }

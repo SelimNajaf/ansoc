@@ -1002,9 +1002,11 @@ function renderActivityChart() {
   const maxC = Math.max(...bins.map((b) => b.count), 1);
   const yStep = Math.max(1, Math.round(St.niceStep(maxC, 5)));
   const yMax = Math.ceil(maxC / yStep) * yStep;
-  const maxV = Math.max(...bins.map((b) => lineVal(b) || 0), 1);
-  const vStep = St.niceStep(maxV, 5);
-  const vMax = Math.ceil(maxV / vStep) * vStep;
+  // views on a log scale (one viral interval would flatten all the others); 0 sits on the floor
+  const pos = bins.map(lineVal).filter((v) => v > 0);
+  const lo10 = pos.length ? Math.floor(Math.log10(Math.min(...pos))) : 0;
+  const hi10 = Math.max(lo10 + 1, pos.length ? Math.ceil(Math.log10(Math.max(...pos))) : 1);
+  const vy = (v) => m.t + ph - (v > 0 ? Math.max(0, (Math.log10(v) - lo10) / (hi10 - lo10)) : 0) * ph;
   const bw = pw / bins.length;
   const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t("an_activity") });
   if (W > 900) root.style.minWidth = `${W}px`;
@@ -1016,9 +1018,14 @@ function renderActivityChart() {
   }
   root.append(svg("text", { class: "axis", x: 4, y: 14 }, t("an_act_axis_y")));
   if (line) {
-    for (let v = 0; v <= vMax; v += vStep) {
-      const yy = m.t + ph - (v / vMax) * ph;
-      root.append(svg("text", { class: "axis views", x: W - m.r + 6, y: yy + 4 }, cmp(v)));
+    // 1K · 10K · 100K …, plus 2 and 5 in between when the range is short
+    const mids = hi10 - lo10 <= 2 ? [1, 2, 5] : [1];
+    for (let e = lo10; e <= hi10; e++) {
+      for (const k of mids) {
+        const v = k * Math.pow(10, e);
+        if (v > Math.pow(10, hi10)) continue;
+        root.append(svg("text", { class: "axis views", x: W - m.r + 6, y: vy(v) + 4 }, cmp(v)));
+      }
     }
     root.append(svg("text", { class: "axis views", x: W - 4, y: 14, "text-anchor": "end" }, t(mode === "total" ? "an_act_axis_total" : "an_act_axis_y2")));
   }
@@ -1075,7 +1082,7 @@ function renderActivityChart() {
 
   if (line) {
     const pts = bins
-      .map((b, i) => (lineVal(b) == null ? null : [m.l + i * bw + bw / 2, m.t + ph - (lineVal(b) / vMax) * ph, b]))
+      .map((b, i) => (lineVal(b) == null ? null : [m.l + i * bw + bw / 2, vy(lineVal(b)), b]))
       .filter(Boolean);
     root.append(svg("polyline", { class: "vline-views", points: pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ") }));
     if (pts.length <= 120) {
@@ -1534,15 +1541,19 @@ function openFilterPop(key, anchor) {
   renderFilterPop();
   placeFilterPop();
   const pop = $("fpop");
+  clearTimeout(fpop.hideT);
   pop.hidden = false;
-  requestAnimationFrame(() => requestAnimationFrame(() => pop.classList.add("open")));
+  pop.classList.remove("open", "closing");
+  void pop.offsetWidth; // restart the drop animation (also when moving to another column)
+  pop.classList.add("open");
   renderHeads();
   renderTable();
 }
 function closeFilterPop() {
   const pop = $("fpop");
-  if (pop.hidden) return;
+  if (pop.hidden || pop.classList.contains("closing")) return;
   pop.classList.remove("open");
+  pop.classList.add("closing");
   fpop.key = null;
   fpop.step = null;
   const before = state.filters.length;
@@ -1551,7 +1562,8 @@ function closeFilterPop() {
   clearTimeout(fpop.hideT);
   fpop.hideT = setTimeout(() => {
     if (!pop.classList.contains("open")) pop.hidden = true;
-  }, 260);
+    pop.classList.remove("closing");
+  }, 320);
   renderHeads();
   for (const c of document.querySelectorAll(".fc-chip.on")) c.classList.remove("on");
 }
@@ -1580,9 +1592,12 @@ function renderFilterPop() {
   const { pool, index } = popPool();
   const s = currentSort();
   const sortBtn = (dir, label) => el("button", {
-    type: "button", class: "seg-btn" + (s.key === key && s.dir === dir ? " on" : ""), text: label,
+    type: "button", class: "seg-btn" + (state.sort && state.sort.key === key && state.sort.dir === dir ? " on" : ""), text: label,
+    title: s.key === key && s.dir === dir && !state.sort ? t("an_fp_sort_auto") : "",
     onclick: () => {
-      state.sort = { key, dir };
+      // a second click on the chosen order goes back to the automatic one
+      const on = state.sort && state.sort.key === key && state.sort.dir === dir;
+      state.sort = on ? null : { key, dir };
       renderFilterPop();
       renderTable();
     },
@@ -1610,18 +1625,44 @@ function renderFilterPop() {
   const readout = el("div", { class: "fp-read" }, [
     el("span", { class: "fp-val", id: "fpVal" }), el("span", { class: "fp-kept", id: "fpKept" }),
   ]);
-  // histogram of the reels this step sees, bars inside the range lit
-  const BINS = 28;
-  const counts = new Array(BINS).fill(0);
-  for (const v of sc.vals) {
-    const b = Math.floor(((toU(v, key) - sc.lo) / (sc.hi - sc.lo)) * BINS);
-    counts[Math.max(0, Math.min(BINS - 1, b))]++;
+  // smooth density of the reels this step sees (no empty columns), the part inside the range lit
+  const us = sc.vals.map((v) => toU(v, key)).sort((x, y) => x - y);
+  const span = sc.hi - sc.lo;
+  let bwU = span * 0.04;
+  if (us.length > 1) {
+    const avg = us.reduce((x, y) => x + y, 0) / us.length;
+    const sd = Math.sqrt(us.reduce((x, y) => x + (y - avg) ** 2, 0) / (us.length - 1));
+    const iqr = St.quantile(us, 0.75) - St.quantile(us, 0.25);
+    const spread = Math.min(sd, iqr / 1.34) || sd;
+    bwU = Math.max(span * 0.025, 0.9 * spread * Math.pow(us.length, -0.2));
   }
-  const maxC = Math.max(1, ...counts);
-  const hist = el("div", { class: "fp-hist" }, counts.map((c) => el("i", { style: `height:${c ? 8 + (c / maxC) * 92 : 0}%` })));
+  const NPT = 100;
+  const dens = Array.from({ length: NPT + 1 }, (_, i) => {
+    const x = sc.lo + (span * i) / NPT;
+    let d = 0;
+    for (const u of us) d += Math.exp(-0.5 * ((x - u) / bwU) ** 2);
+    return d;
+  });
+  const maxD = Math.max(1e-9, ...dens);
+  const pts = dens.map((d, i) => `${i},${(50 - (d / maxD) * 46).toFixed(2)}`).join(" L");
+  const area = `M0,50 L${pts} L${NPT},50 Z`;
+  const sv = (tag, attrs) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    return n;
+  };
+  const clipRect = sv("rect", { x: 0, y: 0, width: NPT, height: 50 });
+  const clip = sv("clipPath", { id: "fpClip" });
+  clip.append(clipRect);
+  const defs = sv("defs", {});
+  defs.append(clip);
+  const dsvg = sv("svg", { class: "fp-dens", viewBox: `0 0 ${NPT} 50`, preserveAspectRatio: "none", "aria-hidden": "true" });
+  dsvg.append(defs, sv("path", { class: "fp-area-base", d: area }), sv("path", { class: "fp-area", d: area, "clip-path": "url(#fpClip)" }),
+    sv("path", { class: "fp-line", d: `M${pts}`, "vector-effect": "non-scaling-stroke" }));
+  const hist = el("div", { class: "fp-hist" }, [dsvg]);
   const mean = sc.vals.length ? sc.vals.reduce((a, b) => a + b, 0) / sc.vals.length : null;
   if (mean != null) {
-    const x = ((toU(mean, key) - sc.lo) / (sc.hi - sc.lo)) * 100;
+    const x = ((toU(mean, key) - sc.lo) / span) * 100;
     if (x >= 0 && x <= 100) hist.append(el("b", { class: "fp-avg", style: `left:${x}%`, title: `${t("an_fp_avg")} ${metricText(mean, key)}` }));
   }
   // two thumbs on one track (own pointer handling: smooth on mouse, touch and keyboard)
@@ -1645,13 +1686,12 @@ function renderFilterPop() {
     tb.style.left = `${pos(hi)}%`;
     fill.style.left = `${pos(lo)}%`;
     fill.style.width = `${pos(hi) - pos(lo)}%`;
-    hist.querySelectorAll("i").forEach((bar, k) => {
-      const c0 = sc.lo + ((sc.hi - sc.lo) * k) / BINS;
-      const c1 = sc.lo + ((sc.hi - sc.lo) * (k + 1)) / BINS;
-      bar.classList.toggle("in", c1 > lo + 1e-9 && c0 < hi - 1e-9);
-    });
+    clipRect.setAttribute("x", pos(lo));
+    clipRect.setAttribute("width", Math.max(0, pos(hi) - pos(lo)));
     const half = sc.step / 2;
-    const cand = { key, min: lo <= sc.lo + half ? -Infinity : fromU(lo, key), max: hi >= sc.hi - half ? Infinity : fromU(hi, key) };
+    const cand = { key, min: lo <= sc.lo + half ? -Infinity : fromU(lo, key), max: hi >= sc.hi - half ? Infinity : fromU(hi, key), preset: null };
+    // a quick pick keeps its exact value (the average, a quantile) and stays marked as chosen
+    if (commit && commit.preset) Object.assign(cand, { min: commit.min, preset: commit.preset });
     ta.setAttribute("aria-valuetext", isFinite(cand.min) ? metricText(cand.min, key) : "–");
     tb.setAttribute("aria-valuetext", isFinite(cand.max) ? metricText(cand.max, key) : "–");
     // just opened / range switched: show the step as it is, not as rounded to this slider's grid
@@ -1667,6 +1707,7 @@ function renderFilterPop() {
       state.filters.push(cand);
     }
     scheduleTable();
+    markPresets();
   };
   const setVal = (which, u) => {
     u = snap(u);
@@ -1710,18 +1751,26 @@ function renderFilterPop() {
   }
   sync(false);
 
-  // quick picks + the slider's range
+  // quick picks (stay highlighted while they are the filter; a second click clears it) + the slider's range
   const qp = (label, q) => el("button", {
-    type: "button", class: "chipbtn", text: label,
+    type: "button", class: "chipbtn", text: label, "data-q": q,
     onclick: () => {
       const v = sc.vals.slice().sort((x, y) => x - y);
       if (!v.length) return;
-      const val = q === "avg" ? mean : v[Math.min(v.length - 1, Math.floor(q * v.length))];
-      lo = Math.min(snap(toU(val, key)), sc.hi);
       hi = sc.hi;
-      sync(true);
+      if (fpop.step && fpop.step.preset === q) {
+        lo = sc.lo;
+        return sync(true);
+      }
+      const val = q === "avg" ? mean : v[Math.min(v.length - 1, Math.floor(Number(q) * v.length))];
+      lo = Math.min(snap(toU(val, key)), sc.hi);
+      sync({ preset: q, min: val });
     },
   });
+  const quick = el("div", { class: "fp-quick" }, [qp(t("an_fp_avg_up"), "avg"), qp(t("an_fp_top", ["25"]), "0.75"), qp(t("an_fp_top", ["10"]), "0.9")]);
+  function markPresets() {
+    for (const b of quick.children) b.classList.toggle("on", !!fpop.step && fpop.step.preset === b.dataset.q);
+  }
   const modeBtn = (mode, label) => el("button", {
     type: "button", class: "seg-btn" + (fpop.mode === mode ? " on" : ""), text: label, title: t(`an_fp_${mode}_tip`),
     onclick: () => {
@@ -1730,13 +1779,14 @@ function renderFilterPop() {
     },
   });
   pop.append(el("div", { class: "fp-foot" }, [
-    el("div", { class: "fp-quick" }, [qp(t("an_fp_avg_up"), "avg"), qp(t("an_fp_top", ["25"]), 0.75), qp(t("an_fp_top", ["10"]), 0.9)]),
+    quick,
     STD_RANGE[key] ? el("div", { class: "seg" }, [modeBtn("data", t("an_fp_data")), modeBtn("std", t("an_fp_std"))]) : null,
   ]));
   pop.append(el("div", { class: "fp-actions" }, [
     fpop.step ? el("button", { type: "button", class: "link", text: t("an_fc_remove"), onclick: () => removeStep(fpop.step) }) : el("span"),
     el("button", { type: "button", class: "primary", text: t("an_fp_done"), onclick: closeFilterPop }),
   ]));
+  markPresets();
 }
 let tableRaf = 0;
 function scheduleTable() {
@@ -2249,11 +2299,9 @@ function summaryRow(rows) {
     el("td"),
     el("td", { colspan: "2", class: "sum-label" }, [
       // the two lines here name the two lines of every value cell: average, then median
-      el("div", { title: t("an_sum_count", [String(rows.length), cmp(tViews)]) }, [
-        el("span", { text: t("an_sum_label") }),
-        el("span", { class: "sum-n", text: ` · ${t("an_sum_count", [String(rows.length), cmp(tViews)])}` }),
-      ]),
+      el("div", { text: t("an_sum_label") }),
       el("div", { class: "sum-med", text: t("an_sum_median") }),
+      el("div", { class: "sum-n", title: t("an_sum_count", [String(rows.length), cmp(tViews)]), text: t("an_sum_count", [String(rows.length), cmp(tViews)]) }),
     ]),
     cellOf((r) => r.views, (x) => cmp(Math.round(x))),
     cellOf((r) => r.score, (x) => `${x.toFixed(1)}×`),

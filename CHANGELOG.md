@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.8.1
+
+- **No empty spaces:** the top tiles, the posting tiles and the *What works* tiles stretch to fill their row. Short one-line subtitles everywhere.
+- **Posting activity:** the views line uses a logarithmic scale (1K · 10K · 100K …), so one big week no longer flattens the rest.
+- **Filter panel:** opens and closes like a water drop. The chart inside is a smooth curve (no empty columns). *Above avg* / *Top 25%* / *Top 10%* stay highlighted when you open the panel again; click again to clear. Click *High* / *Low* a second time to go back to the normal order.
+- **Table:** the *Average* row no longer changes the width of the table when you filter.
+
 ## 2.8.0
 
 - **Top numbers, cleaner:** two groups, *Views* and *Engagement*. *Typical range* now has a small bar (min – max, the middle 50 %, median, P90). *Engagement mix* shows likes : comments as a bar. Removed: Viral / Strong / Winner / High engagement / Top 10 % tiles and *How is this calculated?*.
