@@ -179,35 +179,36 @@
   }
 
   // ========================================================================== toolbar UI
+  // Colors mirror extension/ui/tokens.css (a page stylesheet can't reach into this shadow root).
   const CSS = `
-    :host { all: initial; }
+    :host { all: initial; --surface: #fff; --soft: #f0f0f3; --fg: #16161a; --muted: #6c6c78; --good: #12924a; --bad: #d0244d;
+      --brand-grad: linear-gradient(135deg, #e60023, #ff6a3d 60%, #f59e0b); }
     .wrap { position: fixed; right: 18px; bottom: 18px; z-index: 2147483000; font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #111; background: #fff; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 10px; width: 250px; box-sizing: border-box; }
+      color: var(--fg); background: var(--surface); border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 10px; width: 250px; box-sizing: border-box; }
     .wrap.min { width: auto; padding: 6px; }
     .head { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 8px; }
     .wrap.min .head { margin: 0; }
     .wrap.min .body { display: none; }
-    .logo { width: 18px; height: 18px; border-radius: 50%; background: #e60023; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
+    .logo { width: 18px; height: 18px; border-radius: 50%; background: var(--brand-grad); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
     .grow { flex: 1; }
-    .icon { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 8px; color: #555; }
-    .icon:hover { background: #efefef; }
+    .icon { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 8px; color: var(--muted); }
+    .icon:hover { background: var(--soft); }
     .btns { display: flex; flex-direction: column; gap: 6px; }
-    button.b { border: 0; border-radius: 20px; padding: 8px 12px; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; background: #efefef; color: #111; }
-    button.b.primary { background: #e60023; color: #fff; }
+    button.b { border: 0; border-radius: 20px; padding: 8px 12px; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; background: var(--soft); color: var(--fg); }
+    button.b.primary { background: var(--brand-grad); color: #fff; }
     button.b:hover { filter: brightness(.95); }
     button.b:disabled { opacity: .55; cursor: default; }
     .status { margin-top: 8px; font-size: 12px; color: #444; word-break: break-word; }
-    .status.err { color: #b00020; }
-    .status.ok { color: #0a7a2f; }
-    .bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
+    .status.err { color: var(--bad); }
+    .status.ok { color: var(--good); }
+    .bar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
     .bar.on { display: block; }
-    .fill { height: 100%; width: 0; background: #e60023; transition: width .2s; }
+    .fill { height: 100%; width: 0; background: var(--brand-grad); transition: width .2s; }
     .fill.indet { width: 35%; animation: slide 1.1s infinite ease-in-out; }
     @keyframes slide { from { margin-left: -35%; } to { margin-left: 100%; } }
     .row { display: flex; gap: 6px; margin-top: 6px; }
     @media (prefers-color-scheme: dark) {
-      .wrap { background: #1e1e1e; color: #f1f1f1; } button.b { background: #333; color: #f1f1f1; }
-      .status { color: #ccc; } .bar { background: #333; } .icon { color: #bbb; } .icon:hover { background: #333; }
+      :host { --surface: #1b1b1e; --soft: #27272b; --fg: #f2f2f4; --muted: #9e9eaa; --good: #3ccf7a; --bad: #ff6b8a; }
     }`;
 
   const ui = {};

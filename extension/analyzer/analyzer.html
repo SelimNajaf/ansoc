@@ -4,9 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reels Analyzer</title>
+  <link rel="stylesheet" href="../ui/tokens.css">
   <link rel="stylesheet" href="analyzer.css">
 </head>
 <body>
+  <!-- shared chart fills (tokens.css: .g-data-*); referenced as url(#gData) by the bars -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <linearGradient id="gData" x1="0" y1="1" x2="0" y2="0"><stop class="g-data-1" offset="0"/><stop class="g-data-2" offset="1"/></linearGradient>
+  </svg>
   <header class="top">
     <span class="logo" aria-hidden="true">↓</span>
     <div class="grow">

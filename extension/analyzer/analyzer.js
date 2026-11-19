@@ -1317,7 +1317,7 @@ function renderHeatmap() {
       if (mr != null) {
         // log2 scale: 1x = neutral grey, 4x = full green, 1/4x = full red
         const sc = Math.max(-1, Math.min(1, Math.log2(mr) / 2));
-        bar.style.background = `color-mix(in srgb, ${sc >= 0 ? "var(--ok)" : "var(--err)"} ${Math.round(25 + Math.abs(sc) * 75)}%, var(--h-neutral))`;
+        bar.style.background = `color-mix(in srgb, ${sc >= 0 ? "var(--good)" : "var(--bad)"} ${Math.round(25 + Math.abs(sc) * 75)}%, var(--neutral))`;
       }
       bar.append(el("span", { class: "h-n", text: String(c.n) }));
       track.append(bar);

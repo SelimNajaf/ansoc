@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0
+
+- **One look everywhere:** the popup, the Reels Analyzer, Compare stores and the panel on Pinterest / TikTok / Instagram now share one design: the red → orange → gold colors of the loading screen.
+- **Colors mean something:** gold = a hit (viral, winner), green = better than usual, red = worse, blue = links and averages. The purple and pink are gone.
+- Buttons, progress bars and chart bars use the same flame gradient; winner chips are gold.
+
 ## 2.5.5
 
 - **New loading screen** for *Analyze*: a big counter of reels found, the profile and follower count, the three steps (Connect → Read reels → Fill gaps) and a live strip where every reel found appears as a bar (taller = more views, gold = a hit).

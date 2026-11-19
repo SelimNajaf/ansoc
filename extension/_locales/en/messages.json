@@ -1443,7 +1443,7 @@
     "message": "Compare stores"
   },
   "cmp_subtitle": {
-    "message": "What works across several stores: time, day, posting pace."
+    "message": "What works across several stores: posting hours and pace."
   },
   "cmp_drop": {
     "message": "Drop CSV files here"

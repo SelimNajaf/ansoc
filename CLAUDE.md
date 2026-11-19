@@ -78,6 +78,7 @@ extension/               Chrome MV3 extension (fixed ID via "key" in manifest.js
   background/            service worker: job queue, native messaging client, update check
   analyzer/              Reels Analyzer page (stats.js = pure statistics, testable in Node; effects.js = shared result bars)
   compare/               Compare stores page (loads the analyzer's CSV exports)
+  ui/tokens.css          design tokens + base components shared by every page (see DESIGN.md)
   popup/  content/  utils/
   _locales/en/           all UI text (English only)
 helper/                  Python helper, started by Chrome via Native Messaging
@@ -97,6 +98,8 @@ Update-*  Uninstall-*    end-user update / uninstall scripts
 - Instagram rate-limits quickly: keep Instagram downloads to one at a time (`PLATFORM_CONCURRENCY` in background.js), never prefetch details in bulk.
 - Temporary download folders live in the system temp dir, not the (often OneDrive-synced) Desktop.
 - Statistics (viral / strong / winner) are documented at the top of `performance()` in `extension/analyzer/stats.js`: robust z-score on log views against a time-local baseline; engagement judged against a Theil–Sen fit on reach.
+
+- **Design:** follow `DESIGN.md`. Colors, gradients, radii and font sizes come only from `extension/ui/tokens.css` (`var(--token)`); never hard-code a color. Gold = hit, green/rose = better/worse, brand gradient = actions.
 
 ### Checks before committing
 
