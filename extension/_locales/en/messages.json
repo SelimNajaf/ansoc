@@ -494,9 +494,6 @@
   "an_reels": {
     "message": "Reels"
   },
-  "an_show": {
-    "message": "Show"
-  },
   "an_all": {
     "message": "All"
   },
@@ -535,18 +532,6 @@
   },
   "an_clear_filter": {
     "message": "Show all"
-  },
-  "an_select": {
-    "message": "Select:"
-  },
-  "an_sel_viral": {
-    "message": "Viral"
-  },
-  "an_sel_shown": {
-    "message": "All shown"
-  },
-  "an_sel_none": {
-    "message": "None"
   },
   "an_selected": {
     "message": "selected"
@@ -619,9 +604,6 @@
   },
   "an_tip_vpd": {
     "message": "Views ÷ days since posting: what is hot now."
-  },
-  "an_sel_hot": {
-    "message": "Hot now (last 30 days)"
   },
   "an_act_range": {
     "message": "$1 – $2 · $4 reels in $3 days"
@@ -749,33 +731,6 @@
   "an_weekdays_long": {
     "message": "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
   },
-  "an_metric": {
-    "message": "Metric"
-  },
-  "an_thr_mean": {
-    "message": "Above average"
-  },
-  "an_thr_custom": {
-    "message": "Custom: above my value"
-  },
-  "an_thr_info_mean": {
-    "message": "$3 / $4 · $1 > $2 (avg)"
-  },
-  "an_thr_info_custom": {
-    "message": "$3 / $4 · $1 > $2"
-  },
-  "an_thr_all": {
-    "message": "$2 reels"
-  },
-  "an_thr_date": {
-    "message": "$2 reels · newest first"
-  },
-  "an_thr_hint": {
-    "message": "e.g. 10K, 1.5M (ER: 5 = 5%)"
-  },
-  "an_thr_bad": {
-    "message": "Not a number. e.g. 10K, 1.5M"
-  },
   "an_stat_strong": {
     "message": "Strong reels"
   },
@@ -838,24 +793,6 @@
   },
   "an_viral_line": {
     "message": "Viral ≈"
-  },
-  "an_thr_strong": {
-    "message": "Strong or viral"
-  },
-  "an_thr_viral": {
-    "message": "Viral only"
-  },
-  "an_thr_winner": {
-    "message": "Winner candidates"
-  },
-  "an_thr_engaged": {
-    "message": "High engagement / talked about"
-  },
-  "an_thr_info_tier": {
-    "message": "$2 / $3 · $1"
-  },
-  "an_sel_winner": {
-    "message": "Winners"
   },
   "an_sig_viral": {
     "message": "VIRAL"
@@ -1021,9 +958,6 @@
   },
   "an_lg_new": {
     "message": "New (< 3 days)"
-  },
-  "an_thr_rising": {
-    "message": "Rising (new and already strong)"
   },
   "an_ins_rising": {
     "message": "$1 new reels are already strong and still growing."
@@ -1510,5 +1444,86 @@
   },
   "an_ld_hint": {
     "message": "Each bar is a reel: taller = more views, gold = a hit."
+  },
+  "an_fc_total": {
+    "message": "Reels before filters"
+  },
+  "an_fc_chip_tip": {
+    "message": "$1 → $2 reels · click to edit · drag to reorder"
+  },
+  "an_fc_remove": {
+    "message": "Remove"
+  },
+  "an_fc_hint": {
+    "message": "Click a column header to filter"
+  },
+  "an_fc_clear": {
+    "message": "Clear all"
+  },
+  "an_fp_new": {
+    "message": "Newest"
+  },
+  "an_fp_old": {
+    "message": "Oldest"
+  },
+  "an_fp_high": {
+    "message": "High"
+  },
+  "an_fp_low": {
+    "message": "Low"
+  },
+  "an_fp_avg": {
+    "message": "Average"
+  },
+  "an_fp_kept": {
+    "message": "$1 / $2 reels"
+  },
+  "an_fp_avg_up": {
+    "message": "Above avg"
+  },
+  "an_fp_top": {
+    "message": "Top $1%"
+  },
+  "an_fp_data": {
+    "message": "Data"
+  },
+  "an_fp_std": {
+    "message": "Standard"
+  },
+  "an_fp_data_tip": {
+    "message": "Slider from the lowest to the highest value of these reels"
+  },
+  "an_fp_std_tip": {
+    "message": "Slider over a fixed, typical range"
+  },
+  "an_fp_done": {
+    "message": "Done"
+  },
+  "an_fh_tip": {
+    "message": "Filter & sort"
+  },
+  "an_fh_sort_tip": {
+    "message": "Sort"
+  },
+  "an_fp_min": {
+    "message": "Minimum"
+  },
+  "an_fp_max": {
+    "message": "Maximum"
+  },
+  "an_tier_viral": {
+    "message": "Viral"
+  },
+  "an_tier_strong": {
+    "message": "Strong+"
+  },
+  "an_tier_winner": {
+    "message": "Winners"
+  },
+  "an_tier_engaged": {
+    "message": "Engaged"
+  },
+  "an_tier_rising": {
+    "message": "Rising"
   }
 }

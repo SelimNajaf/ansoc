@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.7.0
+
+- **Filters on the Reels table:** click a column header (Views, Engagement, Comment rate …) and a panel slides open with a slider, a small chart of the values and the average. Drag the two handles, or pick *Above avg* / *Top 25%* / *Top 10%*. *Data* = slider from the lowest to the highest reel, *Standard* = a fixed typical range.
+- **Filters in order:** each filter gets a number (① ② ③) and only sees the reels the filters before it kept. The chain above the table shows how many are left after each step; drag a chip to change the order, × to remove it.
+- **Sort** from the same panel (High / Low); without a choice the table is sorted by the first filter.
+- The *Select: Viral / Winners / Hot …* buttons and the *Metric / Show* menus are gone. Clicking 🚀 viral or 🏆 winners in the facts still shows them, as the first filter.
+
 ## 2.6.0
 
 - **One look everywhere:** the popup, the Reels Analyzer, Compare stores and the panel on Pinterest / TikTok / Instagram now share one design: the red → orange → gold colors of the loading screen.

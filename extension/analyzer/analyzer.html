@@ -199,50 +199,12 @@
       <section class="card">
         <div class="section-head">
           <h2 data-i18n="an_reels"></h2>
-          <div class="controls">
-            <label class="field inline small"><span data-i18n="an_metric"></span>
-              <select id="sortSelect">
-                <option value="views" data-i18n="an_col_views"></option>
-                <option value="score" data-i18n="an_col_score"></option>
-                <option value="likes" data-i18n="an_col_likes"></option>
-                <option value="comments" data-i18n="an_col_comments"></option>
-                <option value="er" data-i18n="an_col_er"></option>
-                <option value="likeRate" data-i18n="an_col_likeRate"></option>
-                <option value="commentRate" data-i18n="an_col_commentRate"></option>
-                <option value="commentShare" data-i18n="an_col_commentShare"></option>
-                <option value="erAdj" data-i18n="an_col_erAdj"></option>
-                <option value="vpd" data-i18n="an_col_vpd"></option>
-                <option value="date" data-i18n="an_col_date"></option>
-              </select>
-            </label>
-            <label class="field inline small"><span data-i18n="an_show"></span>
-              <select id="thresholdSelect">
-                <option value="strong" data-i18n="an_thr_strong"></option>
-                <option value="viral" data-i18n="an_thr_viral"></option>
-                <option value="winner" data-i18n="an_thr_winner"></option>
-                <option value="rising" data-i18n="an_thr_rising"></option>
-                <option value="engaged" data-i18n="an_thr_engaged"></option>
-                <option value="mean" data-i18n="an_thr_mean" selected></option>
-                <option value="custom" data-i18n="an_thr_custom"></option>
-                <option value="all" data-i18n="an_all"></option>
-              </select>
-            </label>
-            <input id="customInput" class="custom-thr" type="text" inputmode="decimal" spellcheck="false" hidden>
-          </div>
         </div>
         <div id="filterBar" class="filterbar small" hidden>
           <span id="filterText"></span>
           <button type="button" id="clearFilter" class="link" data-i18n="an_clear_filter"></button>
         </div>
-        <div id="thresholdInfo" class="thr-info small muted"></div>
-        <div class="quick small">
-          <span data-i18n="an_select"></span>
-          <button type="button" class="chipbtn" id="selViral" data-i18n="an_sel_viral"></button>
-          <button type="button" class="chipbtn" id="selWinner" data-i18n="an_sel_winner"></button>
-          <button type="button" class="chipbtn" id="selHot" data-i18n="an_sel_hot"></button>
-          <button type="button" class="chipbtn" id="selShown" data-i18n="an_sel_shown"></button>
-          <button type="button" class="chipbtn" id="selNone" data-i18n="an_sel_none"></button>
-        </div>
+        <div id="filterChain" class="fchain small" aria-live="polite"></div>
         <div id="actionBar" class="actionbar" hidden>
           <div class="sel-info">
             <strong id="selCount">0</strong> <span data-i18n="an_selected"></span>
@@ -277,15 +239,16 @@
                 <th class="c-check"><input type="checkbox" id="checkAll" aria-label="Select all shown"></th>
                 <th class="num">#</th>
                 <th></th>
-                <th class="num" data-i18n="an_col_views"></th>
-                <th class="num" data-i18n="an_col_score" title=""></th>                <th class="num" data-i18n="an_col_likes"></th>
-                <th class="num" data-i18n="an_col_comments"></th>
-                <th class="num" data-i18n="an_col_er"></th>
-                <th class="num" data-i18n="an_col_likeRate"></th>
-                <th class="num" data-i18n="an_col_commentRate"></th>
-                <th class="num" data-i18n="an_col_erAdj"></th>
-                <th class="num" data-i18n="an_col_vpd"></th>
-                <th data-i18n="an_col_date"></th>
+                <th class="num fh" data-key="views"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_views"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="score"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_score"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="likes"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likes"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="comments"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_comments"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="er"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_er"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="likeRate"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_likeRate"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="commentRate"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_commentRate"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="erAdj"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_erAdj"></span><i class="fh-sort"></i></button></th>
+                <th class="num fh" data-key="vpd"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_vpd"></span><i class="fh-sort"></i></button></th>
+                <th class="fh" data-key="date"><button type="button" class="fh-btn"><i class="fh-i"></i><span data-i18n="an_col_date"></span><i class="fh-sort"></i></button></th>
                 <th data-i18n="an_col_caption"></th>
                 <th data-i18n="an_col_status"></th>
               </tr>
@@ -296,6 +259,8 @@
       </section>
     </div>
   </main>
+
+  <div id="fpop" class="fpop" role="dialog" aria-modal="false" hidden></div>
 
   <dialog id="capDialog" class="capdlg" aria-labelledby="capTitle">
     <div class="capdlg-head">

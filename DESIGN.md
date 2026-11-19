@@ -69,11 +69,13 @@ Weights: 400 text, 600 buttons/labels, 700–800 numbers and titles.
 | Logo | `<span class="logo">↓</span>` — gradient circle, size set by the page |
 
 Page-level components (in `analyzer.css`): `.card`, `.stat` tiles, `.fact` chips, `.sig` signal chips,
-`.fx-tile` / `.fx-bar` result tiles and effect bars, `.seg` segmented switch, the loader (`.ld-*`).
+`.fx-tile` / `.fx-bar` result tiles and effect bars, `.seg` segmented switch, the loader (`.ld-*`),
+the filter panel (`.fpop`: opens with `--ease-io`, slider thumbs `.fp-thumb`, numbered steps `.fc-chip` / `.fh-i` in the brand gradient).
 
 ## 6. Motion
 
-- `--t-fast` .15s for hover, `--t` .25s for state changes, `--ease` for slides, `--ease-pop` for bars that grow.
+- `--t-fast` .15s for hover, `--t` .25s for state changes, `--ease` for slides, `--ease-pop` for bars that grow,
+  `--ease-io` (ease-in-out) for panels that open and close.
 - Loops only while something is happening (loading, a rising reel). `prefers-reduced-motion` turns animations off globally.
 
 ## 7. Checklist for a new screen or feature

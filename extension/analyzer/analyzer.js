@@ -19,10 +19,9 @@ const state = {
   interval: null, // activity chart bucket size in days (null = automatic)
   viewsLine: "median", // activity chart line: "median" | "total" | "off"
   activity: null, // PD.stats.postingStats result
-  // table: "strong" | "viral" | "winner" | "engaged" (statistical groups) | "mean" | "custom" | "all"
-  threshold: "mean",
-  custom: "", // typed custom threshold, e.g. "10K"
-  sort: "views",
+  // table: ordered filter steps [{key, min, max} | {tier}], then the sort ({key, dir}; null = automatic)
+  filters: [],
+  sort: null,
   selected: new Set(), // codes
   jobs: new Map(), // code -> jobId
   jobById: new Map(), // jobId -> job
@@ -282,6 +281,9 @@ function load(data, cachedAt) {
   state.openCode = null; // a new profile closes the details panel
   $("drawer").hidden = true;
   state.filter = null;
+  state.filters = []; // a new profile starts unfiltered
+  state.sort = null;
+  closeFilterPop();
   state.selected.clear();
   // "now" = when the data was fetched, so a cached result keeps its own frame of reference
   state.now = cachedAt || Date.now();
@@ -859,14 +861,6 @@ function fact(icon, text, opts) {
   return node;
 }
 
-/** Show a group of reels in the table (used by the clickable facts). */
-function showInTable(threshold) {
-  state.threshold = threshold;
-  $("thresholdSelect").value = threshold;
-  state.filter = null;
-  renderTable();
-  $("reelTable").closest(".card").scrollIntoView({ behavior: "smooth", block: "start" });
-}
 
 function renderInsights() {
   const s = state.stats;
@@ -1361,33 +1355,12 @@ function renderActivityInsights() {
   if (state.data.truncated) add("⚠️", t("f_truncated", [String(state.data.count)]), { tone: "warn", title: t("an_ai_truncated", [String(state.data.count)]) });
 }
 
-// ------------------------------------------------------------------ table
-function visibleRows() {
-  let rows = state.rows.slice();
-  const f = state.filter;
-  if (f && f.kind === "views") rows = rows.filter((r) => r.views != null && r.views >= f.from && r.views < f.to);
-  if (f && f.kind === "date") rows = rows.filter((r) => r.ts >= f.from && r.ts < f.to);
-  const key = state.sort;
-  // A clicked chart bar shows every reel of that interval; otherwise the "above X" filter of the chosen metric.
-  const thr = f ? null : currentThreshold();
-  if (thr && thr.test) rows = rows.filter(thr.test);
-  else if (thr) rows = rows.filter((r) => isNum(metricVal(r, key)) && metricVal(r, key) > thr.value);
-  rows.sort((a, b) => {
-    const x = metricVal(a, key);
-    const y = metricVal(b, key);
-    return isNum(y) ? (isNum(x) ? y - x : 1) : isNum(x) ? -1 : 0;
-  });
-  return rows;
-}
-
-// ------------------------------------------------------------------ table filter: "above average" / "above X"
+// ------------------------------------------------------------------ table: an ordered chain of filters
+// Click a column header -> a slider for that column. Filters run in the order they were added:
+// step 2 only sees the reels that step 1 kept, so its slider and histogram span what is left.
 const isNum = (x) => typeof x === "number" && isFinite(x);
 const metricVal = (r, key) => (key === "date" ? r.ts || null : r[key]);
-const CUSTOM_PLACEHOLDER = {
-  views: "10K", likes: "500", comments: "50", er: "5 (%)", vpd: "1K", score: "3", erAdj: "1.5",
-  likeRate: "4 (%)", commentRate: "0.1 (%)", commentShare: "5 (%)",
-};
-// statistical groups (independent of the chosen metric, which then only sorts)
+// statistical groups (from the clickable facts): a step without a slider
 const TIER_FILTERS = {
   viral: (r) => !!r.perf && r.perf.tier === "viral",
   strong: (r) => !!r.perf && (r.perf.tier === "viral" || r.perf.tier === "strong"),
@@ -1395,13 +1368,16 @@ const TIER_FILTERS = {
   engaged: (r) => !!r.perf && (r.perf.highEr || r.perf.talk),
   rising: (r) => !!r.perf && r.perf.rising,
 };
-
-function metricMean(key) {
-  const v = state.rows.map((r) => metricVal(r, key)).filter(isNum);
-  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
-}
-// metrics typed and shown in percent
+const TIER_ICON = { viral: "🚀", strong: "💪", winner: "🏆", engaged: "💬", rising: "🌱" };
+// metrics shown in percent
 const PCT_KEYS = new Set(["er", "likeRate", "commentRate", "commentShare"]);
+// counts spread over orders of magnitude: the slider moves on a log scale
+const LOG_KEYS = new Set(["views", "likes", "comments", "vpd"]);
+// "Standard" slider range (the other choice is the min - max of the reels left)
+const STD_RANGE = {
+  views: [1e3, 1e7], likes: [10, 1e6], comments: [1, 1e5], vpd: [1, 1e6],
+  er: [0, 0.1], likeRate: [0, 0.1], commentRate: [0, 0.01], score: [0, 10], erAdj: [0, 3],
+};
 /** Percent with enough digits for tiny rates: 2.1% / 0.35% / 0.062% */
 function pctFine(x) {
   if (!isFinite(x)) return "–";
@@ -1411,56 +1387,419 @@ function pctFine(x) {
 }
 function metricText(v, key) {
   if (PCT_KEYS.has(key)) return pctFine(v);
-  if (key === "score" || key === "erAdj") return `${v.toFixed(2)}×`;
+  if (key === "score" || key === "erAdj") return `${v.toFixed(v < 10 ? 1 : 0)}×`;
   return v >= 1000 ? cmp(v) : String(Math.round(v * 10) / 10);
 }
-/** "10K", "1.5m", "2,5k", "10,000", "12 000" -> number; ER is typed in percent ("5" = 5%). */
-function parseThreshold(text, key) {
-  let s = String(text || "").trim().toLowerCase().replace(/[\s ]/g, "").replace(/%$/, "");
-  if (/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, ""); // 10,000 = thousands separators
-  const m = /^(\d+(?:[.,]\d+)?)([kmb]?)$/.exec(s);
-  if (!m) return null;
-  let n = parseFloat(m[1].replace(",", "."));
-  n *= { "": 1, k: 1e3, m: 1e6, b: 1e9 }[m[2]];
-  return PCT_KEYS.has(key) ? n / 100 : n;
+/** "≥ 3%", "≤ 10K", "3% – 12%" */
+function rangeText(f) {
+  if (f.tier) return t(`an_tier_${f.tier}`);
+  const lo = isFinite(f.min);
+  const hi = isFinite(f.max);
+  if (lo && hi) return `${metricText(f.min, f.key)} – ${metricText(f.max, f.key)}`;
+  if (lo) return `≥ ${metricText(f.min, f.key)}`;
+  if (hi) return `≤ ${metricText(f.max, f.key)}`;
+  return t("an_all");
 }
-function currentThreshold() {
-  const key = state.sort;
-  if (TIER_FILTERS[state.threshold]) return { kind: "tier", test: TIER_FILTERS[state.threshold] };
-  if (key === "date" || state.threshold === "all") return null;
-  if (state.threshold === "mean") {
-    const m = metricMean(key);
-    return m == null ? null : { value: m, kind: "mean" };
+function stepTest(f) {
+  if (f.tier) return TIER_FILTERS[f.tier];
+  return (r) => {
+    const v = metricVal(r, f.key);
+    return isNum(v) && v >= f.min && v <= f.max;
+  };
+}
+/** The reels before any step (date range + a clicked chart bar). */
+function baseRows() {
+  let rows = state.rows;
+  const f = state.filter;
+  if (f && f.kind === "views") rows = rows.filter((r) => r.views != null && r.views >= f.from && r.views < f.to);
+  if (f && f.kind === "date") rows = rows.filter((r) => r.ts >= f.from && r.ts < f.to);
+  return rows;
+}
+/** pools[i] = the reels step i sees; the last one = what the table shows. */
+function chainPools() {
+  const pools = [baseRows()];
+  for (const f of state.filters) pools.push(pools[pools.length - 1].filter(stepTest(f)));
+  return pools;
+}
+/** Sort: chosen in a column's panel; otherwise by the first filter's column, else views. */
+function currentSort() {
+  if (state.sort) return state.sort;
+  const first = state.filters.find((f) => f.key);
+  return { key: first ? first.key : "views", dir: -1 };
+}
+function visibleRows() {
+  const pools = chainPools();
+  const rows = pools[pools.length - 1].slice();
+  const { key, dir } = currentSort();
+  rows.sort((a, b) => {
+    const x = metricVal(a, key);
+    const y = metricVal(b, key);
+    return isNum(y) ? (isNum(x) ? (x - y) * dir : 1) : isNum(x) ? -1 : 0;
+  });
+  return rows;
+}
+
+/** The filter chain above the table: ① ER ≥ 3% · 41 › ② Comment rate ≥ 0.2% · 17 */
+function renderChain(pools) {
+  const box = $("filterChain");
+  box.replaceChildren();
+  box.append(el("span", { class: "fc-start", title: t("an_fc_total") }, [
+    el("span", { class: "fc-icon", text: "⛃" }), el("strong", { text: String(pools[0].length) }),
+  ]));
+  state.filters.forEach((f, i) => {
+    const kept = pools[i + 1].length;
+    const chip = el("span", {
+      class: "fc-chip" + (f.tier ? " tier" : "") + (fpop.step === f ? " on" : ""), draggable: "true",
+      title: t("an_fc_chip_tip", [String(pools[i].length), String(kept)]),
+    }, [
+      el("span", { class: "fc-n", text: String(i + 1) }),
+      el("button", {
+        type: "button", class: "fc-body", onclick: (e) => (f.tier ? null : openFilterPop(f.key, colHead(f.key) || e.currentTarget)),
+      }, [
+        f.tier ? el("span", { text: TIER_ICON[f.tier] || "•" }) : el("span", { class: "fc-key", text: t(`an_col_${f.key}`) }),
+        el("span", { class: "fc-range", text: rangeText(f) }),
+      ]),
+      el("span", { class: "fc-kept" + (kept ? "" : " zero"), text: String(kept) }),
+      el("button", { type: "button", class: "fc-x", "aria-label": t("an_fc_remove"), text: "×", onclick: () => removeStep(f) }),
+    ]);
+    chip.addEventListener("dragstart", (e) => {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(i));
+      chip.classList.add("dragging");
+    });
+    chip.addEventListener("dragend", () => chip.classList.remove("dragging"));
+    chip.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      chip.classList.add("drop");
+    });
+    chip.addEventListener("dragleave", () => chip.classList.remove("drop"));
+    chip.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const from = Number(e.dataTransfer.getData("text/plain"));
+      if (!isFinite(from) || from === i) return renderTable();
+      const [moved] = state.filters.splice(from, 1);
+      state.filters.splice(i, 0, moved);
+      renderTable();
+    });
+    box.append(el("span", { class: "fc-arrow", "aria-hidden": "true", text: "›" }), chip);
+  });
+  if (!state.filters.length) box.append(el("span", { class: "fc-hint muted", text: t("an_fc_hint") }));
+  else box.append(el("button", { type: "button", class: "link fc-clear", text: t("an_fc_clear"), onclick: clearSteps }));
+}
+function removeStep(f) {
+  state.filters = state.filters.filter((x) => x !== f);
+  if (fpop.step === f) closeFilterPop();
+  renderTable();
+}
+function clearSteps() {
+  state.filters = [];
+  closeFilterPop();
+  renderTable();
+}
+/** Show a statistical group (used by the clickable facts): it becomes the first step. */
+function showInTable(tier) {
+  state.filters = [{ tier }].concat(state.filters.filter((f) => f.tier !== tier));
+  state.filter = null;
+  renderTable();
+  $("reelTable").closest(".card").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** Column headers: filter number badge, sort arrow. */
+const colHead = (key) => document.querySelector(`#reelTable th[data-key="${key}"] .fh-btn`);
+function renderHeads() {
+  const s = currentSort();
+  for (const th of document.querySelectorAll("#reelTable th[data-key]")) {
+    const key = th.dataset.key;
+    const idx = state.filters.findIndex((f) => f.key === key);
+    th.classList.toggle("filtered", idx >= 0);
+    th.classList.toggle("sorted", s.key === key);
+    th.classList.toggle("open", fpop.key === key);
+    const i = th.querySelector(".fh-i");
+    i.textContent = idx >= 0 ? String(idx + 1) : "";
+    th.querySelector(".fh-sort").textContent = s.key === key ? (s.dir < 0 ? "↓" : "↑") : "";
+    th.setAttribute("aria-sort", s.key === key ? (s.dir < 0 ? "descending" : "ascending") : "none");
   }
-  const v = parseThreshold(state.custom, key);
-  return v == null ? null : { value: v, kind: "custom" };
 }
-function renderThresholdInfo(shown) {
-  const key = state.sort;
-  const box = $("thresholdInfo");
-  const isDate = key === "date";
-  // dates have no "above average"/custom value; the statistical groups still apply
-  for (const o of $("thresholdSelect").options) if (o.value === "mean" || o.value === "custom") o.disabled = isDate;
-  $("customInput").hidden = isDate || state.threshold !== "custom";
-  $("customInput").placeholder = CUSTOM_PLACEHOLDER[key] || "";
-  box.classList.remove("warn");
-  if (state.filter) {
-    box.textContent = "";
+
+// ---- the filter panel (pops up next to a column header)
+const fpop = { key: null, step: null, anchor: null, mode: "data" };
+/** slider units: log10 for counts, percent for rates, the value itself for × */
+function toU(v, key) {
+  if (LOG_KEYS.has(key)) return Math.log10(Math.max(0, v) + 1);
+  if (PCT_KEYS.has(key)) return v * 100;
+  return v;
+}
+function fromU(u, key) {
+  if (LOG_KEYS.has(key)) return niceRound(Math.pow(10, u) - 1);
+  if (PCT_KEYS.has(key)) return u / 100;
+  return u;
+}
+/** 2 significant digits for counts: 12345 -> 12000 */
+function niceRound(x) {
+  if (x < 10) return Math.round(x);
+  const p = Math.pow(10, Math.floor(Math.log10(x)) - 1);
+  return Math.round(x / p) * p;
+}
+function popScale(key, pool) {
+  const vals = pool.map((r) => metricVal(r, key)).filter(isNum);
+  let lo;
+  let hi;
+  if (fpop.mode === "std" && STD_RANGE[key]) [lo, hi] = STD_RANGE[key].map((v) => toU(v, key));
+  else {
+    lo = vals.length ? toU(Math.min(...vals), key) : 0;
+    hi = vals.length ? toU(Math.max(...vals), key) : 1;
+  }
+  const spanU = hi - lo || 1;
+  // step: 0.1 for rates and ×, 0.01 when the range is tiny (comment rate), ~200 stops on log scales
+  const step = LOG_KEYS.has(key) ? spanU / 200 : spanU < 2 ? 0.01 : 0.1;
+  lo = Math.floor(lo / step) * step;
+  hi = Math.ceil(hi / step) * step;
+  if (hi <= lo) hi = lo + step;
+  return { vals, lo, hi, step };
+}
+
+function openFilterPop(key, anchor) {
+  if (fpop.key === key && fpop.anchor === anchor && $("fpop").classList.contains("open")) return closeFilterPop();
+  fpop.key = key;
+  fpop.anchor = anchor;
+  fpop.step = state.filters.find((f) => f.key === key) || null;
+  fpop.mode = "data";
+  renderFilterPop();
+  placeFilterPop();
+  const pop = $("fpop");
+  pop.hidden = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => pop.classList.add("open")));
+  renderHeads();
+  renderTable();
+}
+function closeFilterPop() {
+  const pop = $("fpop");
+  if (pop.hidden) return;
+  pop.classList.remove("open");
+  fpop.key = null;
+  fpop.step = null;
+  const before = state.filters.length;
+  state.filters = state.filters.filter((f) => f.tier || isFinite(f.min) || isFinite(f.max));
+  if (state.filters.length !== before) renderTable();
+  clearTimeout(fpop.hideT);
+  fpop.hideT = setTimeout(() => {
+    if (!pop.classList.contains("open")) pop.hidden = true;
+  }, 260);
+  renderHeads();
+  for (const c of document.querySelectorAll(".fc-chip.on")) c.classList.remove("on");
+}
+function placeFilterPop() {
+  const pop = $("fpop");
+  const a = fpop.anchor.getBoundingClientRect();
+  const w = Math.min(320, window.innerWidth - 16);
+  const left = Math.max(8, Math.min(window.innerWidth - w - 8, a.left + a.width / 2 - w / 2));
+  pop.style.width = `${w}px`;
+  pop.style.left = `${left + window.scrollX}px`;
+  pop.style.top = `${a.bottom + window.scrollY + 8}px`;
+  pop.style.setProperty("--ox", `${Math.round(a.left + a.width / 2 - left)}px`);
+}
+
+/** Pool for the open panel: the reels before its step (a new step goes last). */
+function popPool() {
+  const pools = chainPools();
+  const i = fpop.step ? state.filters.indexOf(fpop.step) : state.filters.length;
+  return { pool: pools[i], index: i };
+}
+
+function renderFilterPop() {
+  const key = fpop.key;
+  const pop = $("fpop");
+  pop.replaceChildren();
+  const { pool, index } = popPool();
+  const s = currentSort();
+  const sortBtn = (dir, label) => el("button", {
+    type: "button", class: "seg-btn" + (s.key === key && s.dir === dir ? " on" : ""), text: label,
+    onclick: () => {
+      state.sort = { key, dir };
+      renderFilterPop();
+      renderTable();
+    },
+  });
+  const head = el("div", { class: "fp-head" }, [
+    el("div", { class: "fp-title" }, [
+      el("span", { class: "fp-n", text: String(index + 1) }),
+      el("strong", { text: t(`an_col_${key}`) }),
+    ]),
+    el("div", { class: "seg" }, key === "date"
+      ? [sortBtn(-1, t("an_fp_new")), sortBtn(1, t("an_fp_old"))]
+      : [sortBtn(-1, "↓ " + t("an_fp_high")), sortBtn(1, "↑ " + t("an_fp_low"))]),
+  ]);
+  pop.append(head);
+  if (key === "date") {
+    pop.querySelector(".fp-n").remove();
     return;
   }
-  const total = String(state.rows.length);
-  const name = t(`an_col_${key}`);
-  const thr = currentThreshold();
-  if (thr && thr.kind === "tier") {
-    const label = $("thresholdSelect").selectedOptions[0].textContent;
-    box.textContent = t("an_thr_info_tier", [label, String(shown), total, name]);
-  } else if (isDate) box.textContent = t("an_thr_date", [String(shown), total]);
-  else if (thr) {
-    box.textContent = t(thr.kind === "mean" ? "an_thr_info_mean" : "an_thr_info_custom", [name, metricText(thr.value, key), String(shown), total]);
-  } else if (state.threshold === "custom") {
-    box.textContent = state.custom.trim() ? t("an_thr_bad") : t("an_thr_hint");
-    if (state.custom.trim()) box.classList.add("warn");
-  } else box.textContent = t("an_thr_all", [name, String(shown)]);
+  const sc = popScale(key, pool);
+  const f = fpop.step || { key, min: -Infinity, max: Infinity };
+  const uMin = isFinite(f.min) ? Math.max(sc.lo, Math.min(sc.hi, toU(f.min, key))) : sc.lo;
+  const uMax = isFinite(f.max) ? Math.max(sc.lo, Math.min(sc.hi, toU(f.max, key))) : sc.hi;
+
+  // readout: the chosen range, big; how many reels it keeps
+  const readout = el("div", { class: "fp-read" }, [
+    el("span", { class: "fp-val", id: "fpVal" }), el("span", { class: "fp-kept", id: "fpKept" }),
+  ]);
+  // histogram of the reels this step sees, bars inside the range lit
+  const BINS = 28;
+  const counts = new Array(BINS).fill(0);
+  for (const v of sc.vals) {
+    const b = Math.floor(((toU(v, key) - sc.lo) / (sc.hi - sc.lo)) * BINS);
+    counts[Math.max(0, Math.min(BINS - 1, b))]++;
+  }
+  const maxC = Math.max(1, ...counts);
+  const hist = el("div", { class: "fp-hist" }, counts.map((c) => el("i", { style: `height:${c ? 8 + (c / maxC) * 92 : 0}%` })));
+  const mean = sc.vals.length ? sc.vals.reduce((a, b) => a + b, 0) / sc.vals.length : null;
+  if (mean != null) {
+    const x = ((toU(mean, key) - sc.lo) / (sc.hi - sc.lo)) * 100;
+    if (x >= 0 && x <= 100) hist.append(el("b", { class: "fp-avg", style: `left:${x}%`, title: `${t("an_fp_avg")} ${metricText(mean, key)}` }));
+  }
+  // two thumbs on one track (own pointer handling: smooth on mouse, touch and keyboard)
+  let lo = uMin;
+  let hi = uMax;
+  const fill = el("div", { class: "fp-fill" });
+  const thumb = (label) => el("button", { type: "button", class: "fp-thumb", role: "slider", "aria-label": label });
+  const ta = thumb(t("an_fp_min"));
+  const tb = thumb(t("an_fp_max"));
+  const track = el("div", { class: "fp-track" }, [fill, ta, tb]);
+  const slider = el("div", { class: "fp-slider" }, [track]);
+  const ends = el("div", { class: "fp-ends" }, [
+    el("span", { text: metricText(fromU(sc.lo, key), key) }), el("span", { text: metricText(fromU(sc.hi, key), key) }),
+  ]);
+  pop.append(readout, hist, slider, ends);
+
+  const snap = (u) => Math.max(sc.lo, Math.min(sc.hi, sc.lo + Math.round((u - sc.lo) / sc.step) * sc.step));
+  const pos = (u) => ((u - sc.lo) / (sc.hi - sc.lo)) * 100;
+  const sync = (commit) => {
+    ta.style.left = `${pos(lo)}%`;
+    tb.style.left = `${pos(hi)}%`;
+    fill.style.left = `${pos(lo)}%`;
+    fill.style.width = `${pos(hi) - pos(lo)}%`;
+    hist.querySelectorAll("i").forEach((bar, k) => {
+      const c0 = sc.lo + ((sc.hi - sc.lo) * k) / BINS;
+      const c1 = sc.lo + ((sc.hi - sc.lo) * (k + 1)) / BINS;
+      bar.classList.toggle("in", c1 > lo + 1e-9 && c0 < hi - 1e-9);
+    });
+    const half = sc.step / 2;
+    const cand = { key, min: lo <= sc.lo + half ? -Infinity : fromU(lo, key), max: hi >= sc.hi - half ? Infinity : fromU(hi, key) };
+    ta.setAttribute("aria-valuetext", isFinite(cand.min) ? metricText(cand.min, key) : "–");
+    tb.setAttribute("aria-valuetext", isFinite(cand.max) ? metricText(cand.max, key) : "–");
+    // just opened / range switched: show the step as it is, not as rounded to this slider's grid
+    const shown = !commit && fpop.step ? fpop.step : cand;
+    $("fpVal").textContent = rangeText(shown);
+    $("fpKept").textContent = t("an_fp_kept", [String(pool.filter(stepTest(shown)).length), String(pool.length)]);
+    if (!commit) return;
+    const all = !isFinite(cand.min) && !isFinite(cand.max);
+    // a step pulled back to "everything" keeps its place until the panel closes
+    if (fpop.step) Object.assign(fpop.step, cand);
+    else if (!all) {
+      fpop.step = cand;
+      state.filters.push(cand);
+    }
+    scheduleTable();
+  };
+  const setVal = (which, u) => {
+    u = snap(u);
+    if (which === ta) lo = Math.min(u, hi);
+    else hi = Math.max(u, lo);
+    sync(true);
+  };
+  const uAt = (x) => {
+    const r = track.getBoundingClientRect();
+    return sc.lo + ((x - r.left) / (r.width || 1)) * (sc.hi - sc.lo);
+  };
+  let drag = null;
+  slider.addEventListener("pointerdown", (e) => {
+    const u = uAt(e.clientX);
+    // the nearer thumb moves; both on one spot -> the side you pull towards
+    drag = Math.abs(u - lo) < Math.abs(u - hi) || (lo === hi && u < lo) ? ta : tb;
+    drag.focus({ preventScroll: true });
+    drag.classList.add("drag");
+    slider.setPointerCapture(e.pointerId);
+    setVal(drag, u);
+    e.preventDefault();
+  });
+  slider.addEventListener("pointermove", (e) => drag && setVal(drag, uAt(e.clientX)));
+  const end = () => {
+    if (drag) drag.classList.remove("drag");
+    drag = null;
+  };
+  slider.addEventListener("pointerup", end);
+  slider.addEventListener("pointercancel", end);
+  for (const th of [ta, tb]) {
+    th.addEventListener("keydown", (e) => {
+      const cur = th === ta ? lo : hi;
+      const big = e.shiftKey ? 10 : 1;
+      const k = { ArrowLeft: -big, ArrowDown: -big, ArrowRight: big, ArrowUp: big }[e.key];
+      if (k) setVal(th, cur + k * sc.step);
+      else if (e.key === "Home") setVal(th, sc.lo);
+      else if (e.key === "End") setVal(th, sc.hi);
+      else return;
+      e.preventDefault();
+    });
+  }
+  sync(false);
+
+  // quick picks + the slider's range
+  const qp = (label, q) => el("button", {
+    type: "button", class: "chipbtn", text: label,
+    onclick: () => {
+      const v = sc.vals.slice().sort((x, y) => x - y);
+      if (!v.length) return;
+      const val = q === "avg" ? mean : v[Math.min(v.length - 1, Math.floor(q * v.length))];
+      lo = Math.min(snap(toU(val, key)), sc.hi);
+      hi = sc.hi;
+      sync(true);
+    },
+  });
+  const modeBtn = (mode, label) => el("button", {
+    type: "button", class: "seg-btn" + (fpop.mode === mode ? " on" : ""), text: label, title: t(`an_fp_${mode}_tip`),
+    onclick: () => {
+      fpop.mode = mode;
+      renderFilterPop();
+    },
+  });
+  pop.append(el("div", { class: "fp-foot" }, [
+    el("div", { class: "fp-quick" }, [qp(t("an_fp_avg_up"), "avg"), qp(t("an_fp_top", ["25"]), 0.75), qp(t("an_fp_top", ["10"]), 0.9)]),
+    STD_RANGE[key] ? el("div", { class: "seg" }, [modeBtn("data", t("an_fp_data")), modeBtn("std", t("an_fp_std"))]) : null,
+  ]));
+  pop.append(el("div", { class: "fp-actions" }, [
+    fpop.step ? el("button", { type: "button", class: "link", text: t("an_fc_remove"), onclick: () => removeStep(fpop.step) }) : el("span"),
+    el("button", { type: "button", class: "primary", text: t("an_fp_done"), onclick: closeFilterPop }),
+  ]));
+}
+let tableRaf = 0;
+function scheduleTable() {
+  cancelAnimationFrame(tableRaf);
+  tableRaf = requestAnimationFrame(() => {
+    renderTable();
+    renderHeads();
+  });
+}
+function initFilterPop() {
+  for (const th of document.querySelectorAll("#reelTable th[data-key]")) {
+    const btn = th.querySelector(".fh-btn");
+    btn.title = th.dataset.key === "date" ? t("an_fh_sort_tip") : t("an_fh_tip");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openFilterPop(th.dataset.key, btn);
+    });
+  }
+  const pop = $("fpop");
+  document.addEventListener("pointerdown", (e) => {
+    if (pop.hidden || pop.contains(e.target) || e.target.closest(".fh-btn, .fc-body")) return;
+    closeFilterPop();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !pop.hidden) {
+      e.stopPropagation();
+      closeFilterPop();
+    }
+  }, true);
+  window.addEventListener("resize", () => !pop.hidden && fpop.anchor && placeFilterPop());
 }
 
 function jobStatusCell(row) {
@@ -1969,7 +2308,9 @@ let lastClickedCode = null; // anchor for Shift+click range selection
 function renderTable() {
   const body = $("reelBody");
   body.replaceChildren();
+  const pools = chainPools();
   const rows = visibleRows();
+  renderChain(pools);
   $("filterBar").hidden = !state.filter;
   if (state.filter) {
     const f = state.filter;
@@ -2064,18 +2405,12 @@ function renderTable() {
     body.append(tr);
   });
   if (rows.length > 1) body.prepend(summaryRow(rows));
-  renderThresholdInfo(rows.length);
+  renderHeads();
   const all = rows.length > 0 && rows.every((r) => state.selected.has(r.code));
   $("checkAll").checked = all;
 }
 
 // ------------------------------------------------------------------ selection + actions
-function select(codes, replace) {
-  if (replace) state.selected.clear();
-  for (const c of codes) state.selected.add(c);
-  renderTable();
-  updateActionBar();
-}
 
 function selectedRows() {
   return state.rows.filter((r) => state.selected.has(r.code));
@@ -2291,19 +2626,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderActivityChart();
     renderTable();
   });
-  $("thresholdSelect").addEventListener("change", () => {
-    state.threshold = $("thresholdSelect").value;
-    renderTable();
-    if (state.threshold === "custom") $("customInput").focus();
-  });
-  $("customInput").addEventListener("input", () => {
-    state.custom = $("customInput").value;
-    renderTable();
-  });
-  $("sortSelect").addEventListener("change", () => {
-    state.sort = $("sortSelect").value;
-    renderTable();
-  });
   $("clearFilter").addEventListener("click", () => {
     state.filter = null;
     renderChart();
@@ -2354,15 +2676,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderTable();
     updateActionBar();
   });
-  $("selViral").addEventListener("click", () => select(state.rows.filter(TIER_FILTERS.viral).map((r) => r.code), true));
-  $("selWinner").addEventListener("click", () => select(state.rows.filter(TIER_FILTERS.winner).map((r) => r.code), true));
-  $("selHot").addEventListener("click", () => {
-    const recent = state.rows.filter((r) => r.vpd != null && r.ts > state.now - 30 * St.DAY);
-    const pool = recent.length ? recent : state.rows.filter((r) => r.vpd != null);
-    select(pool.sort((a, b) => b.vpd - a.vpd).slice(0, 10).map((r) => r.code), true);
-  });
-  $("selShown").addEventListener("click", () => select(visibleRows().map((r) => r.code), false));
-  $("selNone").addEventListener("click", () => select([], true));
+  initFilterPop();
   $("downloadSel").addEventListener("click", downloadSelected);
   $("copyLinks").addEventListener("click", copyLinks);
   $("cancelAll").addEventListener("click", cancelAll);
