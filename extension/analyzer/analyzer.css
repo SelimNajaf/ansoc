@@ -708,3 +708,13 @@ button.kpi:hover { filter: none; border-color: var(--line); }
 .succ-i { font-size: 10px; }
 .dr-cell.hit .v { color: var(--hit); }
 .dr-cell.good .v { color: var(--good); }
+
+/* 📷 full-page screenshot */
+.shot-btn { width: 36px; height: 36px; padding: 0; font-size: 17px; line-height: 1; border-radius: 50%; }
+.shot-btn:disabled { opacity: 1; animation: shot-pulse 1s ease-in-out infinite; }
+@keyframes shot-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--brand) 30%, transparent); } }
+.shot-msg { color: var(--muted); max-width: 360px; text-align: right; }
+.shot-msg.ok { color: var(--good); }
+.shot-msg.err { color: var(--bad); }
+body.shot-flash::after { content: ""; position: fixed; inset: 0; z-index: 99; background: #fff; pointer-events: none; animation: shot-flash .4s ease-out forwards; }
+@keyframes shot-flash { from { opacity: .7; } to { opacity: 0; } }

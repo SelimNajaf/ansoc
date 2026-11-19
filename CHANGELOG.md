@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.14.0
+
+- **📷 Screenshot of the whole page** (camera button at the top of the Reels Analyzer): top to bottom in one image, at 2× sharpness (zoom in and it still looks like the real screen). Saved to *Downloads → MediaDownloader → Screenshots* and copied to the clipboard (paste with Ctrl+V). Chrome shows a short "started debugging" bar while it captures — that is normal.
+- New permission: *debugger* (needed for the sharp full-page capture).
+
 ## 2.13.0
 
 - **Removed:** the *Compare stores* page and its button in the Reels Analyzer.

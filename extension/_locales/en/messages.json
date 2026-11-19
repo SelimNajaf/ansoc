@@ -1342,5 +1342,20 @@
   },
   "an_hours_tip_succ": {
     "message": "Success $1 vs usual · 🎯 $2 hit(s)"
+  },
+  "an_shot_tip": {
+    "message": "Screenshot of the whole page (sharp, 2×)"
+  },
+  "an_shot_busy": {
+    "message": "Capturing…"
+  },
+  "an_shot_done": {
+    "message": "📸 Saved ($1 px) to Downloads/MediaDownloader/Screenshots"
+  },
+  "an_shot_done_copied": {
+    "message": "📸 Saved ($1 px) and copied — paste with Ctrl+V"
+  },
+  "an_shot_err": {
+    "message": "Screenshot failed: $1"
   }
 }

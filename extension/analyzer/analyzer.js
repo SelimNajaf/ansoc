@@ -2682,6 +2682,126 @@ function saveCaptionsTxt() {
   }, 1000);
 }
 
+// ------------------------------------------------------------------ 📸 full-page screenshot
+/*
+ * The whole page, top to bottom, like DevTools' "Capture full size screenshot", but sharper:
+ * at least 2x pixels (zoom in on a phone and it still looks like the real screen). Uses the
+ * Chrome DevTools protocol on this tab (chrome.debugger: Chrome shows a short "started
+ * debugging" bar while it runs). Long pages are captured in slices and stitched on a canvas.
+ * Saved to Downloads/MediaDownloader/Screenshots and copied to the clipboard.
+ */
+let shotRun = false;
+function setShotMsg(text, kind) {
+  const m = $("shotMsg");
+  m.textContent = text || "";
+  m.className = "shot-msg small" + (kind ? " " + kind : "");
+  clearTimeout(setShotMsg.t);
+  if (text && kind !== "busy") setShotMsg.t = setTimeout(() => (m.textContent = ""), 8000);
+}
+async function captureFullPage() {
+  if (shotRun) return;
+  shotRun = true;
+  $("shotBtn").disabled = true;
+  setShotMsg(t("an_shot_busy"), "busy");
+  closeFilterPop();
+  if (!$("drawer").hidden) closeDetails();
+  const tab = await chrome.tabs.getCurrent();
+  const target = { tabId: tab.id };
+  const cmd = (method, params) => chrome.debugger.sendCommand(target, method, params || {});
+  let attached = false;
+  try {
+    try {
+      await chrome.debugger.attach(target, "1.3");
+      attached = true;
+    } catch (_e) {
+      // Chrome refused the debugger (policy, DevTools already open …): scroll and stitch instead
+      return await captureByScrolling(tab);
+    }
+    const metrics = await cmd("Page.getLayoutMetrics");
+    const size = metrics.cssContentSize || metrics.contentSize;
+    const W = Math.ceil(size.width);
+    const H = Math.ceil(size.height);
+    const dpr = window.devicePixelRatio || 1;
+    // >= 2 pixels per CSS pixel; lower only if the image would pass Chrome's canvas limits
+    let out = Math.max(2, dpr);
+    while (out > 1 && (H * out > 32000 || W * H * out * out > 250e6)) out -= 0.25;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(W * out);
+    canvas.height = Math.round(H * out);
+    const ctx = canvas.getContext("2d");
+    const SLICE = 3000; // CSS px per capture: keeps every piece well under the GPU texture limit
+    for (let y = 0; y < H; y += SLICE) {
+      const h = Math.min(SLICE, H - y);
+      const res = await cmd("Page.captureScreenshot", {
+        format: "png", fromSurface: true, captureBeyondViewport: true,
+        clip: { x: 0, y, width: W, height: h, scale: out / dpr },
+      });
+      const img = new Image();
+      img.src = "data:image/png;base64," + res.data;
+      await img.decode();
+      ctx.drawImage(img, 0, Math.round(y * out), canvas.width, Math.round(h * out));
+    }
+    await chrome.debugger.detach(target);
+    attached = false;
+    await saveShot(canvas);
+  } catch (e) {
+    setShotMsg(t("an_shot_err", [String((e && e.message) || e)]), "err");
+  } finally {
+    if (attached) {
+      try {
+        await chrome.debugger.detach(target);
+      } catch (_e) { /* already gone */ }
+    }
+    shotRun = false;
+    $("shotBtn").disabled = false;
+  }
+}
+
+/** Fallback without the debugger: screen-size pieces while scrolling (sharpness = the screen's). */
+async function captureByScrolling(tab) {
+  const W = document.documentElement.scrollWidth;
+  const H = document.documentElement.scrollHeight;
+  const vh = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(H * dpr);
+  const ctx = canvas.getContext("2d");
+  const back = window.scrollY;
+  document.documentElement.style.scrollBehavior = "auto";
+  for (let y = 0; y < H; y += vh) {
+    window.scrollTo(0, y);
+    await new Promise((r) => setTimeout(r, 550)); // captureVisibleTab allows ~2 calls a second
+    const top = window.scrollY;
+    const url = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    ctx.drawImage(img, 0, Math.round(top * dpr));
+  }
+  window.scrollTo(0, back);
+  document.documentElement.style.scrollBehavior = "";
+  if (W > window.innerWidth) { /* wider than the window: the right part is not included */ }
+  await saveShot(canvas);
+}
+
+async function saveShot(canvas) {
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  const d = new Date();
+  const name = `${(state.data && state.data.username) || "reels"}_${today()}_${p2(d.getHours())}-${p2(d.getMinutes())}.png`;
+  const url = URL.createObjectURL(blob);
+  await chrome.downloads.download({ url, filename: `MediaDownloader/Screenshots/${name}`, conflictAction: "uniquify" });
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  let copied = false;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    copied = true;
+  } catch (_e) { /* saving is enough */ }
+  document.body.classList.add("shot-flash");
+  setTimeout(() => document.body.classList.remove("shot-flash"), 400);
+  setShotMsg(t(copied ? "an_shot_done_copied" : "an_shot_done", [`${canvas.width}×${canvas.height}`]), "ok");
+}
+
 // ------------------------------------------------------------------ data export (temporary research tool)
 /*
  * "Export data": one JSON file per store with
@@ -2931,6 +3051,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("cancelAll").addEventListener("click", cancelAll);
   $("copyCaptions").addEventListener("click", copyCaptions);
   $("exportSel").addEventListener("click", exportSelected);
+  $("shotBtn").addEventListener("click", captureFullPage);
   $("capClose").addEventListener("click", () => $("capDialog").close());
   $("capSave").addEventListener("click", saveCaptionsTxt);
   $("capCopy").addEventListener("click", () => copyText($("capText").value, "an_cap_copied_short"));
