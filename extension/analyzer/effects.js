@@ -1,5 +1,5 @@
-/* Visuals for "what works" results (PD.stats.groupEffect output), shared by the Reels Analyzer
- * and the Compare stores page. DOM is built with createElement/textContent only. */
+/* Visuals for "what works" results (PD.stats.successEffect output) in the Reels Analyzer.
+ * DOM is built with createElement/textContent only. */
 (function (root) {
   "use strict";
   const PD = (root.PD = root.PD || {});
@@ -77,7 +77,7 @@
         style: good ? `left:50%;width:${Math.max(0.6, p - 50)}%` : `left:${p}%;width:${Math.max(0.6, 50 - p)}%`,
       }));
       const isBest = best && best.group === g;
-      const tip = t("fx_row_tip", [label, fmt(e.ratio), e.lo != null ? `${fmt(e.lo)} – ${fmt(e.hi)}` : "–", String(e.n), String(e.stores)]);
+      const tip = t("fx_row_tip", [label, fmt(e.ratio), e.lo != null ? `${fmt(e.lo)} – ${fmt(e.hi)}` : "–", String(e.n)]);
       box.append(el("div", { class: `fx-row${isBest ? " best" : ""}${e.enough ? "" : " few"}`, title: tip }, [
         el("span", { class: "fx-label" }, [isBest ? el("span", { class: "fx-star", text: "★" }) : null, el("span", { text: label })]),
         track,

@@ -77,7 +77,6 @@ There are two kinds of requests. Figure out which one you have:
 extension/               Chrome MV3 extension (fixed ID via "key" in manifest.json)
   background/            service worker: job queue, native messaging client, update check
   analyzer/              Reels Analyzer page (stats.js = pure statistics, testable in Node; effects.js = shared result bars)
-  compare/               Compare stores page (loads the analyzer's CSV exports)
   ui/tokens.css          design tokens + base components shared by every page (see DESIGN.md)
   popup/  content/  utils/
   _locales/en/           all UI text (English only)

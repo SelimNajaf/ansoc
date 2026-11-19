@@ -511,14 +511,6 @@
   }
 
   // ---------------------------------------------------------------- "what works" (timing / pace)
-  /*
-   * Effect of a grouping (time window, weekday, posts per day ...) on performance.
-   * Input items: {group, ratio, store}, where ratio = views / typical views of that store at that
-   * time ("vs typical"), so stores of different size are comparable.
-   * Per group: median log-ratio per store, then the median over stores -> every store weighs the
-   * same, a big store cannot drown the others. An 80% interval comes from a (hierarchical)
-   * bootstrap: resample stores, then reels inside each store.
-   */
   function seeded(seed) {
     let s = seed >>> 0 || 1;
     return () => {
@@ -529,48 +521,8 @@
     };
   }
 
-  function groupEffect(items, opts) {
-    opts = opts || {};
-    const minN = opts.minN || 5;
-    // across several stores a pattern must show up in at least minStores of them
-    const minStores = opts.minStores || 1;
-    const iters = opts.iters || 400;
-    const byGroup = new Map();
-    for (const it of items) {
-      if (!(it.ratio > 0) || it.group == null) continue;
-      if (!byGroup.has(it.group)) byGroup.set(it.group, new Map());
-      const g = byGroup.get(it.group);
-      const k = it.store || "";
-      if (!g.has(k)) g.set(k, []);
-      g.get(k).push(Math.log(it.ratio));
-    }
-    const rnd = seeded(12345);
-    const est = (lists) => median(lists.map((l) => median(l)));
-    const out = [];
-    for (const [group, stores] of byGroup) {
-      const lists = [...stores.values()];
-      const n = lists.reduce((a, l) => a + l.length, 0);
-      const value = est(lists);
-      let lo = null;
-      let hi = null;
-      const enough = n >= minN && lists.length >= minStores;
-      if (enough) {
-        const sims = [];
-        for (let k = 0; k < iters; k++) {
-          const pick = lists.length > 1 ? lists.map(() => lists[Math.floor(rnd() * lists.length)]) : lists;
-          sims.push(est(pick.map((l) => l.map(() => l[Math.floor(rnd() * l.length)]))));
-        }
-        sims.sort((a, b) => a - b);
-        lo = Math.exp(quantile(sims, 0.1));
-        hi = Math.exp(quantile(sims, 0.9));
-      }
-      out.push({ group, n, stores: lists.length, ratio: Math.exp(value), lo, hi, enough });
-    }
-    return out;
-  }
-
   /*
-   * Same idea, measured with the brain: how much SUCCESS a group of reels brings compared with the
+   * How much SUCCESS a group of reels brings compared with the
    * store's average reel. Input items: {group, p} with p = success probability (0..1).
    *   ratio = mean p of the group / mean p of all reels   (2× = twice as many hits as usual)
    * A mean, not a median: success is rare (most reels score near 0), and a group that produces the
@@ -626,13 +578,9 @@
     if (!ok.length) return null;
     return ok.reduce((b, e) => (e.lo > b.lo || (e.lo === b.lo && e.ratio > b.ratio) ? e : b));
   }
-  function worstEffect(effects) {
-    const ok = effects.filter((e) => e.enough);
-    if (ok.length < 2) return null;
-    return ok.reduce((b, e) => (e.hi < b.hi ? e : b));
-  }
 
-  // groupings shared by the analyzer and the "Compare stores" page
+
+  // groupings for "What works"
   const BUCKETS = {
     window: { order: [0, 3, 6, 9, 12, 15, 18, 21], of: (hour) => Math.floor(hour / 3) * 3 },
     weekday: { order: [0, 1, 2, 3, 4, 5, 6], of: (w) => w },
@@ -720,6 +668,6 @@
   PD.stats = {
     quantile, summarize, niceStep, linearBins, logBins, densestRange, compact,
     DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods,
-    groupEffect, effectConfidence, bestEffect, worstEffect, BUCKETS, success, SUCCESS, successEffect,
+    effectConfidence, bestEffect, BUCKETS, success, SUCCESS, successEffect,
   };
 })(typeof globalThis !== "undefined" ? globalThis : self);

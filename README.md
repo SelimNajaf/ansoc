@@ -54,14 +54,13 @@ It follows [`CLAUDE.md`](CLAUDE.md): it runs the installer, checks that everythi
 - **Download from a page:** open a Pinterest, TikTok or Instagram post. A **Media Downloader** panel appears at the bottom right. Or click the extension icon, paste a link and press **Download**.
 - **Instagram:** log in to instagram.com in Chrome, then in the extension's settings turn on **"Use Chrome's login"** (the Reels Analyzer also offers a **Use my Chrome login** button).
 - **Reels Analyzer:** on an Instagram profile click the extension icon → **Reels Analyzer** → **Analyze**. You get:
-  - which reels are **Viral / Strong / Winner** (statistics, compared with that profile's own normal level),
+  - a **Success score** for every reel (🎯 hit / ✓ good): comments + like rate compared with that store's own reels — learned from successful reels of real stores,
   - a **time range** slider with pauses and active periods,
-  - **when** they post (weekday × hour) and **what works**: best time window, weekday, posts per day / week (with how sure that is),
+  - **posting hours** and **what works**: best time window, posts per day / week, gap between posts — judged by success (with how sure that is),
   - likes vs comments, engagement, and **views per day** (what's hot right now),
   - click any reel for its **full description** (calls to action, prices, hashtags, music used).
   - Select reels and download them into one folder. File names end with the view count, e.g. `…_3.1M-views.mp4`.
-  - **📊 Compare stores:** drop the CSVs of several stores and see what works across all of them.
-  - **Download CSV** (next to *When do they post?*): one row per reel with posting time, results, *vs typical* and posting frequency. Export several stores and combine the files to find the best posting hours and posts per day. Pick **Excel (;)** or **Standard (,)** and use the same for all stores.
+  - **Download CSV** (next to *When do they post?*): one row per reel with posting time, results, success score and posting frequency. Export several stores and combine the files to find the best posting hours and posts per day. Pick **Excel (;)** or **Standard (,)** and use the same for all stores.
 - **Your files** go to **Desktop → MediaDownloader → Instagram / TikTok / Pinterest**.
 
 ---

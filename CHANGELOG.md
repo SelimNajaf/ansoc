@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.13.0
+
+- **Removed:** the *Compare stores* page and its button in the Reels Analyzer.
+
 ## 2.12.0
 
 - **What works** and **Posting hours** now use the brain: every time window, posts-per-day, posts-per-week and gap is judged by the **Success** of its reels (comments + like rate), not by views. *2×* = that group brings twice the success of the store's average reel. Reels younger than 3 days are left out (their comments are still coming).

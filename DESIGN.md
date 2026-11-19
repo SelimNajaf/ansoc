@@ -1,6 +1,6 @@
 # Design system
 
-Every page of the extension (popup, Reels Analyzer, Compare stores, the on-page panel) follows these rules.
+Every page of the extension (popup, Reels Analyzer, the on-page panel) follows these rules.
 The values live in **`extension/ui/tokens.css`**; every page links it before its own stylesheet.
 
 ## 1. Principles

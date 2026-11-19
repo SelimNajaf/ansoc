@@ -1109,7 +1109,7 @@ function renderActivityChart() {
 const HEAT_HOURS = [...Array(24).keys()].map((i) => (i + 12) % 24); // 12, 13 … 23, 0, 1 … 11
 
 // ------------------------------------------------------------------ "What works" (timing + pace)
-// Same groupings and statistics as the Compare stores page (PD.stats.groupEffect): every reel's
+// Groupings shared with stats.js (St.BUCKETS), judged by the brain (St.successEffect): every reel's
 // "vs typical" ratio, grouped by 3-hour window, posts that day / week, gap before it.
 const WW_WINDOWS = [12, 15, 18, 21, 0, 3, 6, 9]; // same order as the heatmap (midnight in the middle)
 const p2h = (h) => String(h).padStart(2, "0");

@@ -1125,7 +1125,7 @@
     "message": "Too few reels (or only one store) to tell"
   },
   "fx_row_tip": {
-    "message": "$1: $2 (likely $3) · $4 reels · $5 stores"
+    "message": "$1: $2 (likely $3) · $4 reels"
   },
   "fx_not_enough": {
     "message": "—"
@@ -1135,57 +1135,6 @@
   },
   "fx_reels": {
     "message": "$1 reels"
-  },
-  "cmp_open": {
-    "message": "📊 Compare stores"
-  },
-  "cmp_title": {
-    "message": "Compare stores"
-  },
-  "cmp_subtitle": {
-    "message": "What works across several stores: posting hours and pace."
-  },
-  "cmp_drop": {
-    "message": "Drop CSV files here"
-  },
-  "cmp_drop_sub": {
-    "message": "Export each store from the Reels Analyzer (⬇ Download CSV). Excel (;) and Standard (,) both work."
-  },
-  "cmp_choose": {
-    "message": "Choose files"
-  },
-  "cmp_stores": {
-    "message": "Stores"
-  },
-  "cmp_count": {
-    "message": "$1 · $2 reels"
-  },
-  "cmp_include_new": {
-    "message": "Include new reels (< 3 days)"
-  },
-  "cmp_copy": {
-    "message": "Copy summary for AI"
-  },
-  "cmp_copied": {
-    "message": "Copied ✓"
-  },
-  "cmp_clear": {
-    "message": "Remove all"
-  },
-  "cmp_remove": {
-    "message": "Remove $1"
-  },
-  "cmp_note": {
-    "message": "$1 reels · $2 stores · each store counts equally · a result needs 8+ reels from 2+ stores"
-  },
-  "cmp_empty": {
-    "message": "No stores yet. Add the CSV files of a few stores to see what works for all of them."
-  },
-  "cmp_err_empty": {
-    "message": "$1: no reels found."
-  },
-  "cmp_err_columns": {
-    "message": "$1: not a Reels Analyzer CSV (missing: $2)."
   },
   "an_hours_lg_height": {
     "message": "Taller = more reels"
