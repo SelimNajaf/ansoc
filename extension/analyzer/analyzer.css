@@ -308,7 +308,7 @@ tr.sumrow td[title] { cursor: help; }
 .chart-wrap .vline.viral { stroke: var(--hit); }
 .chart-wrap .vlabel.viral { fill: var(--hit); font-size: 11px; font-weight: 600; }
 /* the Reel cell: preview + date/time + caption (one line, never widens the table) */
-.c-reel { width: 34%; min-width: 210px; }
+.c-reel { min-width: 0; }
 .reel { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .reel-txt { flex: 1; min-width: 0; width: 0; display: flex; flex-direction: column; gap: 3px; }
 .reel-date { display: flex; align-items: baseline; gap: 6px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -497,21 +497,20 @@ th.filtered .fh-btn, th.sorted .fh-btn { color: var(--fg); }
   background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-2);
   transform-origin: var(--ox, 50%) 0; pointer-events: none;
 }
-/* opens like a water drop: a small round bead at the column grows, overshoots a little and settles;
-   closing pulls it back into the bead */
-.fpop.open { pointer-events: auto; animation: fp-drop-in .52s var(--ease-io) both; }
-.fpop.closing { animation: fp-drop-out .3s var(--ease-io) both; }
+/* opens like a water drop: a round bead at the column swells into the panel with a small
+   springy overshoot (fast: ~0.26 s), the content fades in just after; closing shrinks it back */
+.fpop.open { pointer-events: auto; animation: fp-drop-in .26s cubic-bezier(.2, .9, .3, 1.15) both; }
+.fpop.open > * { animation: fp-fade-in .18s .07s ease-out both; }
+.fpop.closing { animation: fp-drop-out .16s cubic-bezier(.5, 0, .75, 0) both; }
 @keyframes fp-drop-in {
-  0% { opacity: 0; clip-path: circle(0 at var(--ox, 50%) 0); transform: translateY(-10px) scale(.6, .4); border-radius: 50%; }
-  35% { opacity: 1; clip-path: circle(60% at var(--ox, 50%) 0); transform: translateY(2px) scale(.94, 1.06); border-radius: 40%; }
-  65% { clip-path: circle(140% at var(--ox, 50%) 0); transform: translateY(0) scale(1.03, .97); border-radius: var(--r-l); }
-  85% { transform: scale(.99, 1.01); }
-  100% { opacity: 1; clip-path: circle(150% at var(--ox, 50%) 0); transform: none; border-radius: var(--r-l); }
+  0% { opacity: 0; transform: translateY(-4px) scale(.3, .2); border-radius: 40px; }
+  55% { opacity: 1; border-radius: 22px; }
+  100% { opacity: 1; transform: none; border-radius: var(--r-l); }
 }
+@keyframes fp-fade-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes fp-drop-out {
-  0% { opacity: 1; clip-path: circle(150% at var(--ox, 50%) 0); transform: none; }
-  40% { transform: scale(1.02, .96); }
-  100% { opacity: 0; clip-path: circle(0 at var(--ox, 50%) 0); transform: translateY(-8px) scale(.6, .4); border-radius: 50%; }
+  from { opacity: 1; transform: none; border-radius: var(--r-l); }
+  to { opacity: 0; transform: translateY(-4px) scale(.4, .25); border-radius: 40px; }
 }
 .fpop::before {
   content: ""; position: absolute; top: -6px; left: calc(var(--ox, 50%) - 6px); width: 12px; height: 12px;
@@ -678,3 +677,22 @@ button.kpi:hover { filter: none; border-color: var(--line); }
 .sw.h-sw { background: var(--neutral); margin-right: 1px; }
 .sw.h-sw.good { background: var(--good); }
 .sw.h-sw.bad { background: var(--bad); }
+
+/* Reels table: fixed column widths, so the table fills the card and never jumps when values change */
+#reelTable { table-layout: fixed; min-width: 900px; }
+#reelTable th, #reelTable td { overflow: hidden; text-overflow: ellipsis; }
+#reelTable th.fh { overflow: visible; }
+.col-c-check { width: 34px; }
+.col-c-rank { width: 32px; }
+.col-c-reel { width: 25%; }
+.col-views { width: 7.5%; }
+.col-score { width: 8%; }
+.col-vpd { width: 8%; }
+.col-likes { width: 7%; }
+.col-comments { width: 8%; }
+.col-er { width: 9%; }
+.col-likeRate { width: 7.5%; }
+.col-commentRate { width: 9%; }
+.col-erAdj { width: 8%; }
+.col-c-st { width: 110px; }
+#reelTable.no-jobs .col-c-st { width: 0; }

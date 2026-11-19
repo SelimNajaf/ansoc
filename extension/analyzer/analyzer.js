@@ -1563,7 +1563,7 @@ function closeFilterPop() {
   fpop.hideT = setTimeout(() => {
     if (!pop.classList.contains("open")) pop.hidden = true;
     pop.classList.remove("closing");
-  }, 320);
+  }, 170);
   renderHeads();
   for (const c of document.querySelectorAll(".fc-chip.on")) c.classList.remove("on");
 }

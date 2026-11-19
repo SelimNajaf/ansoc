@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.9.1
+
+- **Reels table:** fixed column widths. The number columns now share the space (no empty gap next to *Views*), and the columns no longer change width when you filter or values change.
+- **Filter panel:** a quicker, springier opening (about a quarter second) and a fast close.
+
 ## 2.9.0
 
 - **Reels table, rebuilt:** the table fits the page, no sideways scrolling and no cut-off links.
