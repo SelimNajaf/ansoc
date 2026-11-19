@@ -124,9 +124,11 @@ async function analyze(e) {
     return;
   }
   $("fetchBtn").disabled = true;
-  const limit = parseInt($("limitSelect").value, 10);
-  loaderStart(profile, limit);
-  const res = await send({ type: "listReels", profile, limit });
+  const per = PERIODS[$("periodSelect").value] || PERIODS["count:120"];
+  // slots for the live strip: the count asked for, else the store's post count (more are added if needed)
+  const slots = per.sinceDays || per.gapDays || $("periodSelect").value === "all" ? Math.min(500, state.previewPosts || 120) : per.limit;
+  loaderStart(profile, slots);
+  const res = await send({ type: "listReels", profile, limit: per.limit, sinceDays: per.sinceDays, gapDays: per.gapDays });
   $("fetchBtn").disabled = false;
   loaderStop();
   if (!res.ok) {
@@ -214,6 +216,11 @@ function loaderAdd(n, views) {
   const lo = Math.log10(max / 1000);
   const span = Math.log10(max) - lo || 1;
   const med = median(known);
+  while (L.slots.length < L.views.length && L.slots.length < 500) {
+    const extra = el("div", { class: "ld-slot" });
+    $("ldStrip").append(extra);
+    L.slots.push(extra);
+  }
   L.views.forEach((v, i) => {
     const s = L.slots[i];
     if (!s) return;
@@ -252,6 +259,94 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 // ------------------------------------------------------------------ data model
+// ------------------------------------------------------------------ profile preview + what to read
+/*
+ * Before analysing: one quick request shows the store (followers, posts, bio, link, category),
+ * so the period / count can be chosen knowingly. "Current season" reads newest -> oldest and stops
+ * at the first pause of 14+ days between two reels; "Last N days" stops at that date.
+ */
+const PERIODS = {
+  "gap:14": { gapDays: 14, limit: 500 },
+  "since:30": { sinceDays: 30, limit: 500 },
+  "since:60": { sinceDays: 60, limit: 500 },
+  "since:90": { sinceDays: 90, limit: 500 },
+  "since:180": { sinceDays: 180, limit: 500 },
+  all: { limit: 500 },
+  "count:60": { limit: 60 },
+  "count:120": { limit: 120 },
+  "count:240": { limit: 240 },
+};
+function initPeriodSelect() {
+  const sel = $("periodSelect");
+  for (const o of sel.querySelectorAll("option[data-n]")) o.textContent = t("an_p_newest", [o.dataset.n]);
+  for (const g of sel.querySelectorAll("optgroup[data-label]")) g.label = t(g.dataset.label);
+  try {
+    const saved = localStorage.getItem("period");
+    if (saved && PERIODS[saved]) sel.value = saved;
+  } catch (_e) { /* default */ }
+  sel.addEventListener("change", () => {
+    try {
+      localStorage.setItem("period", sel.value);
+    } catch (_e) { /* not remembered */ }
+  });
+}
+const profileName = (v) => String(v || "").trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").split(/[/?#]/)[0].toLowerCase();
+let previewFor = "";
+let previewTimer = 0;
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => loadPreview(profileName($("profileInput").value)), 900);
+}
+async function loadPreview(name) {
+  if (!/^[a-z0-9._]{2,30}$/.test(name) || name === previewFor) return;
+  previewFor = name;
+  const box = $("profilePreview");
+  box.hidden = false;
+  box.classList.add("loading");
+  $("ppName").textContent = "@" + name;
+  $("ppStats").replaceChildren(el("span", { class: "muted", text: t("an_pp_loading") }));
+  $("ppBio").textContent = "";
+  $("ppLinks").replaceChildren();
+  $("ppCat").hidden = true;
+  const res = await send({ type: "profileInfo", profile: name });
+  if (previewFor !== name) return; // the user typed another name meanwhile
+  box.classList.remove("loading");
+  if (!res.ok) {
+    $("ppStats").replaceChildren(el("span", { class: "muted", text: res.error.message || t("err_UNKNOWN") }));
+    return;
+  }
+  renderPreview(res.data);
+}
+function profileStats(p) {
+  const chip = (icon, v, key) => (v == null ? null : el("span", { class: "pp-stat", title: t(key + "_tip") }, [
+    el("span", { class: "pp-i", text: icon }), el("strong", { text: cmp(v) }), el("span", { class: "muted", text: " " + t(key) }),
+  ]));
+  return [chip("👥", p.followers, "an_pp_followers"), chip("🎬", p.posts, "an_pp_posts"), chip("➡", p.following, "an_pp_following")].filter(Boolean);
+}
+function renderPreview(p) {
+  $("ppName").textContent = `@${p.username}${p.is_verified ? " ✓" : ""}${p.full_name ? " · " + p.full_name : ""}`;
+  $("ppStats").replaceChildren(...profileStats(p));
+  $("ppCat").hidden = !p.category;
+  $("ppCat").textContent = p.category || "";
+  $("ppBio").textContent = p.biography || "";
+  $("ppLinks").replaceChildren(...(p.links || []).map((u) => el("a", { href: u, target: "_blank", rel: "noopener noreferrer", text: "🔗 " + u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60) })));
+  if (p.is_private) $("ppStats").append(el("span", { class: "pp-stat bad", text: "🔒 " + t("an_pp_private") }));
+  // a count choice bigger than the store makes no sense: hint at it
+  $("ppHint").textContent = p.posts != null ? t("an_pp_hint", [cmp(p.posts)]) : "";
+  state.previewPosts = p.posts;
+}
+/** One line on the results card: which part of the store was read. */
+function periodText(d) {
+  const per = d.period || {};
+  const ts = (d.reels || []).filter((r) => !r.pinned).map((r) => (r.taken_at ? Date.parse(r.taken_at) || 0 : 0) || St.codeTime(r.code)).filter((x) => x > 0);
+  const from = ts.length ? dateShort(Math.min(...ts), true) : "";
+  if (d.stopped_by === "gap") return t("an_per_gap", [from, String(per.gap_days || 14)]);
+  if (d.stopped_by === "date") return t("an_per_since", [String(per.since_days), from]);
+  if (d.stopped_by === "limit") return t("an_per_limit", [String(d.count)]);
+  if (d.stopped_by === "end") return t("an_per_all", [String(d.count)]);
+  return "";
+}
+
 // ------------------------------------------------------------------ local cache (no extra Instagram requests)
 const CACHE_KEY = "reelsCache";
 const CACHE_MAX_PROFILES = 8;
@@ -678,8 +773,13 @@ function renderProfile() {
   if (p.followers != null) parts.push(t("an_followers", [cmp(p.followers)]));
   parts.push(t("an_reels_analyzed", [String(d.count)]));
   $("profileMeta").textContent = parts.join(" · ");
-  const notes = [];
-  if (d.truncated) notes.push(t("an_note_truncated", [String(d.count)]));
+  $("profileExtra").replaceChildren(...profileStats(p),
+    p.category ? el("span", { class: "chip pp-cat", text: p.category }) : null,
+    ...(p.links || []).slice(0, 2).map((u) => el("a", { class: "pp-link", href: u, target: "_blank", rel: "noopener noreferrer", text: "🔗 " + u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 40) })));
+  $("profileBio").textContent = p.biography || "";
+  $("profileBio").hidden = !p.biography;
+  const notes = [periodText(d)].filter(Boolean);
+  if (d.truncated && d.stopped_by !== "limit") notes.push(t("an_note_truncated", [String(d.count)]));
   if (d.missing_views) notes.push(t("an_note_missing", [String(d.missing_views)]));
   $("profileNote").textContent = notes.join(" ");
 }
@@ -2408,6 +2508,8 @@ function renderDetails() {
   if (pf) cell("an_col_score", `${pf.ratio.toFixed(1)}×`, t("an_dr_typical", [cmp(Math.round(pf.baseline)), pf.z.toFixed(1)]), pf.tier);
   cell("an_col_likes", r.likes != null ? fmt(r.likes) : "–", r.likeRate != null ? pctFine(r.likeRate) : "");
   cell("an_col_comments", r.comments != null ? fmt(r.comments) : "–", r.commentRate != null ? pctFine(r.commentRate) : "");
+  const shares = r.shares != null ? r.shares : det && det.shares != null ? det.shares : null;
+  if (shares != null) cell("an_col_shares", fmt(shares), r.views ? pctFine(shares / r.views) : "");
   const likeShareTxt = (cs) => (1 - cs > 0.99 ? `${((1 - cs) * 100).toFixed(1)}%` : pct(1 - cs)); // never "100%"
   cell("an_col_er", r.er != null ? pct(r.er) : "–", r.commentShare != null ? t("an_dr_mix", [likeShareTxt(r.commentShare), pctFine(r.commentShare)]) : "");
   if (pf && pf.erVsExpected != null) {
@@ -2982,7 +3084,7 @@ function reelRecord(r, timing, full) {
     posted_local: d ? `${dateKey(r.ts)} ${p2(d.getHours())}:${p2(d.getMinutes())}` : null,
     hour: d ? d.getHours() : null,
     age_days: r.ts ? round((state.now - r.ts) / St.DAY, 1) : null,
-    views: r.views ?? null, likes: r.likes ?? null, comments: r.comments ?? null,
+    views: r.views ?? null, likes: r.likes ?? null, comments: r.comments ?? null, shares: r.shares ?? (det && det.shares) ?? null,
     er: round(r.er, 5), like_rate: round(r.likeRate, 5), comment_rate: round(r.commentRate, 6), comment_share: round(r.commentShare, 4),
     views_per_day: round(r.vpd, 1),
     success_score: r.success ? r.success.score : null, success_tier: r.success ? r.success.tier : null,
@@ -3000,6 +3102,7 @@ function reelRecord(r, timing, full) {
     if (det) {
       rec.audio = det.audio || null;
       rec.location = det.location || null;
+      rec.alt_text = det.alt_text || null;
       rec.tagged = det.tagged || [];
       rec.coauthors = det.coauthors || [];
       rec.paid_partnership = !!det.paid_partnership;
@@ -3043,6 +3146,8 @@ async function exportSelected() {
     timezone_offset_min: -new Date().getTimezoneOffset(),
     store: {
       username: state.data.username, full_name: prof.full_name || null, followers: prof.followers ?? null,
+      following: prof.following ?? null, posts: prof.posts ?? null, category: prof.category || null,
+      biography: prof.biography || null, links: prof.links || [], period: state.data.period || null, stopped_by: state.data.stopped_by || null,
       analyzed_at: new Date(state.now).toISOString(),
       range: ts.length ? { from: dateKey(Math.min(...ts)), to: dateKey(Math.max(...ts)) } : null,
       reels: state.rows.length,
@@ -3109,6 +3214,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   i18nize();
   for (const opt of document.querySelectorAll("option[data-i18n]")) opt.textContent = t(opt.dataset.i18n);
   $("fetchForm").addEventListener("submit", analyze);
+  initPeriodSelect();
+  $("profileInput").addEventListener("input", schedulePreview);
   $("enableCookies").addEventListener("click", enableCookies);
   $("scaleLinear").addEventListener("click", () => {
     state.scale = "linear";
@@ -3218,6 +3325,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const u = new URLSearchParams(location.search).get("u");
   if (u) {
     $("profileInput").value = u;
+    loadPreview(profileName(u));
     const cached = await loadCache(u);
     if (cached) load(cached.data, cached.at); // instant, no request to Instagram
   }

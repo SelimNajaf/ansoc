@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.16.0
+
+- **See the store before analysing:** type or open a profile and a card shows followers, number of posts (reels are at most that many), category, bio and the link in bio — one quick request.
+- **Choose what to read instead of guessing a number:** *Current season* (reads newest → oldest and stops at the first pause of 14+ days — for seasonal stores), *Last 30 / 60 / 90 / 180 days*, *Everything (up to 500)*, or *Newest 60 / 120 / 240*. Your choice is remembered. Old pinned reels outside the period are left out.
+- The results card says which part was read (e.g. *Current season: since 12.10.2026*) and shows the bio, link and category.
+- Extra data: **shares** (when Instagram gives them) in the reel details, and the profile + Instagram's image description in *Export data*.
+- Needs the helper update: use **Update now** in the popup.
+
 ## 2.15.1
 
 - **Updates show up right away:** the popup now checks for a new version every time you open it (it used to wait up to 30 minutes).

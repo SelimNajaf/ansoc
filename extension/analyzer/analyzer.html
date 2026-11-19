@@ -39,16 +39,36 @@
         <input id="profileInput" type="text" spellcheck="false" placeholder="@username / https://www.instagram.com/username/reels/">
       </label>
       <label class="field">
-        <span class="label" data-i18n="an_limit"></span>
-        <select id="limitSelect">
-          <option value="30">30</option>
-          <option value="60">60</option>
-          <option value="120" selected>120</option>
-          <option value="240">240</option>
-          <option value="500">500</option>
+        <span class="label" data-i18n="an_period"></span>
+        <select id="periodSelect">
+          <optgroup data-label="an_p_by_time">
+            <option value="gap:14" data-i18n="an_p_season" selected></option>
+            <option value="since:30" data-i18n="an_p_30"></option>
+            <option value="since:60" data-i18n="an_p_60"></option>
+            <option value="since:90" data-i18n="an_p_90"></option>
+            <option value="since:180" data-i18n="an_p_180"></option>
+            <option value="all" data-i18n="an_p_all"></option>
+          </optgroup>
+          <optgroup data-label="an_p_by_count">
+            <option value="count:60" data-n="60"></option>
+            <option value="count:120" data-n="120"></option>
+            <option value="count:240" data-n="240"></option>
+          </optgroup>
         </select>
       </label>
       <button id="fetchBtn" type="submit" class="primary" data-i18n="an_analyze"></button>
+      <section id="profilePreview" class="pp" hidden aria-live="polite">
+        <div class="pp-head">
+          <strong id="ppName"></strong>
+          <span id="ppCat" class="chip pp-cat" hidden></span>
+          <span id="ppStats" class="pp-stats"></span>
+        </div>
+        <div id="ppBio" class="pp-bio small"></div>
+        <div class="pp-foot small">
+          <span id="ppLinks" class="pp-links"></span>
+          <span id="ppHint" class="muted"></span>
+        </div>
+      </section>
     </form>
 
     <section id="progressBox" class="card loader" hidden aria-live="polite">
@@ -75,6 +95,8 @@
         <div>
           <div id="profileName" class="pname"></div>
           <div id="profileMeta" class="muted small"></div>
+          <div id="profileExtra" class="pp-stats small"></div>
+          <div id="profileBio" class="pp-bio small" hidden></div>
         </div>
         <div id="profileNote" class="muted small"></div>
         <div id="cacheNote" class="cache-note small" hidden></div>

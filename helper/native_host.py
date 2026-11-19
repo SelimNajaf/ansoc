@@ -181,7 +181,13 @@ def handle(action: str, params: dict, progress) -> dict:
         eng = router.get_engine("instagram")(progress)
         _prep(eng, params)
         return eng.list_reels(params.get("profile", ""), int(params.get("limit") or 100), cookies,
-                              bool(params.get("enrich_missing", True)))
+                              bool(params.get("enrich_missing", True)),
+                              float(params["since_days"]) if params.get("since_days") else None,
+                              float(params["gap_days"]) if params.get("gap_days") else None)
+    if action == "profile_info":  # quick look before analysing: followers, posts, bio, link
+        eng = router.get_engine("instagram")(progress)
+        _prep(eng, params)
+        return eng.profile_info(params.get("profile", ""), cookies)
     if action == "check_update":  # latest version published on GitHub
         import updater
 

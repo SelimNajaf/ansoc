@@ -873,11 +873,32 @@ const handlers = {
       if (!login.cookies.some((c) => c.name === "sessionid" && c.value)) {
         throw new PDError(E.LOGIN_REQUIRED, "Not logged in to instagram.com in this Chrome profile");
       }
-      return await PD.native.request("list_reels", { profile: String(msg.profile || ""), limit, ...login },
+      const period = {};
+      if (Number(msg.sinceDays) > 0) period.since_days = Number(msg.sinceDays);
+      if (Number(msg.gapDays) > 0) period.gap_days = Number(msg.gapDays);
+      return await PD.native.request("list_reels", { profile: String(msg.profile || ""), limit, ...period, ...login },
         { onProgress: progress, timeout: 30 * 60 * 1000 });
     } finally {
       running--;
     }
+  },
+  /** Quick look at a profile before analysing (one Instagram request, kept for 6 hours). */
+  async profileInfo(msg) {
+    const name = String(msg.profile || "").trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").split(/[/?#]/)[0].toLowerCase();
+    if (!/^[a-z0-9._]{1,30}$/.test(name)) throw new PDError(E.BAD_REQUEST, "bad profile");
+    const KEY = "profileInfo";
+    const store = (await chrome.storage.local.get(KEY))[KEY] || {};
+    if (!msg.refresh && store[name] && Date.now() - store[name].at < 6 * 3600 * 1000) return Object.assign({ cached: store[name].at }, store[name].data);
+    await load();
+    if (!settings.useBrowserCookies) throw new PDError(E.LOGIN_REQUIRED, "Enable \"use Chrome's login\" first");
+    const st = await PD.native.status(true);
+    if (!st.ok) throw new PDError((st.error && st.error.code) || E.HOST_NOT_INSTALLED, st.error && st.error.message);
+    const data = await PD.native.request("profile_info", { profile: name, ...(await loginParams("instagram")) }, { timeout: 60000 });
+    store[name] = { at: Date.now(), data };
+    const keys = Object.keys(store).sort((a, b) => store[b].at - store[a].at);
+    for (const k of keys.slice(50)) delete store[k];
+    await chrome.storage.local.set({ [KEY]: store });
+    return data;
   },
   /** Bulk download of picked items into one collection folder. */
   async downloadSelected(msg) {

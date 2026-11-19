@@ -1405,5 +1405,77 @@
   },
   "ww_day_tip": {
     "message": "$1 reels that day · $2 days · ≈ $3 hits/day"
+  },
+  "an_period": {
+    "message": "What to read"
+  },
+  "an_p_by_time": {
+    "message": "By time"
+  },
+  "an_p_by_count": {
+    "message": "By count"
+  },
+  "an_p_season": {
+    "message": "Current season (stops at a 14-day pause)"
+  },
+  "an_p_30": {
+    "message": "Last 30 days"
+  },
+  "an_p_60": {
+    "message": "Last 60 days"
+  },
+  "an_p_90": {
+    "message": "Last 90 days"
+  },
+  "an_p_180": {
+    "message": "Last 180 days"
+  },
+  "an_p_all": {
+    "message": "Everything (up to 500 reels)"
+  },
+  "an_p_newest": {
+    "message": "Newest $1 reels"
+  },
+  "an_pp_loading": {
+    "message": "Looking up…"
+  },
+  "an_pp_followers": {
+    "message": "followers"
+  },
+  "an_pp_followers_tip": {
+    "message": "Followers"
+  },
+  "an_pp_posts": {
+    "message": "posts"
+  },
+  "an_pp_posts_tip": {
+    "message": "All posts on the profile (reels + photos + carousels): the number of reels is at most this"
+  },
+  "an_pp_following": {
+    "message": "following"
+  },
+  "an_pp_following_tip": {
+    "message": "Accounts this store follows"
+  },
+  "an_pp_private": {
+    "message": "private"
+  },
+  "an_pp_hint": {
+    "message": "≤ $1 reels"
+  },
+  "an_per_gap": {
+    "message": "📅 Current season: since $1 (stopped at a $2+ day pause)"
+  },
+  "an_per_since": {
+    "message": "📅 Last $1 days: since $2"
+  },
+  "an_per_limit": {
+    "message": "📅 Newest $1 reels"
+  },
+  "an_per_all": {
+    "message": "📅 All $1 reels"
+  },
+  "an_col_shares": {
+    "message": "Shares"
   }
 }

@@ -745,3 +745,20 @@ body.shooting .shot-btn { animation: none; }
 .hc-sw-bar { background: var(--good); }
 .sw.line.hc-sw-curve { border-top: 2.5px solid var(--info); }
 .hc-sw-band { background: color-mix(in srgb, var(--good) 20%, transparent); box-shadow: inset 0 0 0 1px var(--good); }
+
+/* profile preview (before analysing) and the extra profile line on the results card */
+.fetch { flex-wrap: wrap; }
+.pp { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--r-m); background: var(--bg); border: 1px solid var(--line); animation: fc-in var(--t) var(--ease-io); }
+.pp.loading { opacity: .7; }
+.pp-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pp-stats { display: inline-flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.pp-stat { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.pp-stat.bad { color: var(--bad); }
+.pp-i { font-size: 12px; }
+.pp-cat { font-size: var(--fs-xs); font-weight: 600; padding: 2px 8px; border-radius: var(--r-pill); background: var(--soft); color: var(--muted); }
+.pp-bio { color: var(--muted); white-space: pre-wrap; max-height: 3.2em; overflow: hidden; }
+.pp-foot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pp-links { display: inline-flex; gap: 10px; flex-wrap: wrap; }
+.pp-links a, .pp-link { text-decoration: none; }
+#profileExtra { margin-top: 6px; }
+#profileExtra .pp-link { margin-left: 4px; }

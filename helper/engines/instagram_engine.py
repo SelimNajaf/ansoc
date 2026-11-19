@@ -311,6 +311,7 @@ class InstagramEngine(BaseEngine):
                                      "video_play_count", "fb_play_count"),
             "likes": self._first_num(media, "like_count"),
             "comments": self._first_num(media, "comment_count"),
+            "shares": self._first_num(media, "reshare_count", "share_count", "media_repost_count"),
             # the GraphQL reels-tab query no longer returns taken_at: decode it from the shortcode
             "taken_at": self._iso(media.get("taken_at")) or self._code_time(code),
             "duration": media.get("video_duration"),
@@ -447,7 +448,9 @@ class InstagramEngine(BaseEngine):
             "views": self._first_num(media, "play_count", "ig_play_count", "view_count", "video_view_count"),
             "likes": self._first_num(media, "like_count"),
             "comments": self._first_num(media, "comment_count"),
+            "shares": self._first_num(media, "reshare_count", "share_count", "media_repost_count"),
             "duration": media.get("video_duration"),
+            "alt_text": (media.get("accessibility_caption") or "")[:500],
             "audio": audio,
             "location": loc.get("name") or "",
             "tagged": [t for t in tags if t][:30],
@@ -458,11 +461,81 @@ class InstagramEngine(BaseEngine):
             "like_count_hidden": bool(media.get("like_and_view_counts_disabled")),
         }
 
+    def _profile_from_user(self, user: dict, username: str) -> Dict[str, Any]:
+        """The store's public profile: size, bio, link, category (one web_profile_info answer)."""
+        links = []
+        for b in user.get("bio_links") or []:
+            u = (b or {}).get("url") or (b or {}).get("lynx_url") or ""
+            if u:
+                links.append(u)
+        ext = user.get("external_url") or ""
+        if ext and ext not in links:
+            links.insert(0, ext)
+        return {
+            "username": user.get("username") or username,
+            "full_name": user.get("full_name") or "",
+            "followers": self._first_num(user, "follower_count") or
+            self._first_num(user.get("edge_followed_by") or {}, "count"),
+            "following": self._first_num(user, "following_count") or
+            self._first_num(user.get("edge_follow") or {}, "count"),
+            "posts": self._first_num(user, "media_count") or
+            self._first_num(user.get("edge_owner_to_timeline_media") or {}, "count"),
+            "biography": (user.get("biography") or "")[:600],
+            "links": links[:5],
+            "category": user.get("category_name") or user.get("business_category_name") or "",
+            "is_business": bool(user.get("is_business_account")),
+            "is_private": bool(user.get("is_private")),
+            "is_verified": bool(user.get("is_verified")),
+        }
+
+    def profile_info(self, profile: str, use_browser_cookies: bool = False) -> Dict[str, Any]:
+        """One quick request before analysing: followers, number of posts, bio, link, category."""
+        username = self.profile_username(profile)
+        if not use_browser_cookies:
+            raise HelperError(E_LOGIN_REQUIRED, "Needs Instagram login: enable \"use Chrome's login\".")
+        if not module_available("gallery_dl"):
+            raise HelperError(E_NO_MEDIA, "gallery-dl is not installed")
+        with _GDL_LOCK:
+            from gallery_dl import extractor
+
+            if self.dl.cookies and not self.dl.has_cookie("sessionid"):
+                raise HelperError(E_LOGIN_REQUIRED, "You are not logged in to instagram.com in this Chrome profile.")
+            self._gdl_setup({c["name"]: c["value"] for c in self.dl.cookies} if self.dl.cookies else True)
+            try:
+                ex = extractor.find(f"https://www.instagram.com/{username}/reels/")
+                if ex is None:
+                    raise HelperError(E_BAD_REQUEST, f"gallery-dl cannot handle {username}")
+                ex.initialize()
+                ex.login()
+                user = ex.api.user(username) or {}
+                if not user:
+                    raise HelperError(E_NO_MEDIA, f"Profile not found: {username}")
+                return self._profile_from_user(user, username)
+            except HelperError:
+                raise
+            except Exception as exc:
+                raise self._gdl_error(exc) from exc
+            finally:
+                from gallery_dl import config
+
+                config.clear()
+
+    @staticmethod
+    def _epoch(iso: str) -> Optional[float]:
+        try:
+            return _dt.datetime.fromisoformat(iso).timestamp() if iso else None
+        except ValueError:
+            return None
+
     def list_reels(self, profile: str, limit: int = 100, use_browser_cookies: bool = False,
-                   enrich_missing: bool = True) -> Dict[str, Any]:
+                   enrich_missing: bool = True, since_days: Optional[float] = None,
+                   gap_days: Optional[float] = None) -> Dict[str, Any]:
         """Reels of a profile with view / like / comment counts. Nothing is downloaded.
 
-        Uses Instagram's own Reels-tab API through gallery-dl (12 reels per request)."""
+        Uses Instagram's own Reels-tab API through gallery-dl (12 reels per request). The tab is
+        newest first, so it can stop early: at `since_days` (only the last N days) or at the first
+        pause longer than `gap_days` between two reels (a seasonal store's current season).
+        Pinned reels sit on top whatever their age: they are kept only if they fall in the period."""
         username = self.profile_username(profile)
         if not use_browser_cookies:
             raise HelperError(E_LOGIN_REQUIRED, "Listing reels needs Instagram login: enable \"use Chrome's login\".")
@@ -486,26 +559,36 @@ class InstagramEngine(BaseEngine):
                     raise HelperError(E_LOGIN_REQUIRED, "No Instagram login found in Chrome. Log in to "
                                       "instagram.com in Chrome, then retry.")
                 user = ex.api.user(username) or {}
-                profile_info = {
-                    "username": user.get("username") or username,
-                    "full_name": user.get("full_name") or "",
-                    "followers": self._first_num(user, "follower_count") or
-                    self._first_num(user.get("edge_followed_by") or {}, "count"),
-                    "is_private": bool(user.get("is_private")),
-                    "is_verified": bool(user.get("is_verified")),
-                }
+                profile_info = self._profile_from_user(user, username)
                 # "profile:<name>:<followers>" lets the page show who it is reading while it waits
                 self.dl.progress(None, f"profile:{profile_info['username']}:{profile_info['followers'] or ''}",
                                  force=True)
                 rows: List[Dict[str, Any]] = []
+                pinned: List[Dict[str, Any]] = []
                 seen = set()
                 truncated = False
+                stopped_by = "end"
+                cutoff = time.time() - float(since_days) * 86400 if since_days else None
+                last_ts: Optional[float] = None
                 for node in ex.api.user_reels(username):
                     media = node.get("media", node) if isinstance(node, dict) else {}
                     row = self._reel_row(media)
                     if not row["code"] or row["code"] in seen:
                         continue
                     seen.add(row["code"])
+                    ts = self._epoch(row.get("taken_at") or "")
+                    if row.get("pinned"):
+                        pinned.append(row)  # decided at the end, when the period is known
+                        continue
+                    if ts is not None and cutoff is not None and ts < cutoff:
+                        stopped_by = "date"
+                        break
+                    if ts is not None and gap_days and last_ts is not None and len(rows) >= 3 \
+                            and last_ts - ts > float(gap_days) * 86400:
+                        stopped_by = "gap"
+                        break
+                    if ts is not None:
+                        last_ts = ts
                     rows.append(row)
                     # every reel is reported (not throttled): the page draws one bar per reel, height = views
                     views = row["views"]
@@ -513,7 +596,17 @@ class InstagramEngine(BaseEngine):
                                      f"reels:{len(rows)}:{-1 if views is None else int(views)}", force=True)
                     if len(rows) >= limit:
                         truncated = True
+                        stopped_by = "limit"
                         break
+                # pinned reels count only if they belong to the period that was read
+                oldest = min((self._epoch(r.get("taken_at") or "") or 0) for r in rows) if rows else 0
+                for row in pinned:
+                    ts = self._epoch(row.get("taken_at") or "") or 0
+                    # read to the very end: every pinned reel inside the period counts; stopped early:
+                    # only those not older than the oldest reel that was read
+                    if ts >= ((cutoff or 0) if stopped_by == "end" else max(oldest, cutoff or 0)):
+                        rows.append(row)
+                rows.sort(key=lambda r: r.get("taken_at") or "", reverse=True)
                 # Some responses omit the counter; ask for those reels individually (slowly).
                 missing = [r for r in rows if r["views"] is None]
                 if enrich_missing and missing and len(missing) <= 60:
@@ -545,6 +638,8 @@ class InstagramEngine(BaseEngine):
             "reels": rows,
             "count": len(rows),
             "truncated": truncated,
+            "stopped_by": stopped_by,
+            "period": {"since_days": since_days, "gap_days": gap_days, "limit": limit},
             "missing_views": sum(1 for r in rows if r["views"] is None),
             "fetched_at": now_iso(),
         }
