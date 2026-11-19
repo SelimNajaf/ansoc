@@ -24,6 +24,8 @@
     return 50 + (x / LIMIT) * 50; // percent from the left; 1x = 50%
   };
   const fmt = (r) => `${r >= 10 ? Math.round(r) : r.toFixed(1)}×`;
+  // around 1x (0.95-1.05) is "as usual": grey, not green / red
+  const tone = (r) => (r >= 1.05 ? "good" : r <= 0.95 ? "bad" : "mid");
 
   /** Dots for how sure we are: ●●● clear, ●●○ likely, ●○○ few reels. */
   function confidence(e) {
@@ -34,8 +36,8 @@
 
   /**
    * Horizontal bars, one per group, around a 1x line (= the store's normal level):
-   * green to the right = better than usual, red to the left = worse. The thin line is the
-   * 80% interval; the best group gets a star.
+   * green to the right = better than usual, red to the left = worse. The whisker is the
+   * 80% interval; the best group is highlighted with a star.
    */
   function bars(effects, opts) {
     opts = opts || {};
@@ -43,31 +45,43 @@
     const byGroup = new Map(effects.map((e) => [e.group, e]));
     const best = PD.stats.bestEffect(effects);
     const box = el("div", { class: "fx-bars" });
+    // scale above the bars: 0.5x · 1x · 2x, worse on the left, better on the right
+    const scale = el("span", { class: "fx-scale" }, [
+      el("span", { class: "fx-tick", style: `left:${pos(0.5)}%`, text: "0.5×" }),
+      el("span", { class: "fx-tick mid", style: "left:50%", text: "1×" }),
+      el("span", { class: "fx-tick", style: `left:${pos(2)}%`, text: "2×" }),
+      el("span", { class: "fx-side bad", text: "◂ " + t("fx_worse") }),
+      el("span", { class: "fx-side good", text: t("fx_better") + " ▸" }),
+    ]);
+    box.append(el("div", { class: "fx-row fx-head" }, [el("span"), scale, el("span"), el("span")]));
     for (const g of order) {
       const e = byGroup.get(g);
       const label = opts.label ? opts.label(g) : String(g);
       if (!e) {
-        box.append(el("div", { class: "fx-row empty" }, [el("span", { class: "fx-label", text: label }), el("span", { class: "fx-track" }), el("span", { class: "fx-val muted", text: "–" }), el("span")]));
+        box.append(el("div", { class: "fx-row empty" }, [
+          el("span", { class: "fx-label", text: label }), el("span", { class: "fx-track" }, [el("span", { class: "fx-mid" })]),
+          el("span", { class: "fx-val muted", text: "–" }), el("span"),
+        ]));
         continue;
       }
       const p = pos(e.ratio);
       const good = e.ratio >= 1;
       const track = el("span", { class: "fx-track" }, [el("span", { class: "fx-mid" })]);
-      track.append(el("span", {
-        class: `fx-bar ${good ? "good" : "bad"}`,
-        style: good ? `left:50%;width:${p - 50}%` : `left:${p}%;width:${50 - p}%`,
-      }));
       if (e.lo != null) {
         const a = pos(e.lo);
         const b = pos(e.hi);
         track.append(el("span", { class: "fx-ci", style: `left:${a}%;width:${Math.max(0.5, b - a)}%` }));
       }
+      track.append(el("span", {
+        class: `fx-bar ${good ? "good" : "bad"}`,
+        style: good ? `left:50%;width:${Math.max(0.6, p - 50)}%` : `left:${p}%;width:${Math.max(0.6, 50 - p)}%`,
+      }));
       const isBest = best && best.group === g;
       const tip = t("fx_row_tip", [label, fmt(e.ratio), e.lo != null ? `${fmt(e.lo)} – ${fmt(e.hi)}` : "–", String(e.n), String(e.stores)]);
       box.append(el("div", { class: `fx-row${isBest ? " best" : ""}${e.enough ? "" : " few"}`, title: tip }, [
-        el("span", { class: "fx-label", text: (isBest ? "★ " : "") + label }),
+        el("span", { class: "fx-label" }, [isBest ? el("span", { class: "fx-star", text: "★" }) : null, el("span", { text: label })]),
         track,
-        el("span", { class: `fx-val ${good ? "good" : "bad"}`, text: fmt(e.ratio) }),
+        el("span", { class: `fx-val ${tone(e.ratio)}`, text: fmt(e.ratio) }),
         el("span", { class: "fx-n" }, [confidence(e), el("span", { text: ` ${e.n}` })]),
       ]));
     }
@@ -81,8 +95,8 @@
       el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon", text: icon }), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
       el("div", { class: "fx-tile-val", text: best ? label(best.group) : t("fx_not_enough") }),
       best ? el("div", { class: "fx-tile-sub" }, [
-        el("span", { class: best.ratio >= 1 ? "good" : "bad", text: fmt(best.ratio) }),
-        el("span", { text: ` · ${t("fx_reels", [String(best.n)])} ` }),
+        el("span", { class: "fx-pill " + tone(best.ratio), text: fmt(best.ratio) }),
+        el("span", { class: "fx-tile-n", text: t("fx_reels", [String(best.n)]) }),
         confidence(best),
       ]) : el("div", { class: "fx-tile-sub muted", text: t("fx_need_more") }),
     ]);

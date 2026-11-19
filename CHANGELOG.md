@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.8.0
+
+- **Top numbers, cleaner:** two groups, *Views* and *Engagement*. *Typical range* now has a small bar (min – max, the middle 50 %, median, P90). *Engagement mix* shows likes : comments as a bar. Removed: Viral / Strong / Winner / High engagement / Top 10 % tiles and *How is this calculated?*.
+- **Views distribution:** logarithmic by default. Bars of viral reels are gold, the typical range is a soft band, and the viral line shows how many there are (click it to list them in the table). The row of facts under the chart is gone.
+- **Posting activity:** new tiles: posts per day (with per week / 30 d), last 30 days vs the 30 before, typical gap, longest pause, last post, active days, most in one day and 🔥 *Hot now* (views/day of the best new reel; click to open it). The interval and line switches sit right above the chart; the line shows total views by default. Viral reels show as a gold part of each bar.
+- **What works:** new tiles and effect bars with a 0.5× · 1× · 2× scale; results around 1× are grey instead of red.
+- **Posting hours:** clearer green / red / grey bars and one continuous outline for the best window.
+
 ## 2.7.0
 
 - **Filters on the Reels table:** click a column header (Views, Engagement, Comment rate …) and a panel slides open with a slider, a small chart of the values and the average. Drag the two handles, or pick *Above avg* / *Top 25%* / *Top 10%*. *Data* = slider from the lowest to the highest reel, *Standard* = a fixed typical range.

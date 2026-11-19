@@ -386,9 +386,6 @@
   "an_stat_typical": {
     "message": "Typical range"
   },
-  "an_stat_typical_sub": {
-    "message": "middle 50%"
-  },
   "an_tip_typical": {
     "message": "50% of reels fall inside this range."
   },
@@ -397,27 +394,6 @@
   },
   "an_tip_p90": {
     "message": "90th percentile."
-  },
-  "an_stat_range": {
-    "message": "Range"
-  },
-  "an_stat_viral": {
-    "message": "Viral reels"
-  },
-  "an_stat_viral_sub": {
-    "message": "≥ $1 typical"
-  },
-  "an_tip_viral": {
-    "message": "Views ≥ this many times the profile's typical level (≈ top 2%)."
-  },
-  "an_stat_top10": {
-    "message": "Top 10% share"
-  },
-  "an_stat_top10_sub": {
-    "message": "of all views ($1 reels)"
-  },
-  "an_tip_top10": {
-    "message": "Share of all views from the best 10% of reels."
   },
   "an_stat_er": {
     "message": "Engagement (median)"
@@ -460,36 +436,6 @@
   },
   "an_reels_count": {
     "message": "$1 reels"
-  },
-  "an_ins_dense": {
-    "message": "$1 of the reels fall between $2 and $3 views."
-  },
-  "an_ins_typical": {
-    "message": "Middle 50% of reels: $1 – $2 views."
-  },
-  "an_ins_skew": {
-    "message": "The average ($1) is pulled up by a few hits; the median ($2) is the better 'normal' value."
-  },
-  "an_ins_viral": {
-    "message": "$1 viral reels (≥ $2 typical) bring $3 of all views."
-  },
-  "an_ins_no_viral": {
-    "message": "No viral reels: results are even."
-  },
-  "an_ins_top10": {
-    "message": "Top $1 reels (10%) bring $2 of all views."
-  },
-  "an_ins_volatile": {
-    "message": "Hit-driven: views vary a lot."
-  },
-  "an_ins_stable": {
-    "message": "Steady: views are similar."
-  },
-  "an_ins_trend_up": {
-    "message": "The newer half of the reels has a $1 higher median than the older half."
-  },
-  "an_ins_trend_down": {
-    "message": "The newer half of the reels has a $1 lower median than the older half."
   },
   "an_reels": {
     "message": "Reels"
@@ -620,23 +566,8 @@
   "an_act_per1": {
     "message": "Per day"
   },
-  "an_act_per3": {
-    "message": "Per 3 days"
-  },
-  "an_act_per7": {
-    "message": "Per week"
-  },
-  "an_act_per30": {
-    "message": "Per 30 days"
-  },
   "an_act_posts": {
     "message": "posts"
-  },
-  "an_act_gap_mean": {
-    "message": "Average gap between posts"
-  },
-  "an_act_gap_median": {
-    "message": "typically (median): $1"
   },
   "an_tip_gap": {
     "message": "Time between two reels (median ignores long pauses)."
@@ -674,12 +605,6 @@
   "an_filter_date": {
     "message": "Dates $1: $2 reels"
   },
-  "an_ai_pace": {
-    "message": "~$1 reels a week, usually $2 apart."
-  },
-  "an_ai_trend_restart": {
-    "message": "Silent for a month, now $1 reels: active again."
-  },
   "an_ai_trend_up": {
     "message": "Pace is rising: $1 reels in the last 30 days vs $2 in the 30 before. Often a new product test or pushing a winner."
   },
@@ -692,107 +617,14 @@
   "an_ai_inactive": {
     "message": "Last reel $1 days ago: paused?"
   },
-  "an_ai_when": {
-    "message": "Posts most on $1, between $2."
-  },
-  "an_ai_best_day": {
-    "message": "Best results on $1: median $2 views ($3 reels) vs $4 overall."
-  },
-  "an_ai_best_time": {
-    "message": "Best time slot $1: median $2 views ($3 reels)."
-  },
-  "an_ai_multi_worse": {
-    "message": "Days with 2+ reels get median $1 views vs $2 on single-post days — posting more splits the views."
-  },
-  "an_ai_multi_better": {
-    "message": "Days with 2+ reels get median $1 views vs $2 on single-post days — posting more doesn't hurt this profile."
-  },
-  "an_ai_multi_same": {
-    "message": "No real difference in median views between 2+ post days ($1) and single-post days ($2)."
-  },
-  "an_ai_regular": {
-    "message": "Very regular: probably scheduled."
-  },
-  "an_ai_bursty": {
-    "message": "Bursts and pauses (campaigns / product tests)."
-  },
-  "an_ai_pause": {
-    "message": "Longest pause $1 days: $2 – $3."
-  },
   "an_ai_hot": {
     "message": "~$1 views/day ($2) — “$3”"
-  },
-  "an_ai_truncated": {
-    "message": "Only the latest $1 reels were analyzed. Raise the limit for more history."
   },
   "an_weekdays_short": {
     "message": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
   },
   "an_weekdays_long": {
     "message": "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
-  },
-  "an_stat_strong": {
-    "message": "Strong reels"
-  },
-  "an_stat_strong_sub": {
-    "message": "≥ $1 typical"
-  },
-  "an_tip_strong": {
-    "message": "Clearly above typical (≈ top 16%), not viral."
-  },
-  "an_stat_winner": {
-    "message": "Winner candidates"
-  },
-  "an_stat_winner_sub": {
-    "message": "reach + engagement"
-  },
-  "an_tip_winner": {
-    "message": "Strong reach + more engagement than that reach usually gets: the best sign of a product with demand."
-  },
-  "an_stat_high_er": {
-    "message": "High engagement"
-  },
-  "an_stat_high_er_sub": {
-    "message": "$1 by comments"
-  },
-  "an_tip_high_er": {
-    "message": "Engagement far above what this reach usually gets (z ≥ 2)."
-  },
-  "an_method_title": {
-    "message": "How is this calculated?"
-  },
-  "an_method_few": {
-    "message": "Needs at least 8 reels with views."
-  },
-  "an_method_why": {
-    "message": "Why not '3× median' or '2× average'? Views on social video are heavy-tailed (a few reels get most of the views). A fixed multiplier then means something different on every profile: on a steady account '3× median' is almost never reached, on a volatile one it labels 1 in 5 reels viral. The average is pulled up by the hits themselves, so 'above average' is simply the top ~30%. So this tool measures how unusual a reel is for this profile, on a log scale, with outlier-resistant statistics."
-  },
-  "an_method_baseline_local": {
-    "message": "Typical views = the median of the ~30 reels posted closest in time to each reel. A growing (or shrinking) account is compared with its own level at that moment, not with its whole history."
-  },
-  "an_method_baseline_global": {
-    "message": "Typical views = the median of all analyzed reels (fewer than 20 reels, so no time-local baseline)."
-  },
-  "an_method_tiers": {
-    "message": "This profile's spread (robust standard deviation of log views, from the median absolute deviation) is $1. Strong = at least $2 typical views (z ≥ 1, about the top 16%). Viral = at least $3 typical views (z ≥ 2, about the top 2%). Viral is never below 3× and strong never below 1.5×, so a steady account doesn't call a small bump viral."
-  },
-  "an_method_eng": {
-    "message": "Engagement is judged against reach, because on real profiles they move together: here log(likes + comments) grows with log(views) with slope $1 (1.0 would mean the engagement rate doesn't depend on views; above 1 = reels with more views also get a higher rate). A robust (Theil–Sen) line gives the expected engagement for every view count; 'ER vs expected' is the difference from that line, and its robust z decides High engagement (z ≥ 2) and Winner (strong or viral reach + z ≥ 1). Comments get their own line (slope $2: below 1 = the comment rate falls as reach grows)."
-  },
-  "an_method_new": {
-    "message": "Reels younger than 3 days are still collecting views: they are marked NEW, left out of the baselines and never called weak."
-  },
-  "an_ins_winner": {
-    "message": "$1 winners: strong reach + strong engagement. Check these products first."
-  },
-  "an_ins_viral_low_er": {
-    "message": "$1 viral reels got weak engagement (watched, not acted on)."
-  },
-  "an_ins_talk": {
-    "message": "$1 reels get unusually many comments: read them for buying questions."
-  },
-  "an_viral_line": {
-    "message": "Viral ≈"
   },
   "an_sig_viral": {
     "message": "VIRAL"
@@ -836,20 +668,11 @@
   "an_sig_talk_tip": {
     "message": "Comments per view z = $1 (≥ 2) for this reach, and at least 5 comments."
   },
-  "an_viral_legend": {
-    "message": "Viral ≈"
-  },
   "an_col_erAdj": {
     "message": "ER vs expected"
   },
   "an_tip_eradj": {
     "message": "ER $1 · expected for this reach $2 · z = $3"
-  },
-  "an_method_tail": {
-    "message": "Viral rate on this profile: $1 of reels. A pure log-normal (no real virality) would give about 2%; anything clearly above that is a genuine viral tail."
-  },
-  "an_method_dates": {
-    "message": "Instagram's reels list doesn't return post dates any more, so dates are decoded from each reel's shortcode (the media ID contains its creation time). Accurate to the minute for normal posts."
   },
   "an_rb_title": {
     "message": "Time range"
@@ -902,14 +725,8 @@
   "an_stat_mix": {
     "message": "Engagement mix"
   },
-  "an_stat_mix_sub": {
-    "message": "1 comment / $1 likes"
-  },
   "an_tip_mix": {
     "message": "Share of engagement from likes vs comments. More comments = more questions / buying interest."
-  },
-  "an_stat_rates": {
-    "message": "Like rate · comment rate"
   },
   "an_stat_rates_sub": {
     "message": "of views"
@@ -958,9 +775,6 @@
   },
   "an_lg_new": {
     "message": "New (< 3 days)"
-  },
-  "an_ins_rising": {
-    "message": "$1 new reels are already strong and still growing."
   },
   "an_line_label": {
     "message": "Line:"
@@ -1274,54 +1088,6 @@
   "an_csv_done": {
     "message": "CSV saved: $1 reels"
   },
-  "f_typical": {
-    "message": "Typical $1–$2"
-  },
-  "f_viral": {
-    "message": "$1 viral → $2 of views"
-  },
-  "f_no_viral": {
-    "message": "No viral reels"
-  },
-  "f_winners": {
-    "message": "$1 winners"
-  },
-  "f_talk": {
-    "message": "$1 talked about"
-  },
-  "f_rising": {
-    "message": "$1 rising"
-  },
-  "f_top10": {
-    "message": "Top 10% = $1 of views"
-  },
-  "f_trend": {
-    "message": "Newer reels $1"
-  },
-  "f_pace": {
-    "message": "$1 / week · every $2"
-  },
-  "f_restart": {
-    "message": "Active again: $1 in 30 d"
-  },
-  "f_last30": {
-    "message": "30 d: $1 (before: $2)"
-  },
-  "f_silent": {
-    "message": "Silent $1 d"
-  },
-  "f_regular": {
-    "message": "Fixed schedule"
-  },
-  "f_bursty": {
-    "message": "Bursts + pauses"
-  },
-  "f_hot": {
-    "message": "Hot: $1 / day"
-  },
-  "f_truncated": {
-    "message": "Last $1 reels only"
-  },
   "ww_title": {
     "message": "What works"
   },
@@ -1525,5 +1291,50 @@
   },
   "an_tier_rising": {
     "message": "Rising"
+  },
+  "an_kg_views": {
+    "message": "Views"
+  },
+  "an_kg_eng": {
+    "message": "Engagement"
+  },
+  "an_kpi_mix_sub": {
+    "message": "likes : comment"
+  },
+  "an_kpi_pace_sub": {
+    "message": "$1 / week · $2 / 30 d"
+  },
+  "an_kpi_last30": {
+    "message": "Last 30 days"
+  },
+  "an_kpi_before": {
+    "message": "before: $1"
+  },
+  "an_kpi_gap": {
+    "message": "Typical gap"
+  },
+  "an_kpi_gap_sub": {
+    "message": "avg $1"
+  },
+  "an_kpi_hot": {
+    "message": "Hot now"
+  },
+  "an_kpi_hot_sub": {
+    "message": "views / day · best new reel"
+  },
+  "an_viral_word": {
+    "message": "Viral"
+  },
+  "an_viral_click": {
+    "message": "Show these reels in the table"
+  },
+  "an_act_tip_viral": {
+    "message": "$1 viral"
+  },
+  "fx_worse": {
+    "message": "worse"
+  },
+  "fx_better": {
+    "message": "better"
   }
 }

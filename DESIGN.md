@@ -19,7 +19,7 @@ The values live in **`extension/ui/tokens.css`**; every page links it before its
 | `--brand-grad-up` | red → orange, bottom to top | plain data bars (one reel, one bin, one period) |
 | `--brand` | `#f0412f` | solid stand-in for the gradient: focus rings, outlines, selected item |
 | `--data`, `--data-hover`, `--data-dim` | coral | lines, selection tints, hover, faded bars |
-| `--hit`, `--hit-grad`, `--hit-glow` | gold | **a hit**: viral, winner, best reel. Gold is reserved for this |
+| `--hit`, `--hit-grad`, `--hit-glow` | gold | **a hit**: viral, winner, best reel. Gold is reserved for this (SVG: `fill: url(#gHit)`) |
 | `--good` | green | better than usual, success, "best window" |
 | `--bad` | rose | worse than usual, errors, cancel |
 | `--warn` | dark amber | needs attention (cached data, duplicate, paid) |
@@ -68,7 +68,7 @@ Weights: 400 text, 600 buttons/labels, 700–800 numbers and titles.
 | Job status | `<span class="st success|failed|duplicate|cancelled">` |
 | Logo | `<span class="logo">↓</span>` — gradient circle, size set by the page |
 
-Page-level components (in `analyzer.css`): `.card`, `.stat` tiles, `.fact` chips, `.sig` signal chips,
+Page-level components (in `analyzer.css`): `.card`, `.kpi` tiles (`.kgroup` for a titled group, `.kpi.hero` with the brand accent, `.kpi-row`), `.chart-bar` (a chart's own switches, right above it), `.fact` chips, `.sig` signal chips,
 `.fx-tile` / `.fx-bar` result tiles and effect bars, `.seg` segmented switch, the loader (`.ld-*`),
 the filter panel (`.fpop`: opens with `--ease-io`, slider thumbs `.fp-thumb`, numbered steps `.fc-chip` / `.fh-i` in the brand gradient).
 

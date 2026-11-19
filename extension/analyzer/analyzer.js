@@ -13,11 +13,11 @@ const state = {
   data: null, // helper result
   rows: [], // reels with derived fields
   stats: null,
-  scale: "linear",
+  scale: "log",
   groupOutliers: true,
   filter: null, // {kind: "views" | "date", from, to}
   interval: null, // activity chart bucket size in days (null = automatic)
-  viewsLine: "median", // activity chart line: "median" | "total" | "off"
+  viewsLine: "total", // activity chart line: "median" | "total" | "off"
   activity: null, // PD.stats.postingStats result
   // table: ordered filter steps [{key, min, max} | {tier}], then the sort ({key, dir}; null = automatic)
   filters: [],
@@ -351,7 +351,6 @@ function applyRange() {
   updateRangeLabel();
   renderCards();
   renderChart();
-  renderInsights();
   renderActivity();
   renderTable();
   updateActionBar();
@@ -675,68 +674,74 @@ function renderProfile() {
   $("profileNote").textContent = notes.join(" ");
 }
 
+/** Top KPIs in two groups: views (with a spread bar) and engagement (with a likes : comments bar). */
 function renderCards() {
   const s = state.stats;
   const box = $("cards");
   box.replaceChildren();
   if (!s.n) {
-    box.append(el("div", { class: "stat" }, [el("div", { class: "k", text: t("an_no_views") })]));
+    box.append(el("div", { class: "kpi" }, [el("div", { class: "k", text: t("an_no_views") })]));
     return;
   }
-  const card = (k, v, sub, title) => box.append(el("div", { class: "stat", title: title || "" }, [
-    el("div", { class: "k", text: k }), el("div", { class: "v", text: v }), sub ? el("div", { class: "s", text: sub }) : null,
-  ]));
-  card(t("an_stat_total"), cmp(s.sum), t("an_stat_reels", [String(s.n)]));
-  card(t("an_mean"), cmp(s.mean), fmt(Math.round(s.mean)), t("an_tip_mean"));
-  card(t("an_median"), cmp(s.median), fmt(Math.round(s.median)), t("an_tip_median"));
-  card(t("an_stat_typical"), `${cmp(s.p25)} – ${cmp(s.p75)}`, t("an_stat_typical_sub"), t("an_tip_typical"));
-  card("P90", cmp(s.p90), t("an_stat_p90_sub"), t("an_tip_p90"));
-  card(t("an_stat_range"), `${cmp(s.min)} – ${cmp(s.max)}`, "min – max");
-  const p = state.perf;
-  if (p && p.enough) {
-    const mult = (x) => `${x.toFixed(1)}×`;
-    card(t("an_stat_viral"), String(p.nViral), t("an_stat_viral_sub", [mult(p.viralMult)]), t("an_tip_viral"));
-    card(t("an_stat_strong"), String(p.nStrong), t("an_stat_strong_sub", [mult(p.strongMult)]), t("an_tip_strong"));
-    if (p.er0 != null) {
-      card(t("an_stat_winner"), String(p.nWinner), t("an_stat_winner_sub"), t("an_tip_winner"));
-      card(t("an_stat_high_er"), String(p.nHighEr), t("an_stat_high_er_sub", [String(p.nTalk)]), t("an_tip_high_er"));
-    }
-  }
-  card(t("an_stat_top10"), pct(s.top10Share), t("an_stat_top10_sub", [String(s.top10Count)]), t("an_tip_top10"));
+  const kpi = (k, v, sub, opts) => {
+    opts = opts || {};
+    return el("div", { class: "kpi" + (opts.cls ? " " + opts.cls : ""), title: opts.title || "" }, [
+      el("div", { class: "k", text: k }), el("div", { class: "v", text: v }),
+      sub ? el("div", { class: "s", text: sub }) : null, opts.extra || null,
+    ]);
+  };
+  const group = (icon, title, nodes, cls) => el("div", { class: "kgroup " + cls }, [
+    el("div", { class: "kg-head" }, [el("span", { class: "kg-i", text: icon }), el("span", { text: title })]),
+    el("div", { class: "kg-grid" }, nodes),
+  ]);
+  const views = [
+    kpi(t("an_stat_total"), cmp(s.sum), t("an_stat_reels", [String(s.n)]), { cls: "hero" }),
+    kpi(t("an_median"), cmp(s.median), fmt(Math.round(s.median)), { title: t("an_tip_median") }),
+    kpi(t("an_mean"), cmp(s.mean), fmt(Math.round(s.mean)), { title: t("an_tip_mean") }),
+    kpi("P90", cmp(s.p90), t("an_stat_p90_sub"), { title: t("an_tip_p90") }),
+    spreadKpi(s),
+  ];
+  const eng = [];
   const ers = state.rows.map((r) => r.er).filter((x) => x != null).sort((a, b) => a - b);
-  if (ers.length) card(t("an_stat_er"), pct(St.quantile(ers, 0.5)), t("an_stat_er_sub"), t("an_tip_er"));
-  // where the engagement comes from, profile-wide (sums, so big reels weigh in proportionally)
+  if (ers.length) eng.push(kpi(t("an_stat_er"), pct(St.quantile(ers, 0.5)), t("an_stat_er_sub"), { cls: "hero", title: t("an_tip_er") }));
+  // profile-wide sums, so big reels weigh in proportionally
   const mix = state.rows.filter((r) => r.views && r.likes != null && r.comments != null);
   const sumL = mix.reduce((a, r) => a + r.likes, 0);
   const sumC = mix.reduce((a, r) => a + r.comments, 0);
   if (sumL + sumC > 0) {
     const sumV = mix.reduce((a, r) => a + r.views, 0);
-    const perComment = sumC ? Math.round(sumL / sumC) : null;
     const likeShare = sumL / (sumL + sumC);
-    card(t("an_stat_mix"), `${likeShare > 0.99 ? (likeShare * 100).toFixed(1) + "%" : pct(likeShare)} · ${pctFine(1 - likeShare)}`,
-      perComment != null ? t("an_stat_mix_sub", [String(perComment)]) : "", t("an_tip_mix"));
-    card(t("an_stat_rates"), `${pctFine(sumL / sumV)} · ${pctFine(sumC / sumV)}`, t("an_stat_rates_sub"), t("an_tip_rates"));
+    eng.push(kpi(t("an_col_likeRate"), pctFine(sumL / sumV), t("an_stat_rates_sub"), { title: t("an_tip_rates") }));
+    eng.push(kpi(t("an_col_commentRate"), pctFine(sumC / sumV), t("an_stat_rates_sub"), { title: t("an_tip_rates") }));
+    eng.push(kpi(t("an_stat_mix"), sumC ? `${Math.round(sumL / sumC)} : 1` : "–", t("an_kpi_mix_sub"), {
+      title: t("an_tip_mix"),
+      extra: el("div", { class: "mixbar" }, [
+        el("i", { class: "l", style: `width:${(likeShare * 100).toFixed(1)}%` }),
+        el("i", { class: "c", style: `width:${Math.max(2, (1 - likeShare) * 100).toFixed(1)}%` }),
+      ]),
+    }));
   }
-  renderMethod();
+  box.append(group("👁", t("an_kg_views"), views, "kg-views"));
+  if (eng.length) box.append(group("💬", t("an_kg_eng"), eng, "kg-eng"));
 }
 
-/** "How is this calculated?": the numbers for this profile, in plain words. */
-function renderMethod() {
-  const box = $("methodBody");
-  box.replaceChildren();
-  const p = state.perf;
-  if (!p || !p.enough) {
-    box.append(el("p", { text: t("an_method_few") }));
-    return;
-  }
-  const para = (key, subs) => box.append(el("p", { text: t(key, subs) }));
-  para("an_method_why");
-  para(p.local ? "an_method_baseline_local" : "an_method_baseline_global");
-  para("an_method_tiers", [p.sigma.toFixed(2), `${p.strongMult.toFixed(1)}×`, `${p.viralMult.toFixed(1)}×`]);
-  para("an_method_tail", [pct(p.viralRate)]);
-  if (p.erSlope != null) para("an_method_eng", [p.erSlope.toFixed(2), p.crSlope.toFixed(2)]);
-  if (state.rows.some((r) => !r.taken_at && r.ts)) para("an_method_dates");
-  para("an_method_new");
+/** "Typical" tile with a spread bar on a log scale: min - max line, P25-P75 box, median tick, P90 dot. */
+function spreadKpi(s) {
+  const lo = Math.log10(Math.max(1, s.min));
+  const hi = Math.log10(Math.max(1, s.max));
+  const x = (v) => (((Math.log10(Math.max(1, v)) - lo) / (hi - lo || 1)) * 100).toFixed(1);
+  const bar = el("div", { class: "spread" }, [
+    el("i", { class: "sp-line" }),
+    el("i", { class: "sp-box", style: `left:${x(s.p25)}%;width:${(x(s.p75) - x(s.p25)).toFixed(1)}%` }),
+    el("i", { class: "sp-med", style: `left:${x(s.median)}%`, title: `${t("an_median")} ${cmp(s.median)}` }),
+    el("i", { class: "sp-p90", style: `left:${x(s.p90)}%`, title: `P90 ${cmp(s.p90)}` }),
+  ]);
+  return el("div", { class: "kpi wide", title: t("an_tip_typical") }, [
+    el("div", { class: "k", text: t("an_stat_typical") }),
+    el("div", { class: "v", text: `${cmp(s.p25)} – ${cmp(s.p75)}` }),
+    bar,
+    el("div", { class: "sp-ends" }, [el("span", { text: cmp(s.min) }), el("span", { text: cmp(s.max) })]),
+  ]);
 }
 
 // ------------------------------------------------------------------ histogram
@@ -785,6 +790,21 @@ function renderChart() {
   }
   root.append(svg("text", { class: "axis", x: 4, y: 14 }, t("an_axis_y")));
 
+  // the approximate viral line: typical views x viral multiplier; bins past it are gold (hits)
+  const p = state.perf;
+  let viralAt = null;
+  if (p && p.enough) {
+    const v = p.typicalViews * p.viralMult;
+    const lastBin = bins[bins.length - 1];
+    if (v <= s.max && (lastBin.to === Infinity || v < lastBin.to)) viralAt = v;
+  }
+  // typical range (middle 50% of the reels) as a soft band behind the bars
+  const tx0 = xOf(s.p25, bins, m.l, bw);
+  const tx1 = xOf(s.p75, bins, m.l, bw);
+  const band = svg("rect", { class: "typ-band", x: tx0, y: m.t, width: Math.max(2, tx1 - tx0), height: ph, rx: 6 });
+  band.append(svg("title", {}, t("an_tip_typical")));
+  root.append(band);
+
   // bars
   const labelEvery = Math.ceil(bins.length / 14);
   bins.forEach((b, i) => {
@@ -793,7 +813,8 @@ function renderChart() {
     const y = m.t + ph - h;
     const active = !state.filter || state.filter.kind !== "views" || (state.filter.from === b.from && state.filter.to === b.to);
     const rect = svg("rect", {
-      class: "bin" + (active ? "" : " dim"), x, y, width: Math.max(1, bw - 4), height: Math.max(b.count ? 2 : 0, h),
+      class: "bin" + (viralAt != null && b.from >= viralAt * 0.999 ? " hit" : "") + (active ? "" : " dim"),
+      x, y, width: Math.max(1, bw - 4), height: Math.max(b.count ? 2 : 0, h),
       rx: 3, tabindex: b.count ? "0" : "-1", role: "button",
       "aria-label": `${rangeLabel(b.from, b.to)}: ${b.count}`,
     });
@@ -829,77 +850,23 @@ function renderChart() {
   root.append(svg("text", { class: "axis", x: m.l + pw / 2, y: H - 4, "text-anchor": "middle" },
     state.scale === "log" ? t("an_axis_x_log") : t("an_axis_x", [cmp(bins.step || 0)])));
 
-  // mean & median lines (+ the approximate viral line: typical views x viral multiplier)
-  const lines = [["median", s.median, t("an_median")], ["mean", s.mean, t("an_mean")]];
-  const p = state.perf;
-  if (p && p.enough) {
-    const v = p.typicalViews * p.viralMult;
-    const lastBin = bins[bins.length - 1];
-    if (v <= s.max && (lastBin.to === Infinity || v < lastBin.to)) lines.push(["viral", v, t("an_viral_line")]);
-  }
+  // mean & median lines + the viral line (its label shows how many, a click lists them in the table)
+  const lines = [["median", s.median, `${t("an_median")} ${cmp(s.median)}`], ["mean", s.mean, `${t("an_mean")} ${cmp(s.mean)}`]];
+  if (viralAt != null) lines.push(["viral", viralAt, `🚀 ${t("an_viral_word")} ≥ ${cmp(viralAt)} · ${p.nViral}`]);
   for (const [cls, value, label] of lines) {
     const x = xOf(value, bins, m.l, bw);
     root.append(svg("line", { class: `vline ${cls}`, x1: x, x2: x, y1: m.t - 6, y2: m.t + ph }));
-    const anchor = x > W - 140 ? "end" : "start";
+    const anchor = x > W - 170 ? "end" : "start";
     const ly = cls === "mean" ? m.t - 10 : cls === "viral" ? m.t + 18 : m.t + 4;
-    root.append(svg("text", { class: `vlabel ${cls}`, x: x + (anchor === "end" ? -4 : 4), y: ly, "text-anchor": anchor },
-      `${label}: ${cmp(value)}`));
+    const text = svg("text", { class: `vlabel ${cls}`, x: x + (anchor === "end" ? -4 : 4), y: ly, "text-anchor": anchor }, label);
+    if (cls === "viral" && p.nViral) {
+      text.classList.add("clickable");
+      text.append(svg("title", {}, t("an_viral_click")));
+      text.addEventListener("click", () => showInTable("viral"));
+    }
+    root.append(text);
   }
   wrap.append(root);
-}
-
-/**
- * Short visual facts instead of sentences: icon + a few words; the full explanation is the
- * tooltip. Facts that point at reels are clickable and filter the table.
- */
-function fact(icon, text, opts) {
-  opts = opts || {};
-  const node = el(opts.onClick ? "button" : "span", {
-    class: "fact" + (opts.tone ? " " + opts.tone : ""), title: opts.title || "", type: opts.onClick ? "button" : null,
-  }, [el("span", { class: "fact-i", text: icon }), el("span", { text })]);
-  if (opts.onClick) node.addEventListener("click", opts.onClick);
-  return node;
-}
-
-
-function renderInsights() {
-  const s = state.stats;
-  const box = $("insights");
-  box.replaceChildren();
-  if (!s || !s.n) return;
-  const add = (...a) => box.append(fact(...a));
-  add("📦", t("f_typical", [cmp(s.p25), cmp(s.p75)]), { title: t("an_ins_typical", [cmp(s.p25), cmp(s.p75)]) });
-  const p = state.perf;
-  if (p && p.enough) {
-    if (p.nViral) {
-      add("🚀", t("f_viral", [String(p.nViral), pct(p.viralShare)]), {
-        tone: "viral", onClick: () => showInTable("viral"),
-        title: t("an_ins_viral", [String(p.nViral), `${p.viralMult.toFixed(1)}×`, pct(p.viralShare)])
-          + (p.nViralLowEr ? "\n" + t("an_ins_viral_low_er", [String(p.nViralLowEr)]) : ""),
-      });
-    } else add("🚀", t("f_no_viral"), { title: t("an_ins_no_viral") });
-    if (p.nWinner) add("🏆", t("f_winners", [String(p.nWinner)]), { tone: "win", onClick: () => showInTable("winner"), title: t("an_ins_winner", [String(p.nWinner)]) });
-    if (p.nTalk) add("💬", t("f_talk", [String(p.nTalk)]), { onClick: () => showInTable("engaged"), title: t("an_ins_talk", [String(p.nTalk)]) });
-    if (p.nRising) add("🌱", t("f_rising", [String(p.nRising)]), { tone: "good", onClick: () => showInTable("rising"), title: t("an_ins_rising", [String(p.nRising)]) });
-  }
-  add("🎯", t("f_top10", [pct(s.top10Share)]), {
-    title: t("an_ins_top10", [String(s.top10Count), pct(s.top10Share)]) + (s.cv > 1.5 ? "\n" + t("an_ins_volatile") : s.cv < 0.5 ? "\n" + t("an_ins_stable") : ""),
-  });
-  // newer half vs older half of the reels
-  const withViews = state.rows.filter((r) => r.views != null);
-  if (withViews.length >= 10) {
-    const half = Math.floor(withViews.length / 2);
-    const recent = St.summarize(withViews.slice(0, half).map((r) => r.views)).median; // newest first
-    const older = St.summarize(withViews.slice(half).map((r) => r.views)).median;
-    if (older > 0) {
-      const ch = recent / older - 1;
-      if (Math.abs(ch) >= 0.2) {
-        add(ch > 0 ? "📈" : "📉", t("f_trend", [`${ch > 0 ? "+" : "−"}${pct(Math.abs(ch))}`]), {
-          tone: ch > 0 ? "good" : "bad", title: t(ch > 0 ? "an_ins_trend_up" : "an_ins_trend_down", [pct(Math.abs(ch))]),
-        });
-      }
-    }
-  }
 }
 
 // ------------------------------------------------------------------ posting activity
@@ -962,25 +929,47 @@ function renderActivity() {
   renderActivityChart();
   renderWhatWorks(); // before the heatmap: it outlines the best window
   renderHeatmap();
-  renderActivityInsights();
 }
 
+/** Posting KPIs: pace, last 30 days vs the 30 before, gaps, last post, hot reel (click = open it). */
 function renderActivityCards() {
   const a = state.activity;
   const box = $("activityCards");
   box.replaceChildren();
-  const card = (k, v, sub, title) => box.append(el("div", { class: "stat", title: title || "" }, [
-    el("div", { class: "k", text: k }), el("div", { class: "v", text: v }), sub ? el("div", { class: "s", text: sub }) : null,
-  ]));
-  card(t("an_act_per1"), rate(a.perDay), t("an_act_posts"));
-  card(t("an_act_per3"), rate(a.per3), t("an_act_posts"));
-  card(t("an_act_per7"), rate(a.per7), t("an_act_posts"));
-  card(t("an_act_per30"), rate(a.per30), t("an_act_posts"));
-  card(t("an_act_gap_mean"), dur(a.meanGap), t("an_act_gap_median", [dur(a.medianGap)]), t("an_tip_gap"));
-  if (a.maxGap) card(t("an_act_gap_max"), dur(a.maxGap.hours), `${dateShort(a.maxGap.from)} – ${dateShort(a.maxGap.to)}`);
-  card(t("an_act_last"), t("an_act_ago", [dur(a.sinceLastDays * 24)]), dateLong(a.last));
-  card(t("an_act_active"), pct(a.activeShare), t("an_act_active_sub", [String(a.activeDays), String(a.spanDays)]), t("an_tip_active"));
-  card(t("an_act_max_day"), String(a.maxPerDay), t("an_act_posts"));
+  const kpi = (icon, k, v, sub, opts) => {
+    opts = opts || {};
+    const node = el(opts.onClick ? "button" : "div", {
+      class: "kpi" + (opts.cls ? " " + opts.cls : ""), title: opts.title || "", type: opts.onClick ? "button" : "",
+    }, [
+      el("div", { class: "k" }, [el("span", { class: "k-i", text: icon }), el("span", { text: k })]),
+      el("div", { class: "v", text: v }), sub ? el("div", { class: "s" + (opts.subCls ? " " + opts.subCls : ""), text: sub }) : null,
+    ]);
+    if (opts.onClick) node.addEventListener("click", opts.onClick);
+    box.append(node);
+  };
+  kpi("📅", t("an_act_per1"), rate(a.perDay), t("an_kpi_pace_sub", [rate(a.per7), rate(a.per30)]), { cls: "hero" });
+  if (a.trendComparable && a.prev30 != null) {
+    const ch = a.prev30 ? a.last30 / a.prev30 - 1 : 1;
+    const tone = ch >= 0.25 ? "up" : ch <= -0.25 ? "down" : "";
+    kpi(tone === "up" ? "📈" : tone === "down" ? "📉" : "➡️", t("an_kpi_last30"), String(a.last30),
+      t("an_kpi_before", [String(a.prev30)]), { subCls: tone, title: t(ch >= 0.25 ? "an_ai_trend_up" : ch <= -0.25 ? "an_ai_trend_down" : "an_ai_trend_flat", [String(a.last30), String(a.prev30)]) });
+  }
+  kpi("⏱", t("an_kpi_gap"), dur(a.medianGap), t("an_kpi_gap_sub", [dur(a.meanGap)]), { title: t("an_tip_gap") });
+  if (a.maxGap) kpi("⏸", t("an_act_gap_max"), dur(a.maxGap.hours), `${dateShort(a.maxGap.from)} – ${dateShort(a.maxGap.to)}`);
+  const silent = a.sinceLastDays >= 14;
+  kpi(silent ? "💤" : "🕒", t("an_act_last"), t("an_act_ago", [dur(a.sinceLastDays * 24)]), dateLong(a.last), {
+    cls: silent ? "bad" : "", title: silent ? t("an_ai_inactive", [String(Math.floor(a.sinceLastDays))]) : "",
+  });
+  kpi("✅", t("an_act_active"), pct(a.activeShare), t("an_act_active_sub", [String(a.activeDays), String(a.spanDays)]), { title: t("an_tip_active") });
+  kpi("⚡", t("an_act_max_day"), String(a.maxPerDay), t("an_act_posts"));
+  // hot right now: the best views/day of the last 30 days -> opens that reel
+  const hot = state.rows.filter((r) => r.vpd != null && r.ts > state.windowEnd - 30 * St.DAY).sort((x, y) => y.vpd - x.vpd)[0];
+  if (hot) {
+    kpi("🔥", t("an_kpi_hot"), cmp(Math.round(hot.vpd)), t("an_kpi_hot_sub"), {
+      cls: "hot", onClick: () => openDetails(hot.code),
+      title: t("an_ai_hot", [cmp(Math.round(hot.vpd)), dateLong(hot.ts), (captionOf(hot) || hot.code).split("\n")[0].slice(0, 60)]),
+    });
+  }
 }
 
 function renderActivityChart() {
@@ -1067,6 +1056,15 @@ function renderActivityChart() {
       }
     });
     root.append(rect);
+    // the viral reels of this interval, stacked at the bottom of the bar in gold
+    const nViral = b.items.filter((k) => state.rows[k].perf && state.rows[k].perf.tier === "viral").length;
+    if (nViral) {
+      const vh = Math.max(2, (nViral / yMax) * ph);
+      const vr = svg("rect", { class: "abin-hit", x, y: m.t + ph - vh, width: Math.max(1, bw - (bw > 6 ? 4 : 1)), height: vh, rx: bw > 6 ? 3 : 0 });
+      vr.append(svg("title", {}, `${dateRangeLabel(b.from, b.to)}
+🚀 ${t("an_act_tip_viral", [String(nViral)])}`));
+      root.append(vr);
+    }
     if (b.count && bw >= 14) root.append(svg("text", { class: "count", x: x + (bw - 4) / 2, y: y - 4, "text-anchor": "middle" }, String(b.count)));
     if (i % labelEvery === 0) {
       const lx = m.l + i * bw;
@@ -1308,10 +1306,11 @@ function renderHeatmap() {
     if (c.n) {
       const bar = el("div", { class: "h-bar" });
       bar.style.height = `${Math.max(6, Math.round((c.n / maxN) * 100))}%`;
-      if (mr != null) {
-        // log2 scale: 1x = neutral grey, 4x = full green, 1/4x = full red
-        const sc = Math.max(-1, Math.min(1, Math.log2(mr) / 2));
-        bar.style.background = `color-mix(in srgb, ${sc >= 0 ? "var(--good)" : "var(--bad)"} ${Math.round(25 + Math.abs(sc) * 75)}%, var(--neutral))`;
+      if (mr != null && tone !== " mid") {
+        // log2 scale: the further from 1x, the stronger the green / red (4x or 1/4x = full color)
+        const sc = Math.min(1, Math.abs(Math.log2(mr)) / 2);
+        bar.classList.add(tone.trim());
+        bar.style.setProperty("--s", `${Math.round(45 + sc * 55)}%`);
       }
       bar.append(el("span", { class: "h-n", text: String(c.n) }));
       track.append(bar);
@@ -1321,38 +1320,6 @@ function renderHeatmap() {
     chart.append(col);
   }
   box.append(chart);
-}
-
-function renderActivityInsights() {
-  const a = state.activity;
-  const box = $("activityInsights");
-  box.replaceChildren();
-  const add = (...x) => box.append(fact(...x));
-  add("🗓", t("f_pace", [rate(a.per7), dur(a.medianGap)]), { title: t("an_ai_pace", [rate(a.per7), dur(a.medianGap)]) });
-  if (a.trendComparable) {
-    if (a.prev30 === 0 && a.last30 > 0) add("🔄", t("f_restart", [String(a.last30)]), { tone: "good", title: t("an_ai_trend_restart", [String(a.last30)]) });
-    else if (a.prev30 > 0) {
-      const ch = a.last30 / a.prev30 - 1;
-      const key = ch >= 0.25 ? "an_ai_trend_up" : ch <= -0.25 ? "an_ai_trend_down" : "an_ai_trend_flat";
-      add(ch >= 0.25 ? "📈" : ch <= -0.25 ? "📉" : "➡️", t("f_last30", [String(a.last30), String(a.prev30)]), {
-        tone: ch >= 0.25 ? "good" : ch <= -0.25 ? "bad" : "", title: t(key, [String(a.last30), String(a.prev30)]),
-      });
-    }
-  }
-  if (a.sinceLastDays >= 14) add("💤", t("f_silent", [String(Math.floor(a.sinceLastDays))]), { tone: "bad", title: t("an_ai_inactive", [String(Math.floor(a.sinceLastDays))]) });
-  if (a.n >= 6) {
-    if (a.gapCv < 0.6) add("🕰", t("f_regular"), { title: t("an_ai_regular") });
-    else if (a.gapCv > 1.5) add("🌊", t("f_bursty"), { title: t("an_ai_bursty") });
-  }
-  // hot right now: best views/day of the last 30 days -> opens that reel
-  const hot = state.rows.filter((r) => r.vpd != null && r.ts > state.windowEnd - 30 * St.DAY).sort((x, y) => y.vpd - x.vpd)[0];
-  if (hot) {
-    add("🔥", t("f_hot", [cmp(Math.round(hot.vpd))]), {
-      tone: "viral", onClick: () => openDetails(hot.code),
-      title: t("an_ai_hot", [cmp(Math.round(hot.vpd)), dateLong(hot.ts), (captionOf(hot) || hot.code).split("\n")[0].slice(0, 60)]),
-    });
-  }
-  if (state.data.truncated) add("⚠️", t("f_truncated", [String(state.data.count)]), { tone: "warn", title: t("an_ai_truncated", [String(state.data.count)]) });
 }
 
 // ------------------------------------------------------------------ table: an ordered chain of filters

@@ -11,6 +11,7 @@
   <!-- shared chart fills (tokens.css: .g-data-*); referenced as url(#gData) by the bars -->
   <svg class="defs" aria-hidden="true" focusable="false">
     <linearGradient id="gData" x1="0" y1="1" x2="0" y2="0"><stop class="g-data-1" offset="0"/><stop class="g-data-2" offset="1"/></linearGradient>
+    <linearGradient id="gHit" x1="0" y1="1" x2="0" y2="0"><stop class="g-hit-1" offset="0"/><stop class="g-hit-2" offset="1"/></linearGradient>
   </svg>
   <header class="top">
     <span class="logo" aria-hidden="true">↓</span>
@@ -111,31 +112,27 @@
         <div id="rbChips" class="quick small rb-chips"></div>
       </section>
 
-      <section id="cards" class="cards" aria-label="Statistics"></section>
-      <details class="card method">
-        <summary data-i18n="an_method_title"></summary>
-        <div id="methodBody" class="small"></div>
-      </details>
+      <section id="cards" class="kpis" aria-label="Statistics"></section>
 
       <section class="card">
         <div class="section-head">
           <h2 data-i18n="an_distribution"></h2>
           <div class="controls">
             <div class="seg" role="group" aria-label="Scale">
-              <button type="button" id="scaleLinear" class="seg-btn on" data-i18n="an_linear"></button>
-              <button type="button" id="scaleLog" class="seg-btn" data-i18n="an_log"></button>
+              <button type="button" id="scaleLog" class="seg-btn on" data-i18n="an_log"></button>
+              <button type="button" id="scaleLinear" class="seg-btn" data-i18n="an_linear"></button>
             </div>
-            <label class="check small"><input type="checkbox" id="clampOutliers" checked> <span data-i18n="an_group_outliers"></span></label>
+            <label class="check small"><input type="checkbox" id="clampOutliers" checked disabled> <span data-i18n="an_group_outliers"></span></label>
           </div>
         </div>
         <div id="chartWrap" class="chart-wrap"></div>
         <div class="legend small">
           <span><i class="sw bar-sw"></i><span data-i18n="an_legend_bars"></span></span>
+          <span><i class="sw hit-sw"></i><span data-i18n="an_viral_word"></span></span>
+          <span><i class="sw typ-sw"></i><span data-i18n="an_stat_typical"></span></span>
           <span><i class="sw line mean"></i><span data-i18n="an_mean"></span></span>
           <span><i class="sw line median"></i><span data-i18n="an_median"></span></span>
-          <span><i class="sw line viral"></i><span data-i18n="an_viral_legend"></span></span>
         </div>
-        <div id="insights" class="facts"></div>
       </section>
 
       <section id="activityCard" class="card">
@@ -144,7 +141,10 @@
             <h2 data-i18n="an_activity"></h2>
             <p id="activityRange" class="muted small"></p>
           </div>
-          <div class="controls">
+        </div>
+        <div id="activityCards" class="kpi-row"></div>
+        <div class="chart-bar">
+          <div class="cb-group">
             <span class="small muted" data-i18n="an_interval"></span>
             <div id="intervalSeg" class="seg" role="group">
               <button type="button" class="seg-btn" data-days="1"></button>
@@ -152,19 +152,20 @@
               <button type="button" class="seg-btn" data-days="7"></button>
               <button type="button" class="seg-btn" data-days="30"></button>
             </div>
+          </div>
+          <div class="cb-group">
             <span class="small muted" data-i18n="an_line_label"></span>
             <div id="viewsLineSeg" class="seg" role="group">
-              <button type="button" class="seg-btn" data-line="median"></button>
               <button type="button" class="seg-btn" data-line="total"></button>
+              <button type="button" class="seg-btn" data-line="median"></button>
               <button type="button" class="seg-btn" data-line="off"></button>
             </div>
           </div>
         </div>
-        <div id="activityCards" class="cards mini"></div>
-        <div id="activityInsights" class="facts"></div>
         <div id="activityWrap" class="chart-wrap"></div>
         <div class="legend small">
           <span><i class="sw act-sw"></i><span data-i18n="an_act_legend_bars"></span></span>
+          <span><i class="sw hit-sw"></i><span data-i18n="an_viral_word"></span></span>
           <span id="viewsLegend"><i class="sw line views"></i><span id="viewsLegendText"></span></span>
         </div>
 
