@@ -1415,9 +1415,6 @@
   "an_p_by_count": {
     "message": "By count"
   },
-  "an_p_season": {
-    "message": "Current season (stops at a 14-day pause)"
-  },
   "an_p_30": {
     "message": "Last 30 days"
   },
@@ -1462,9 +1459,6 @@
   },
   "an_pp_hint": {
     "message": "≤ $1 reels"
-  },
-  "an_per_gap": {
-    "message": "📅 Current season: since $1 (stopped at a $2+ day pause)"
   },
   "an_per_since": {
     "message": "📅 Last $1 days: since $2"

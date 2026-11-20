@@ -126,9 +126,9 @@ async function analyze(e) {
   $("fetchBtn").disabled = true;
   const per = PERIODS[$("periodSelect").value] || PERIODS["count:120"];
   // slots for the live strip: the count asked for, else the store's post count (more are added if needed)
-  const slots = per.sinceDays || per.gapDays || $("periodSelect").value === "all" ? Math.min(500, state.previewPosts || 120) : per.limit;
+  const slots = per.sinceDays || $("periodSelect").value === "all" ? Math.min(500, state.previewPosts || 120) : per.limit;
   loaderStart(profile, slots);
-  const res = await send({ type: "listReels", profile, limit: per.limit, sinceDays: per.sinceDays, gapDays: per.gapDays });
+  const res = await send({ type: "listReels", profile, limit: per.limit, sinceDays: per.sinceDays });
   $("fetchBtn").disabled = false;
   loaderStop();
   if (!res.ok) {
@@ -262,11 +262,10 @@ chrome.runtime.onMessage.addListener((msg) => {
 // ------------------------------------------------------------------ profile preview + what to read
 /*
  * Before analysing: one quick request shows the store (followers, posts, bio, link, category),
- * so the period / count can be chosen knowingly. "Current season" reads newest -> oldest and stops
- * at the first pause of 14+ days between two reels; "Last N days" stops at that date.
+ * so the period / count can be chosen knowingly. "Last N days" reads newest -> oldest and stops
+ * at that date (the seasons are then shown on the Time range).
  */
 const PERIODS = {
-  "gap:14": { gapDays: 14, limit: 500 },
   "since:30": { sinceDays: 30, limit: 500 },
   "since:60": { sinceDays: 60, limit: 500 },
   "since:90": { sinceDays: 90, limit: 500 },
@@ -340,7 +339,6 @@ function periodText(d) {
   const per = d.period || {};
   const ts = (d.reels || []).filter((r) => !r.pinned).map((r) => (r.taken_at ? Date.parse(r.taken_at) || 0 : 0) || St.codeTime(r.code)).filter((x) => x > 0);
   const from = ts.length ? dateShort(Math.min(...ts), true) : "";
-  if (d.stopped_by === "gap") return t("an_per_gap", [from, String(per.gap_days || 14)]);
   if (d.stopped_by === "date") return t("an_per_since", [String(per.since_days), from]);
   if (d.stopped_by === "limit") return t("an_per_limit", [String(d.count)]);
   if (d.stopped_by === "end") return t("an_per_all", [String(d.count)]);
