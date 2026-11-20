@@ -473,41 +473,56 @@
   }
 
   /**
-   * Split a posting history into active periods separated by pauses.
-   * Gaps are judged relative to the profile's usual (median) gap between posts:
-   *   pause: >= 14 days AND >= 10x the usual gap -> splits the history into periods
-   *   lull:  >=  5 days AND >=  5x the usual gap -> slowdown, shown but not split
-   * So 6 silent days are a lull for a store posting 4 times a day, normal for a weekly one.
+   * SEASONS: split a posting history into active periods separated by real pauses.
+   * The SAME rule runs in the helper while it reads the reels tab (instagram_engine.list_reels,
+   * "Current season"), so the period the helper stops at is exactly the newest period drawn here.
+   *
+   * Read newest -> oldest. Inside the current period the store's own rhythm is learnt (median gap
+   * between its posts so far). A gap is a PAUSE (the period ends) when
+   *     gap >= 14 days  AND  gap >= 10 x that rhythm  AND  the period already has >= 3 reels.
+   * The rhythm is local (this period only), so a store that changed pace is judged by its current
+   * pace; 1-2 stray reels after a long silence don't make a period of their own (they join the
+   * older period). A LULL (slowdown, shown but not split): >= 5 days and >= 5 x the rhythm.
    */
+  const SEASON = { minDays: 14, factor: 10, minReels: 3, lullDays: 5, lullFactor: 5 };
   function activePeriods(timestamps, opts) {
-    opts = opts || {};
-    const minDays = opts.minDays || 14;
-    const factor = opts.factor || 10;
-    const lullDays = opts.lullDays || 5;
-    const lullFactor = opts.lullFactor || 5;
-    const t = timestamps.filter((x) => x > 0).sort((a, b) => a - b);
-    if (!t.length) return { periods: [], pauses: [], pauseHours: null };
-    const gaps = [];
-    for (let i = 1; i < t.length; i++) gaps.push((t[i] - t[i - 1]) / HOUR);
-    const medGap = gaps.length ? median(gaps) : 0;
-    const pauseHours = Math.max(minDays * 24, factor * medGap);
-    const lullHours = Math.min(pauseHours, Math.max(lullDays * 24, lullFactor * medGap));
+    const o = Object.assign({}, SEASON, opts || {});
+    const t = timestamps.filter((x) => x > 0).sort((a, b) => b - a); // newest first, like the reels tab
+    if (!t.length) return { periods: [], pauses: [], lulls: [], pauseHours: null };
     const periods = [];
     const pauses = [];
     const lulls = [];
-    let start = 0;
-    for (let i = 1; i <= t.length; i++) {
-      const gapH = i < t.length ? (t[i] - t[i - 1]) / HOUR : 0;
-      if (i < t.length && gapH >= lullHours && gapH < pauseHours) {
-        lulls.push({ from: t[i - 1], to: t[i], days: gapH / 24 });
+    let cur = [t[0]];
+    let gaps = [];
+    let newestPauseHours = null;
+    const thresholds = () => {
+      const med = gaps.length ? median(gaps) : 0;
+      const pauseH = Math.max(o.minDays * 24, o.factor * med);
+      return { med, pauseH, lullH: Math.min(pauseH, Math.max(o.lullDays * 24, o.lullFactor * med)) };
+    };
+    const close = () => {
+      periods.push({ from: cur[cur.length - 1], to: cur[0], n: cur.length });
+      if (newestPauseHours == null) newestPauseHours = thresholds().pauseH;
+    };
+    for (let i = 1; i < t.length; i++) {
+      const gapH = (t[i - 1] - t[i]) / HOUR;
+      const th = thresholds();
+      if (cur.length >= o.minReels && gapH >= th.pauseH) {
+        close();
+        pauses.push({ from: t[i], to: t[i - 1], days: gapH / 24 });
+        cur = [t[i]];
+        gaps = [];
+        continue;
       }
-      if (i === t.length || gapH >= pauseHours) {
-        periods.push({ from: t[start], to: t[i - 1], n: i - start });
-        if (i < t.length) pauses.push({ from: t[i - 1], to: t[i], days: gapH / 24 });
-        start = i;
-      }
+      if (gaps.length >= 2 && gapH >= th.lullH) lulls.push({ from: t[i], to: t[i - 1], days: gapH / 24 });
+      gaps.push(gapH);
+      cur.push(t[i]);
     }
-    return { periods, pauses, lulls, pauseHours, lullHours, medianGapHours: medGap };
+    close();
+    periods.reverse();
+    pauses.reverse();
+    lulls.reverse();
+    return { periods, pauses, lulls, pauseHours: newestPauseHours, medianGapHours: thresholds().med };
   }
 
   // ---------------------------------------------------------------- "what works" (timing / pace)
@@ -773,7 +788,7 @@
 
   PD.stats = {
     quantile, summarize, niceStep, linearBins, logBins, densestRange, compact,
-    DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods,
+    DAY, HOUR, dayStart, addDays, weekdayMon, activityBins, autoInterval, postingStats, performance, codeTime, activePeriods, SEASON,
     effectConfidence, bestEffect, BUCKETS, success, SUCCESS, successEffect, bestTimeWindows, postsPerDay,
   };
 })(typeof globalThis !== "undefined" ? globalThis : self);

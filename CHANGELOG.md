@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.16.1
+
+- **Seasons: one rule everywhere.** *Current season* (what is read) and the active periods on the *Time range* now use exactly the same rule, so they always agree. A pause ends a season only when it is at least 14 days **and** at least 10× the store's own posting rhythm in that season (so a weekly poster's 2 quiet weeks are not a "pause"), and a season needs at least 3 reels — 1–2 stray reels after a long silence join the season before them. Pinned reels no longer split periods.
+- **Fixed:** the profile card could show the word "null" when a store has no category.
+- Needs the helper update: use **Update now** in the popup.
+
 ## 2.16.0
 
 - **See the store before analysing:** type or open a profile and a card shows followers, number of posts (reels are at most that many), category, bio and the link in bio — one quick request.

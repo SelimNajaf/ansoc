@@ -412,7 +412,8 @@ function load(data, cachedAt) {
   // whole-history classification: only for the dots on the timeline strip
   const whole = St.success(state.allRows);
   state.allRows.forEach((r, i) => (r.wholeHit = !!whole.items[i] && whole.items[i].tier === "hit"));
-  state.periods = St.activePeriods(state.allRows.map((r) => r.ts));
+  // pinned reels sit on top whatever their age: they don't shape the seasons (same as the helper)
+  state.periods = St.activePeriods(state.allRows.filter((r) => !r.pinned).map((r) => r.ts));
   state.range = null; // {from, to} in ms (local day boundaries); null = everything
   $("collectionInput").value = `${data.username}_reels_${today()}`;
   $("results").hidden = false;
@@ -773,9 +774,9 @@ function renderProfile() {
   if (p.followers != null) parts.push(t("an_followers", [cmp(p.followers)]));
   parts.push(t("an_reels_analyzed", [String(d.count)]));
   $("profileMeta").textContent = parts.join(" · ");
-  $("profileExtra").replaceChildren(...profileStats(p),
+  $("profileExtra").replaceChildren(...[...profileStats(p),
     p.category ? el("span", { class: "chip pp-cat", text: p.category }) : null,
-    ...(p.links || []).slice(0, 2).map((u) => el("a", { class: "pp-link", href: u, target: "_blank", rel: "noopener noreferrer", text: "🔗 " + u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 40) })));
+    ...(p.links || []).slice(0, 2).map((u) => el("a", { class: "pp-link", href: u, target: "_blank", rel: "noopener noreferrer", text: "🔗 " + u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 40) }))].filter(Boolean));
   $("profileBio").textContent = p.biography || "";
   $("profileBio").hidden = !p.biography;
   const notes = [periodText(d)].filter(Boolean);

@@ -570,6 +570,10 @@ class InstagramEngine(BaseEngine):
                 stopped_by = "end"
                 cutoff = time.time() - float(since_days) * 86400 if since_days else None
                 last_ts: Optional[float] = None
+                # "Current season": the same rule as activePeriods() in the analyzer's stats.js.
+                # A gap ends the season when it is >= gap_days (14) AND >= 10x the store's rhythm
+                # in this season so far (median gap) AND the season already has >= 3 reels.
+                season_gaps: List[float] = []
                 for node in ex.api.user_reels(username):
                     media = node.get("media", node) if isinstance(node, dict) else {}
                     row = self._reel_row(media)
@@ -583,10 +587,14 @@ class InstagramEngine(BaseEngine):
                     if ts is not None and cutoff is not None and ts < cutoff:
                         stopped_by = "date"
                         break
-                    if ts is not None and gap_days and last_ts is not None and len(rows) >= 3 \
-                            and last_ts - ts > float(gap_days) * 86400:
-                        stopped_by = "gap"
-                        break
+                    if ts is not None and gap_days and last_ts is not None:
+                        gap_h = (last_ts - ts) / 3600.0
+                        g = sorted(season_gaps)
+                        med = 0.0 if not g else (g[len(g) // 2] if len(g) % 2 else (g[len(g) // 2 - 1] + g[len(g) // 2]) / 2)
+                        if len(rows) >= 3 and gap_h >= max(float(gap_days) * 24, 10 * med):
+                            stopped_by = "gap"
+                            break
+                        season_gaps.append(gap_h)
                     if ts is not None:
                         last_ts = ts
                     rows.append(row)
