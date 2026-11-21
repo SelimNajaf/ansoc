@@ -153,6 +153,9 @@ def self_update(progress: ProgressFn) -> Dict[str, Any]:
     kw: Dict[str, Any] = {"capture_output": True, "text": True, "stdin": subprocess.DEVNULL}
     if os.name == "nt":
         kw["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    elif sys.version_info < (3, 10):
+        warnings.append("The helper runs on Python 3.9, so yt-dlp cannot update any more. "
+                        "Run Update-Mac.command once: it moves the helper to a newer Python.")
     try:
         r = subprocess.run([py, "-m", "pip", "install", "--quiet", "--upgrade", "-r",
                             str(base / "helper" / "requirements.txt")], timeout=900, **kw)

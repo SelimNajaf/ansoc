@@ -103,6 +103,15 @@ Update-*  Uninstall-*    end-user update / uninstall scripts
 
 - **Design:** follow `DESIGN.md`. Colors, gradients, radii and font sizes come only from `extension/ui/tokens.css` (`var(--token)`); never hard-code a color. Gold = hit, green/rose = better/worse, brand gradient = actions.
 
+### Windows + macOS (both are used every day)
+
+Every change must keep working on **both** Windows and macOS. In particular:
+- Paths: use `pathlib` / `os.path`, never hard-coded `\` or `/` separators or `C:\` / `/Users` paths.
+- Platform-specific code goes behind `IS_WINDOWS` / `IS_MAC` (`helper/common.py`); new subprocesses keep `stdin=subprocess.DEVNULL` and, on Windows, `CREATE_NO_WINDOW`.
+- Installer changes go into both `Install-Windows.bat` / `helper/install_windows.bat` and `Install-Mac.command` / `helper/install_unix.sh`; same for Update / Uninstall.
+- Keep line endings from `.gitattributes` (`.bat` CRLF, `.sh` / `.command` LF) and the executable bit on `.command` / `.sh` files.
+- Python code must run on 3.9+ (`from __future__ import annotations` for new type syntax); the installers prefer 3.10+ because yt-dlp needs it.
+
 ### Checks before committing
 
 - `node --check` on every changed `.js` file; `python -m py_compile` on changed `.py` files; `bash -n` on `.sh` / `.command`.

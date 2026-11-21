@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.16.3
+
+- **macOS: newer Python for the helper.** macOS ships Python 3.9, on which yt-dlp no longer updates, so Instagram/TikTok downloads would slowly break. The Mac installer now uses Python 3.10+ (and installs Python 3.12 with Homebrew when it is available), and moves an existing helper to it automatically.
+- Already installed on a Mac with Python 3.9? Run **Update-Mac.command** once. Windows: nothing changes.
+
 ## 2.16.2
 
 - **Removed:** *Current season* from *What to read*. The default is now *Last 60 days*; the seasons (active periods) are still found and shown on the *Time range* after analysing.
