@@ -3,7 +3,7 @@
 
     python main.py install [--extension-id ID]   register the native-messaging host
     python main.py uninstall                       remove the registration
-    python main.py setup                           create Desktop/MediaDownloader/<Platform>/{images,videos,metadata,logs}
+    python main.py setup                           create Desktop/Medias/<Platform>/{images,videos,metadata,logs}
     python main.py check                           show dependency status
     python main.py detect <url>                    show which platform engine handles a URL
     python main.py download <url> [--force]        download a Pinterest / TikTok URL without the browser

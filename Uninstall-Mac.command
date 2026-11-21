@@ -1,5 +1,5 @@
 #!/bin/bash
-# Media Downloader - uninstall. Your downloaded files (Desktop/MediaDownloader) are NOT deleted.
+# Media Downloader - uninstall. Your downloaded files (Desktop/Medias) are NOT deleted.
 DEST="$HOME/MediaDownloader"
 echo
 echo "=== Uninstalling Media Downloader ==="
@@ -14,5 +14,5 @@ case "$ans" in
   *) echo "Kept $DEST." ;;
 esac
 echo
-echo "Your downloads in Desktop/MediaDownloader were kept."
+echo "Your downloads in Desktop/Medias were kept."
 read -r -p "Press Enter to close."

@@ -37,7 +37,7 @@ echo   3. Click "Load unpacked" and choose this folder:
 echo         %DEST%\extension
 echo   4. Updating? Just click the reload icon on the extension instead.
 echo.
-echo  Your downloads go to:  Desktop\MediaDownloader
+echo  Your downloads go to:  Desktop\Medias
 echo ======================================================================
 pause
 endlocal

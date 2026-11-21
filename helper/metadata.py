@@ -116,9 +116,21 @@ class DuplicateIndex:
     def lookup(self, digest: str) -> Optional[dict]:
         with self._lock:
             entry = self._load().get(digest)
-        # Ignore stale entries whose file the user deleted.
-        if entry and Path(entry.get("path", "")).exists():
+        if not entry:
+            return None
+        p = Path(entry.get("path", ""))
+        if p.exists():
             return entry
+        # Saved before the download folder was renamed (Desktop/MediaDownloader -> Desktop/Medias)?
+        from common import legacy_root_dir, root_dir
+
+        try:
+            moved = root_dir() / p.relative_to(legacy_root_dir())
+        except ValueError:
+            moved = None
+        if moved is not None and moved.exists():
+            return dict(entry, path=str(moved))
+        # Ignore stale entries whose file the user deleted.
         return None
 
     def add(self, digest: str, path: Path, content_id: str) -> None:

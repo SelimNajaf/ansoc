@@ -47,7 +47,7 @@ There are two kinds of requests. Figure out which one you have:
 
 5. **Instagram (only if they want it):** "Log in to instagram.com in Chrome. Then open the extension → Settings → turn on *Use Chrome's login*."
 
-6. **Explain usage in 3–4 lines** (see README "Use"): the panel on Pinterest/TikTok/Instagram pages, the popup with a link box, the Reels Analyzer on an Instagram profile, files in `Desktop/MediaDownloader`.
+6. **Explain usage in 3–4 lines** (see README "Use"): the panel on Pinterest/TikTok/Instagram pages, the popup with a link box, the Reels Analyzer on an Instagram profile, files in `Desktop/Medias`.
 
 ### Troubleshooting
 
@@ -59,7 +59,7 @@ There are two kinds of requests. Figure out which one you have:
 | Downloads stuck at "Downloading" | Should not happen since 2.4.0 (children of the helper no longer inherit Chrome's stdin pipe). Ask them to press ✕ Cancel → Retry. Logs: `~/MediaDownloader/helper/logs/`. |
 | *Instagram rate limit* | Instagram throttles accounts that make many requests. Wait 10–15 minutes; avoid re-running Analyze repeatedly. |
 | macOS: "unidentified developer" | Right-click → Open, or run with `bash` as above. |
-| macOS asks for Desktop access | Click Allow: downloads go to `~/Desktop/MediaDownloader`. |
+| macOS asks for Desktop access | Click Allow: downloads go to `~/Desktop/Medias`. |
 
 ### Updating an existing install
 

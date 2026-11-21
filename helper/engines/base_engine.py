@@ -17,7 +17,7 @@ class BaseEngine:
 
     #: short lowercase id used in file names and messages ("pinterest")
     id: str = ""
-    #: display name, also the folder under Desktop/MediaDownloader ("Pinterest")
+    #: display name, also the folder under Desktop/Medias ("Pinterest")
     name: str = ""
     #: host regexes of URLs a user may paste (pages and short links)
     page_hosts: Tuple[str, ...] = ()

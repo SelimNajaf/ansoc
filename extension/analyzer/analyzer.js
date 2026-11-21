@@ -2562,7 +2562,7 @@ async function downloadOne(r) {
   }] });
   if (!res.ok) return setActionMsg(res.error.message, "err");
   for (const j of res.data.jobs) state.jobs.set(j.code, j.jobId);
-  setActionMsg(t("an_queued", ["1", `MediaDownloader/Instagram/${res.data.folder}`]), "ok");
+  setActionMsg(t("an_queued", ["1", `Medias/Instagram/${res.data.folder}`]), "ok");
   renderTable();
   updateCancelAll();
 }
@@ -2795,7 +2795,7 @@ async function downloadSelected() {
     return;
   }
   for (const j of res.data.jobs) state.jobs.set(j.code, j.jobId);
-  setActionMsg(t("an_queued", [String(res.data.jobs.length), `MediaDownloader/Instagram/${res.data.folder}`]), "ok");
+  setActionMsg(t("an_queued", [String(res.data.jobs.length), `Medias/Instagram/${res.data.folder}`]), "ok");
   renderTable();
 }
 

@@ -20,7 +20,8 @@ from urllib.parse import urlparse
 
 HOST_NAME = "com.local.media_downloader"
 LEGACY_HOST_NAMES = ("com.local.pinterest_downloader",)  # removed by the installer
-ROOT_FOLDER = "MediaDownloader"
+ROOT_FOLDER = "Medias"  # download folder on the Desktop
+LEGACY_ROOT_FOLDER = "MediaDownloader"  # its name before 2.17.0, moved to ROOT_FOLDER automatically
 HELPER_DIR = Path(__file__).resolve().parent
 
 
@@ -146,14 +147,37 @@ def desktop_dir() -> Path:
     return Path.home() / "Desktop"
 
 
+_root_migrated = False
+
+
+def legacy_root_dir() -> Path:
+    """The old download folder, Desktop/MediaDownloader."""
+    return desktop_dir() / LEGACY_ROOT_FOLDER
+
+
 def root_dir() -> Path:
-    """Desktop/MediaDownloader (PINDL_ROOT env var overrides it, used by tests)."""
+    """Desktop/Medias (PINDL_ROOT env var overrides it, used by tests).
+
+    The first call renames an old Desktop/MediaDownloader to Desktop/Medias (only when
+    Medias does not exist yet), so earlier downloads keep their place."""
+    global _root_migrated
     override = os.environ.get("PINDL_ROOT")
-    return Path(override) if override else desktop_dir() / ROOT_FOLDER
+    if override:
+        return Path(override)
+    root = desktop_dir() / ROOT_FOLDER
+    if not _root_migrated:
+        _root_migrated = True
+        old = legacy_root_dir()
+        try:
+            if old.is_dir() and not root.exists():
+                old.rename(root)
+        except OSError:  # in use / synced by OneDrive: keep the old folder, use the new one
+            pass
+    return root
 
 
 def ensure_dirs(folder: str = "Pinterest") -> Dict[str, Path]:
-    """Create Desktop/MediaDownloader/<folder>/{images,videos}.
+    """Create Desktop/Medias/<folder>/{images,videos}.
 
     "metadata" is returned but only created when metadata JSON is actually written
     (the "Save metadata" button or the optional setting)."""

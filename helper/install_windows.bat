@@ -51,7 +51,7 @@ if not exist "%VPY%" (
 if errorlevel 1 ( echo [x] Package install failed ^(no internet or blocked by a proxy?^). Run this again when online. & goto :end_fail )
 echo [ok] Packages installed: yt-dlp, gallery-dl, FFmpeg ^(imageio-ffmpeg^)
 
-rem 3) Native Messaging manifest + registry + Desktop\MediaDownloader folders
+rem 3) Native Messaging manifest + registry + Desktop\Medias folders
 if "%EXT_ID%"=="" (
   "%VPY%" "%HERE%\main.py" install
 ) else (

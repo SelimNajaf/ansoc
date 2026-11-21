@@ -41,7 +41,7 @@ echo "  3. Click 'Load unpacked' and choose this folder:"
 echo "        $DEST/extension"
 echo "  4. Updating? Just click the reload icon on the extension instead."
 echo
-echo " Your downloads go to:  Desktop/MediaDownloader"
+echo " Your downloads go to:  Desktop/Medias"
 echo " (macOS may ask once to allow access to the Desktop folder: click Allow.)"
 echo "======================================================================"
 read -r -p "Press Enter to close."

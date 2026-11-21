@@ -61,7 +61,7 @@ It follows [`CLAUDE.md`](CLAUDE.md): it runs the installer, checks that everythi
   - click any reel for its **full description** (calls to action, prices, hashtags, music used).
   - Select reels and download them into one folder. File names end with the view count, e.g. `…_3.1M-views.mp4`.
   - **Download CSV** (next to *When do they post?*): one row per reel with posting time, results, success score and posting frequency. Export several stores and combine the files to find the best posting hours and posts per day. Pick **Excel (;)** or **Standard (,)** and use the same for all stores.
-- **Your files** go to **Desktop → MediaDownloader → Instagram / TikTok / Pinterest**.
+- **Your files** go to **Desktop → Medias → Instagram / TikTok / Pinterest**.
 
 ---
 
@@ -114,6 +114,6 @@ Still stuck? Open an [issue](https://github.com/SelimNajaf/ansoc/issues) and pas
    **Mac:** `Install-Mac.command` faylına sağ klik → *Open* → *Open*.
 3. Chrome-da `chrome://extensions` açın → sağ yuxarıda **Developer mode** → **Load unpacked** → ev qovluğunuzdakı `MediaDownloader/extension` qovluğunu seçin.
 4. Yeniləmə çıxanda extension-ın popup-ında **"Update now"** düyməsi görünəcək — basın, bu qədər.
-5. Fayllar **Desktop → MediaDownloader** qovluğuna düşür.
+5. Fayllar **Desktop → Medias** qovluğuna düşür.
 
 Claude Code istifadə edirsinizsə, sadəcə yazın: *"Bunu mənim üçün qur: https://github.com/SelimNajaf/ansoc"* — qalanını Claude edəcək.

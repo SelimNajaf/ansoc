@@ -133,7 +133,7 @@ def handle(action: str, params: dict, progress) -> dict:
         for p in (params.get("paths") or [])[:200]:
             try:
                 rp = Path(str(p)).resolve()
-                rp.relative_to(root)  # only answer for files inside MediaDownloader
+                rp.relative_to(root)  # only answer for files inside Desktop/Medias
                 out.append(rp.is_file())
             except (ValueError, OSError):
                 out.append(False)
@@ -160,7 +160,7 @@ def handle(action: str, params: dict, progress) -> dict:
         try:
             p.resolve().relative_to(root_dir().resolve())
         except ValueError:
-            raise HelperError(E_BAD_REQUEST, "Path is outside the MediaDownloader folder")
+            raise HelperError(E_BAD_REQUEST, "Path is outside the Medias folder")
         open_in_file_manager(p.parent if p.is_file() else p)
         return {"opened": str(p)}
 

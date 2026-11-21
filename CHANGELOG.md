@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.17.0
+
+- **The download folder is now *Desktop → Medias*** (was *Desktop → MediaDownloader*). Your old folder is renamed automatically the first time the helper runs, so all earlier downloads stay where they are and duplicates are still recognised. Works the same on Windows and macOS.
+- Needs the helper update: use **Update now** in the popup.
+
 ## 2.16.3
 
 - **macOS: newer Python for the helper.** macOS ships Python 3.9, on which yt-dlp no longer updates, so Instagram/TikTok downloads would slowly break. The Mac installer now uses Python 3.10+ (and installs Python 3.12 with Homebrew when it is available), and moves an existing helper to it automatically.
