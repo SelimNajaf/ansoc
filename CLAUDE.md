@@ -47,7 +47,7 @@ There are two kinds of requests. Figure out which one you have:
 
 5. **Instagram (only if they want it):** "Log in to instagram.com in Chrome. Then open the extension → Settings → turn on *Use Chrome's login*."
 
-6. **Explain usage in 3–4 lines** (see README "Use"): the panel on Pinterest/TikTok/Instagram pages, the popup with a link box, the Reels Analyzer on an Instagram profile, files land in the **Downloads** folder and in Chrome's download list (several at once = one ZIP).
+6. **Explain usage in 3–4 lines** (see README "Use"): right-click a post / reel / pin (or a link to one) → **Download this post**, the popup with a link box, the Reels Analyzer on an Instagram profile, files land in the **Downloads** folder and in Chrome's download list (several at once = one ZIP).
 
 ### Troubleshooting
 

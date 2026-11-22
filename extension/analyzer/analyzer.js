@@ -458,103 +458,8 @@ function applyRange() {
   renderCards();
   renderChart();
   renderActivity();
-  renderPlan();
-  renderTop();
   renderTable();
   updateActionBar();
-}
-
-// ------------------------------------------------------------------ "What to do": the verdicts first
-/**
- * A short action plan built from the same brains as the charts below (success score, timing,
- * posting rhythm). Each item: what to do, the evidence, and a click that shows the proof.
- */
-function renderPlan() {
-  const box = $("planGrid");
-  box.replaceChildren();
-  const items = [];
-  const add = (o) => items.push(o);
-  const goWW = (dim) => () => {
-    state.wwDim = dim;
-    if (!$("activityCard").hidden) {
-      renderWhatWorks();
-      $("wwChart").scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  };
-  const w = state.wwTime && state.wwTime.best;
-  if (w) {
-    add({ icon: "clock", tone: w.lift >= 1.05 ? "good" : "", head: t("pl_time", [windowLabel(w)]),
-      sub: t("pl_time_sub", [PD.effectsUI.fmt(w.lift), String(w.n)]), conf: w.confidence, click: goWW("window") });
-  }
-  const dd = state.wwDay;
-  if (dd) {
-    add({ icon: "repeat", tone: "good", head: t("pl_per_day", [String(dd.ideal.n)]),
-      sub: t("pl_per_day_sub", [dd.ideal.perDay.toFixed(1), String(dd.days)]), conf: dd.confidence, click: goWW("perDay") });
-  }
-  const gap = state.wwEffects && PD.stats.bestEffect(state.wwEffects.gap || []);
-  if (gap) {
-    add({ icon: "timer", tone: gap.ratio >= 1.05 ? "good" : "", head: t("pl_gap", [gap.group]),
-      sub: t("pl_gap_sub", [PD.effectsUI.fmt(gap.ratio), String(gap.n)]), click: goWW("gap") });
-  }
-  const hits = state.rows.filter((r) => r.success && r.success.tier === "hit");
-  if (state.rows.length >= 5) {
-    const share = hits.length / state.rows.length;
-    add({ icon: "target", tone: hits.length ? "hit" : "bad", head: t(hits.length ? "pl_hits" : "pl_no_hits", [String(hits.length)]),
-      sub: t("pl_hits_sub", [pct(share), String(state.rows.length)]), click: hits.length ? () => showInTable("hit") : null });
-  }
-  const a = state.activity;
-  if (a && a.trendComparable && a.prev30 != null) {
-    const ch = a.prev30 ? a.last30 / a.prev30 - 1 : 1;
-    if (Math.abs(ch) >= 0.25) {
-      add({ icon: ch > 0 ? "trending-up" : "trending-down", tone: ch > 0 ? "good" : "bad",
-        head: t(ch > 0 ? "pl_trend_up" : "pl_trend_down", [String(Math.round(Math.abs(ch) * 100))]),
-        sub: t("pl_trend_sub", [String(a.last30), String(a.prev30)]), click: () => $("activityCard").scrollIntoView({ behavior: "smooth", block: "start" }) });
-    }
-  }
-  if (a && a.sinceLastDays >= 14) {
-    add({ icon: "moon", tone: "bad", head: t("pl_quiet", [String(Math.floor(a.sinceLastDays))]), sub: t("pl_quiet_sub") });
-  }
-  $("planCard").hidden = !items.length;
-  for (const it of items) {
-    const conf = it.conf ? el("span", { class: `fx-conf ${it.conf}`, title: t(`fx_conf_${it.conf}`),
-      text: it.conf === "clear" ? "●●●" : it.conf === "likely" ? "●●○" : "●○○" }) : null;
-    const node = el(it.click ? "button" : "div", { class: "plan-item " + (it.tone || ""), type: it.click ? "button" : null }, [
-      el("span", { class: "plan-ic" }, [PD.icon(it.icon)]),
-      el("span", { class: "plan-txt" }, [el("strong", { text: it.head }), el("span", { class: "plan-sub" }, [document.createTextNode(it.sub + " "), conf])]),
-      it.click ? el("span", { class: "plan-go" }, [PD.icon("arrow-right")]) : null,
-    ]);
-    if (it.click) node.addEventListener("click", it.click);
-    box.append(node);
-  }
-}
-
-// ------------------------------------------------------------------ top reels gallery
-/** The best reels of the range (success score, then views): thumbnail, score, views. Click = details. */
-function renderTop() {
-  const rows = state.rows.filter((r) => r.successScore != null || r.views != null)
-    .sort((x, y) => (y.successScore ?? -1) - (x.successScore ?? -1) || (y.views ?? 0) - (x.views ?? 0)).slice(0, 8);
-  $("topCard").hidden = rows.length < 3;
-  const grid = $("topGrid");
-  grid.replaceChildren();
-  $("topSub").textContent = t("top_sub", [String(state.rows.length)]);
-  for (const r of rows) {
-    let img;
-    if (r.thumbnail && /^https:\/\/[^/]*(cdninstagram\.com|fbcdn\.net)\//.test(r.thumbnail)) {
-      img = el("img", { class: "top-img", alt: "", loading: "lazy", referrerpolicy: "no-referrer" });
-      img.src = r.thumbnail;
-      img.addEventListener("error", () => img.replaceWith(el("span", { class: "top-img ph" }, [PD.icon("film")])));
-    } else img = el("span", { class: "top-img ph" }, [PD.icon("film")]);
-    const s = r.success || {};
-    const tier = s.tier || "";
-    grid.append(el("button", { type: "button", class: "top-item " + tier, title: (captionOf(r) || r.code).split("\n")[0].slice(0, 120), onclick: () => openDetails(r.code) }, [
-      el("span", { class: "top-media" }, [img,
-        s.score != null ? el("i", { class: "succ " + tier, style: `--p:${s.score}` }, [tier === "hit" ? el("span", { class: "succ-i" }, [PD.icon("target")]) : null, el("span", { text: String(s.score) })]) : null]),
-      el("span", { class: "top-meta" }, [
-        el("strong", { text: r.views != null ? cmp(r.views) : "–" }), el("span", { class: "muted", text: " " + t("top_views") }),
-      ]),
-      el("span", { class: "top-date muted", text: r.ts ? dateShort(r.ts) : "" }),
-    ]));
-  }
 }
 
 // ------------------------------------------------------------------ date range bar (timeline brush)
@@ -866,8 +771,7 @@ function renderProfile() {
   $("profileName").textContent = `@${d.username}${p.is_verified ? " ✓" : ""}`;
   const parts = [];
   if (p.full_name) parts.push(p.full_name);
-  if (p.followers != null) parts.push(t("an_followers", [cmp(p.followers)]));
-  parts.push(t("an_reels_analyzed", [String(d.count)]));
+  parts.push(t("an_reels_analyzed", [String(d.count)])); // followers / posts are in the stats row below
   $("profileMeta").textContent = parts.join(" · ");
   $("profileExtra").replaceChildren(...[...profileStats(p),
     p.category ? el("span", { class: "chip pp-cat", text: p.category }) : null,
@@ -3340,7 +3244,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderActivityChart();
     renderTable();
   });
-  $("topAll").addEventListener("click", () => $("reelsCard").scrollIntoView({ behavior: "smooth", block: "start" }));
   $("clearFilter").addEventListener("click", () => {
     state.filter = null;
     renderChart();

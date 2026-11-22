@@ -1,6 +1,6 @@
 # Design system
 
-Every page of the extension (popup, Reels Analyzer, the on-page panel) follows these rules.
+Every page of the extension (popup, Reels Analyzer, the on-page toast) follows these rules.
 The values live in **`extension/ui/tokens.css`**; every page links it before its own stylesheet.
 
 ## 1. Principles
@@ -85,10 +85,8 @@ the filter panel (`.fpop`: opens with `--ease-io`, slider thumbs `.fp-thumb`, nu
 
 ## 6b. Reels Analyzer layout
 
-Verdicts first, proof below, raw data last (CSS `order` on `#results`): profile → time range →
-**What to do** (`renderPlan`, every item = action + evidence + a click to its proof) → key numbers →
-**Top reels** (`renderTop`) → posting activity / What works → views distribution → the reel list.
-A new insight goes into `renderPlan` only if a chart below can show its proof.
+Order (CSS `order` on `#results`): profile → time range → key numbers → posting activity / What works →
+views distribution → the reel list.
 
 ## 7. Checklist for a new screen or feature
 
@@ -97,5 +95,7 @@ A new insight goes into `renderPlan` only if a chart below can show its proof.
 - [ ] Gold only for hits, green/rose only for better/worse.
 - [ ] Readable on the dark theme (4.5:1 for text); no emoji as icons; nothing clickable below `--tap`.
 - [ ] Text is short English; the rest is in a tooltip.
-- [ ] The on-page panel is a tab docked to the right edge (`.dock` in `content/content.js`): it must never sit over the site's own controls.
-- [ ] The on-page panel (`content/content.js`, shadow DOM) copies the `:root` variables of `tokens.css` at start (`loadTokens`); the values at the top of its CSS are only a first-paint fallback.
+- [ ] Nothing sits permanently on the sites' pages: page actions are in the popup and the right-click menu
+  (`setupMenus` in background.js). The only on-page UI is a toast (`content/content.js`) shown while
+  something the user started runs, and it hides itself when done.
+- [ ] The on-page toast (`content/content.js`, shadow DOM) copies the `:root` variables of `tokens.css` at start (`loadTokens`); the values at the top of its CSS are only a first-paint fallback.

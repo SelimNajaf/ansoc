@@ -756,57 +756,22 @@ body.shooting .shot-btn { animation: none; }
 .pp-stat.bad { color: var(--bad); }
 .pp-i { font-size: var(--fs-s); }
 .pp-cat { font-size: var(--fs-xs); font-weight: 600; padding: 2px 8px; border-radius: var(--r-pill); background: var(--soft); color: var(--muted); }
-.pp-bio { color: var(--muted); white-space: pre-wrap; max-height: 3.2em; overflow: hidden; }
+.pp-bio { color: var(--muted); white-space: pre-wrap; line-height: 1.45; overflow-wrap: anywhere; }
+/* the preview under the search box stays short; the results card shows the whole bio */
+.pp .pp-bio { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .pp-foot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .pp-links { display: inline-flex; gap: 10px; flex-wrap: wrap; }
 .pp-links a, .pp-link { text-decoration: none; }
 #profileExtra { margin-top: 6px; }
 #profileExtra .pp-link { margin-left: 4px; }
 
-/* ---------- dashboard order: verdicts first, proof below, the full list last ---------- */
+/* ---------- dashboard order ---------- */
 #results:not([hidden]) { display: flex; flex-direction: column; }
 #results > * { margin-bottom: 14px; }
 #results > .profile { order: 1; }
 #results > #rangeCard { order: 2; }
-#results > #planCard { order: 3; }
 #results > #cards { order: 4; }
-#results > #topCard { order: 5; }
 #results > #activityCard { order: 6; }
 #results > #distCard { order: 7; }
 #results > #reelsCard { order: 8; }
 #results > :not(.card):not(.kpis) { order: 9; }
-
-/* "What to do" */
-.plan { border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
-  background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, var(--surface)), var(--surface) 70%); }
-.plan h2 { font-size: var(--fs-xl); }
-.plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-.plan-item { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; min-height: 64px;
-  border-radius: var(--r-l); background: var(--bg); border: 1px solid var(--line); color: var(--fg); font: inherit; white-space: normal; }
-button.plan-item:hover { border-color: color-mix(in srgb, var(--brand) 50%, var(--line)); filter: none; }
-.plan-ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-  background: var(--soft); color: var(--muted); font-size: var(--fs-xl); }
-.plan-item.good .plan-ic { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
-.plan-item.bad .plan-ic { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
-.plan-item.hit .plan-ic { color: var(--on-hit); background: var(--hit-grad); }
-.plan-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.plan-txt strong { font-size: var(--fs-l); font-weight: 700; line-height: 1.25; }
-.plan-sub { font-size: var(--fs-s); color: var(--muted); line-height: 1.35; }
-.plan-go { color: var(--muted); font-size: var(--fs-ml); }
-button.plan-item:hover .plan-go { color: var(--brand); }
-
-/* top reels */
-.top-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-.top-item { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 0; min-height: 0; background: none;
-  border-radius: var(--r-m); color: var(--fg); text-align: left; font: inherit; white-space: normal; }
-.top-item:hover { filter: none; }
-.top-media { position: relative; display: block; aspect-ratio: 9 / 16; border-radius: var(--r-m); overflow: hidden; background: var(--soft);
-  border: 1px solid var(--line); transition: transform var(--t-fast), border-color var(--t-fast); }
-.top-item:hover .top-media { transform: translateY(-2px); border-color: var(--data); }
-.top-item.hit .top-media { border-color: color-mix(in srgb, var(--hit) 70%, transparent); box-shadow: var(--hit-glow); }
-.top-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.top-img.ph { display: grid; place-items: center; color: var(--muted); font-size: var(--fs-3xl); }
-.top-media .succ { position: absolute; left: 6px; top: 6px; min-width: 0; cursor: pointer; }
-.top-media .succ:not(.hit):not(.good) { background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--fg); }
-.top-meta { font-size: var(--fs-m); font-variant-numeric: tabular-nums; }
-.top-date { font-size: var(--fs-xs); margin-top: -4px; }

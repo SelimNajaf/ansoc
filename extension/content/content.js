@@ -1,7 +1,7 @@
 /* Media Downloader - content script (Pinterest, TikTok, Instagram).
- * Adds a small toolbar to Pinterest pin/board pages, TikTok video/photo pages and
- * Instagram post/reel/story pages. UI is built with DOM APIs only
- * (no innerHTML) inside a closed shadow root so Pinterest's CSS cannot leak in. */
+ * Reads the open page for the popup and the right-click menu (what is shown, Pinterest hints,
+ * board pins). Shows a small toast only while a download started here runs. UI is built with DOM
+ * APIs inside a closed shadow root so the site's CSS cannot leak in. */
 (function () {
   "use strict";
   if (window.__pinterestDownloaderLoaded) return;
@@ -178,66 +178,43 @@
     return { pins, cancelled: state.cancel, expected };
   }
 
-  // ========================================================================== toolbar UI
-  // Colors and sizes come from extension/ui/tokens.css: loadTokens() copies its variables into this
-  // shadow root (a page stylesheet can't reach in). The values below are only a first-paint fallback.
+  // ========================================================================== toast (only while something runs)
+  // No permanent button on the page any more: actions live in the toolbar popup and the right-click
+  // menu. This small note appears at the bottom only after the user started something (a download
+  // from the right-click menu, a board download) and goes away by itself when it is done.
   const CSS = `
     :host { all: initial; --surface: #1b1b1e; --soft: #27272b; --line: #313137; --fg: #f2f2f4; --muted: #9e9eaa; --good: #3ccf7a; --bad: #ff6b8a;
       --brand: #ff5a45; --brand-grad: linear-gradient(135deg, #e60023, #ff6a3d 60%, #f59e0b); --action-grad: linear-gradient(135deg, #e60023, #c2410c 60%, #b45309);
-      --on-color: #fff; --sh-2: 0 6px 24px rgba(0,0,0,.4); --fs-xs: 12px; --fs-s: 12px; --fs-m: 13px; --fs-ml: 14px; --tap: 28px;
-      --ease: cubic-bezier(.2, .8, .2, 1); color-scheme: dark; }
-    /* A small tab docked to the right edge of the window (out of the way of the site's own buttons).
-       Hover or click opens the card; drag the tab up / down to move it. */
-    .dock { position: fixed; right: 0; top: 40%; z-index: 2147483000; display: flex; align-items: center; flex-direction: row-reverse;
-      font: var(--fs-m)/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); }
-    .tab { position: relative; width: 40px; height: 44px; border: 0; padding: 0 0 0 4px; cursor: grab; touch-action: none;
-      border-radius: 22px 0 0 22px; background: var(--surface); border: 1px solid var(--line); border-right: 0; box-shadow: var(--sh-2); display: grid; place-items: center;
-      opacity: .72; transform: translateX(6px); transition: opacity .15s, transform .2s var(--ease); }
-    .dock:hover .tab, .dock.open .tab, .dock.busy .tab, .dock.flash .tab, .tab:focus-visible { opacity: 1; transform: none; }
-    .tab:focus-visible, button.b:focus-visible, .x:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-    .tab.drag { cursor: grabbing; }
-    .logo { width: 26px; height: 26px; border-radius: 50%; background: var(--action-grad); color: var(--on-color); display: grid; place-items: center; }
-    .logo .ico { width: 15px; height: 15px; stroke-width: 2.5; }
-    .ring { position: absolute; left: 3px; top: 50%; width: 34px; height: 34px; margin-top: -17px; transform: rotate(-90deg); display: none; }
-    .dock.busy .ring { display: block; }
-    .ring circle { fill: none; stroke-width: 3; }
-    .ring .trk { stroke: var(--soft); }
-    .ring .val { stroke: var(--brand); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset .3s; }
-    .ring.indet .val { stroke-dashoffset: 70; animation: spin 1s linear infinite; transform-origin: center; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .dot { position: absolute; right: 6px; top: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface); display: none; }
-    .dock.ok .dot { display: block; background: var(--good); }
-    .dock.err .dot { display: block; background: var(--bad); }
-    .card { width: 260px; margin-right: 8px; padding: 12px; box-sizing: border-box; border-radius: 16px; background: var(--surface);
-      border: 1px solid var(--line); box-shadow: var(--sh-2); opacity: 0; transform: translateX(12px) scale(.98); pointer-events: none;
-      transition: opacity .15s, transform .2s var(--ease); }
-    .dock.open .card, .dock.flash .card { opacity: 1; transform: none; pointer-events: auto; }
-    .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 700; }
-    .head .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .x { border: 0; background: transparent; color: var(--muted); width: var(--tap); height: var(--tap); border-radius: 8px; cursor: pointer; display: grid; place-items: center; }
-    .x:hover { background: var(--soft); color: var(--fg); }
-    .btns { display: flex; flex-direction: column; gap: 6px; }
-    button.b { display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 999px; min-height: 34px; padding: 8px 12px;
-      font: 600 var(--fs-m)/1 inherit; font-family: inherit; cursor: pointer; background: var(--soft); color: var(--fg); }
-    button.b.primary { background: var(--action-grad); color: var(--on-color); }
-    button.b:hover { filter: brightness(1.12); }
-    button.b:disabled { opacity: .55; cursor: default; }
-    .status { margin-top: 8px; font-size: var(--fs-s); color: var(--muted); word-break: break-word; }
-    .status:empty { display: none; }
+      --on-color: #fff; --sh-2: 0 6px 24px rgba(0,0,0,.4); --fs-xs: 12px; --fs-s: 12px; --fs-m: 13px; --tap: 28px; color-scheme: dark; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 2147483000; width: min(360px, calc(100vw - 32px)); box-sizing: border-box;
+      transform: translate(-50%, 12px); opacity: 0; pointer-events: none; transition: opacity .18s, transform .22s cubic-bezier(.2,.8,.2,1);
+      font: var(--fs-m)/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg);
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--sh-2); padding: 10px 12px; }
+    .toast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+    .top { display: flex; align-items: center; gap: 10px; }
+    .logo { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--action-grad); color: var(--on-color); display: grid; place-items: center; }
+    .logo .ico { width: 14px; height: 14px; stroke-width: 2.5; }
+    .status { flex: 1; min-width: 0; word-break: break-word; }
     .status.err { color: var(--bad); }
     .status.ok { color: var(--good); }
+    .x { flex: none; border: 0; background: transparent; color: var(--muted); width: var(--tap); height: var(--tap); border-radius: 8px; cursor: pointer; display: grid; place-items: center; }
+    .x:hover { background: var(--soft); color: var(--fg); }
     .bar { height: 4px; background: var(--soft); border-radius: 2px; overflow: hidden; margin-top: 8px; display: none; }
     .bar.on { display: block; }
     .fill { height: 100%; width: 0; background: var(--brand-grad); transition: width .2s; }
     .fill.indet { width: 35%; animation: slide 1.1s infinite ease-in-out; }
     @keyframes slide { from { margin-left: -35%; } to { margin-left: 100%; } }
-    .row { display: flex; gap: 6px; margin-top: 8px; }
+    .row { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
     .row:empty { display: none; }
-    .row button.b { flex: 1; }
-    .ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    @media (prefers-reduced-motion: reduce) { .tab, .card, .fill, .fill.indet, .ring .val { transition: none; animation: none; } }`;
+    button.b { border: 0; border-radius: 999px; min-height: var(--tap); padding: 6px 12px; font: 600 var(--fs-s)/1 inherit; font-family: inherit;
+      cursor: pointer; background: var(--soft); color: var(--fg); }
+    button.b.primary { background: var(--action-grad); color: var(--on-color); }
+    button.b:hover { filter: brightness(1.12); }
+    button.b:focus-visible, .x:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .ico { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    @media (prefers-reduced-motion: reduce) { .toast, .fill, .fill.indet { transition: none; animation: none; } }`;
 
-  /** Copy the variables of ui/tokens.css into the panel, so it always matches the extension's pages. */
+  /** Copy the variables of ui/tokens.css into the toast, so it matches the extension's pages. */
   async function loadTokens(shadow) {
     try {
       const css = await (await fetch(chrome.runtime.getURL("ui/tokens.css"))).text();
@@ -246,117 +223,61 @@
     } catch (_e) { /* the fallback values above stay */ }
   }
 
+  const ROOT_ID = "media-downloader-root";
+  // An older copy of this script (before the extension was reloaded / updated) may still have its
+  // UI in the page: remove it, it can no longer talk to the extension.
+  for (const id of [ROOT_ID, "pinterest-downloader-root"]) {
+    for (const n of document.querySelectorAll("#" + id)) n.remove();
+  }
+
   const ui = {};
   let current = { platform: "", type: "other", pinId: "", contentId: "", url: "" };
-  let watch = null; // {pinId?, batchId?, jobId?, since}
-
+  let watch = null; // {batchId?, jobId?, total?}
+  let hideTimer = null;
   const icon = (name) => (PD.icon ? PD.icon(name) : document.createTextNode(""));
-  let closeTimer = null;
 
-  function buildUI() {
-    const host = el("div", { id: "pinterest-downloader-root" });
+  function ensureUI() {
+    if (ui.host && ui.host.isConnected) return;
+    const host = el("div", { id: ROOT_ID });
     const shadow = host.attachShadow({ mode: "closed" });
     shadow.appendChild(el("style", { text: CSS }));
     loadTokens(shadow);
-    ui.dock = el("div", { class: "dock", role: "region", "aria-label": "Media Downloader" });
-    // the tab: logo + progress ring + result dot
-    const ns = "http://www.w3.org/2000/svg";
-    ui.ring = document.createElementNS(ns, "svg");
-    ui.ring.setAttribute("class", "ring");
-    ui.ring.setAttribute("viewBox", "0 0 36 36");
-    ui.ring.innerHTML = '<circle class="trk" cx="18" cy="18" r="15.9" pathLength="100"/><circle class="val" cx="18" cy="18" r="15.9" pathLength="100"/>';
-    ui.ringVal = ui.ring.lastChild;
-    ui.tab = el("button", { class: "tab", type: "button", title: "Media Downloader", "aria-label": "Media Downloader", "aria-expanded": "false" },
-      [el("span", { class: "logo" }, [icon("download")]), el("span", { class: "dot" })]);
-    ui.tab.prepend(ui.ring);
-    // the card
-    ui.title = el("span", { class: "t", text: "Media Downloader" });
-    const close = el("button", { class: "x", type: "button", title: t("ui_minimize"), "aria-label": t("ui_minimize"), onclick: () => setOpen(false) }, [icon("x")]);
-    ui.btns = el("div", { class: "btns" });
     ui.status = el("div", { class: "status", "aria-live": "polite" });
     ui.fill = el("div", { class: "fill" });
     ui.bar = el("div", { class: "bar" }, [ui.fill]);
     ui.actions = el("div", { class: "row" });
-    ui.card = el("div", { class: "card" }, [el("div", { class: "head" }, [ui.title, close]), ui.btns, ui.bar, ui.status, ui.actions]);
-    ui.dock.append(ui.tab, ui.card);
-    shadow.appendChild(ui.dock);
+    const close = el("button", { class: "x", type: "button", title: t("btn_close"), "aria-label": t("btn_close"), onclick: hide }, [icon("x")]);
+    ui.toast = el("div", { class: "toast", role: "status" }, [
+      el("div", { class: "top" }, [el("span", { class: "logo" }, [icon("download")]), ui.status, close]), ui.bar, ui.actions]);
+    shadow.appendChild(ui.toast);
     ui.host = host;
     (document.body || document.documentElement).appendChild(host);
-
-    // open on hover (desktop) or click; leave = close after a moment (not while pinned open by a click)
-    ui.dock.addEventListener("mouseenter", () => { clearTimeout(closeTimer); ui.dock.classList.add("hover"); });
-    ui.dock.addEventListener("mouseleave", () => {
-      ui.dock.classList.remove("hover");
-      clearTimeout(closeTimer);
-      if (!ui.pinned) closeTimer = setTimeout(() => setOpen(false), 500);
-    });
-    ui.tab.addEventListener("mouseenter", () => setOpen(true));
-    // drag the tab up / down (a click without movement toggles the card)
-    let drag = null;
-    ui.tab.addEventListener("pointerdown", (e) => {
-      drag = { y: e.clientY, top: ui.dock.getBoundingClientRect().top, moved: false };
-      ui.tab.setPointerCapture(e.pointerId);
-    });
-    ui.tab.addEventListener("pointermove", (e) => {
-      if (!drag) return;
-      const dy = e.clientY - drag.y;
-      if (Math.abs(dy) > 4) drag.moved = true;
-      if (!drag.moved) return;
-      ui.tab.classList.add("drag");
-      placeDock(drag.top + dy);
-    });
-    ui.tab.addEventListener("pointerup", () => {
-      if (!drag) return;
-      const moved = drag.moved;
-      drag = null;
-      ui.tab.classList.remove("drag");
-      if (moved) {
-        try { chrome.storage.local.set({ dockTop: ui.dock.getBoundingClientRect().top / window.innerHeight }); } catch (_e) { /* ignore */ }
-      } else {
-        ui.pinned = !(ui.pinned && ui.dock.classList.contains("open"));
-        setOpen(ui.pinned);
-      }
-    });
-    document.addEventListener("pointerdown", (e) => {
-      if (ui.pinned && !e.composedPath().includes(ui.host)) { ui.pinned = false; setOpen(false); }
-    }, true);
-    window.addEventListener("resize", () => placeDock(ui.dock.getBoundingClientRect().top));
-    try {
-      chrome.storage.local.get("dockTop", (r) => {
-        if (r && typeof r.dockTop === "number") placeDock(r.dockTop * window.innerHeight);
-      });
-    } catch (_e) { /* ignore */ }
   }
 
-  function placeDock(top) {
-    const max = window.innerHeight - 60;
-    ui.dock.style.top = Math.max(12, Math.min(max, top)) + "px";
+  function show() {
+    ensureUI();
+    clearTimeout(hideTimer);
+    ui.toast.classList.add("on");
   }
-
-  function setOpen(open) {
-    if (!open) ui.pinned = false;
-    ui.dock.classList.toggle("open", !!open);
-    ui.tab.setAttribute("aria-expanded", open ? "true" : "false");
+  function hide() {
+    clearTimeout(hideTimer);
+    if (ui.toast) ui.toast.classList.remove("on");
+    if (collecting) collecting.cancel = true;
   }
-
-  /** Show the card for a few seconds (a download finished or failed), then fold back. */
-  function flash() {
-    ui.dock.classList.add("flash");
-    clearTimeout(ui.flashTimer);
-    ui.flashTimer = setTimeout(() => ui.dock.classList.remove("flash"), 4000);
+  /** Fold away a few seconds after the work is done (longer when there is a button to press). */
+  function hideLater(ms) {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => ui.toast && ui.toast.classList.remove("on"), ms);
   }
 
   function setStatus(text, kind) {
+    show();
     ui.status.textContent = text || "";
     ui.status.className = "status" + (kind ? " " + kind : "");
-    ui.dock.classList.toggle("ok", kind === "ok");
-    ui.dock.classList.toggle("err", kind === "err");
-    if (kind) flash();
   }
 
   function setProgress(p) {
-    const busy = p !== false && p !== 100;
-    ui.dock.classList.toggle("busy", busy);
+    ensureUI();
     if (p === false) {
       ui.bar.classList.remove("on");
       return;
@@ -365,107 +286,50 @@
     if (p === null || p === undefined) {
       ui.fill.classList.add("indet");
       ui.fill.style.width = "";
-      ui.ring.classList.add("indet");
     } else {
       ui.fill.classList.remove("indet");
       ui.fill.style.width = Math.max(2, Math.min(100, p)) + "%";
-      ui.ring.classList.remove("indet");
-      ui.ringVal.style.strokeDashoffset = String(100 - Math.max(2, Math.min(100, p)));
     }
   }
 
   function setActions(buttons) {
+    ensureUI();
     ui.actions.replaceChildren(...buttons);
   }
 
-  function button(label, onClick, primary, ico) {
-    return el("button", { class: "b" + (primary ? " primary" : ""), type: "button", onclick: onClick },
-      [ico ? icon(ico) : null, el("span", { text: label })]);
+  function button(label, onClick, primary) {
+    return el("button", { class: "b" + (primary ? " primary" : ""), type: "button", text: label, onclick: onClick });
   }
 
-  function renderButtons() {
-    ui.btns.replaceChildren();
-    setActions([]);
-    const platObj = PD.platforms.byId(current.platform);
-    ui.title.textContent = platObj ? `Media Downloader · ${platObj.name}` : "Media Downloader";
-    if (current.platform && current.platform !== "pinterest" && current.type !== "other") {
-      // TikTok / Instagram / ...: the local helper (yt-dlp / gallery-dl) does the work; label per post type.
-      const plat = PD.platforms.byId(current.platform);
-      if (current.type === "profile") {
-        // Instagram profile: open the Reels Analyzer (views, statistics, pick & bulk download).
-        ui.mainBtn = button(t("btn_analyze_reels"), () => send({ type: "openAnalyzer", profile: plat.profileName(current.url) }), true, "chart");
-        ui.btns.append(ui.mainBtn);
-      } else {
-        ui.mainBtn = button(t(plat && plat.buttonKey ? plat.buttonKey(current.type) : "btn_download"), () => startPin(false), true, "download");
-        ui.btns.append(ui.mainBtn, button(t("btn_save_metadata"), startMetadata));
-      }
-    } else if (current.type === "pin") {
-      const hints = collectHints();
-      ui.mainBtn = button(hints.isVideo ? t("btn_download_video") : t("btn_download_image"), () => startPin(false), true, "download");
-      ui.btns.append(ui.mainBtn, button(t("btn_save_metadata"), startMetadata));
-    } else if (current.type === "board") {
-      ui.mainBtn = button(t("btn_download_all"), startBoard, true, "download");
-      ui.btns.append(ui.mainBtn);
-    }
-  }
-
-  // ========================================================================== actions
-  async function startPin(force) {
-    setStatus(t("status_queued"));
-    setProgress(null);
-    const res = current.platform === "pinterest"
-      ? await send({ type: "download", pinId: current.pinId, hints: collectHints(), force: !!force })
-      : await send({ type: "download", url: current.url, force: !!force });
-    if (!res.ok) {
-      setProgress(false);
-      setStatus(res.error.message, "err");
-      return;
-    }
-    watch = { jobId: res.data.jobId };
-  }
-
-  async function startMetadata() {
-    setStatus(t("status_queued"));
-    setProgress(null);
-    const res = current.platform === "pinterest"
-      ? await send({ type: "saveMetadata", pinId: current.pinId, hints: collectHints() })
-      : await send({ type: "saveMetadata", url: current.url });
-    if (!res.ok) {
-      setProgress(false);
-      setStatus(res.error.message, "err");
-      return;
-    }
-    watch = { jobId: res.data.jobId };
-  }
-
+  // ========================================================================== board download (Pinterest)
   async function startBoard() {
     if (collecting) return;
-    ui.mainBtn.disabled = true;
-    setProgress(null);
-    const stop = button(t("btn_stop"), () => {
+    setActions([button(t("btn_stop"), () => {
       if (collecting) collecting.cancel = true;
-    });
-    setActions([stop]);
+    })]);
+    setProgress(null);
+    setStatus(t("status_collecting", ["…"]));
     const { pins, cancelled, expected } = await collectBoardPins((n, exp) => {
       setStatus(exp ? t("status_collecting_of", [String(n), String(exp)]) : t("status_collecting", [String(n)]));
       if (exp) setProgress((n / exp) * 100);
     });
     setActions([]);
-    ui.mainBtn.disabled = false;
     if (!pins.length) {
       setProgress(false);
       setStatus(t("err_PIN_NOT_FOUND"), "err");
+      hideLater(6000);
       return;
     }
     if (cancelled && !confirm(t("confirm_partial_board", [String(pins.length)]))) {
       setProgress(false);
-      setStatus("");
+      hide();
       return;
     }
     const res = await send({ type: "downloadBoard", pins, boardName: boardName() });
     if (!res.ok) {
       setProgress(false);
       setStatus(res.error.message, "err");
+      hideLater(8000);
       return;
     }
     watch = { batchId: res.data.batchId, total: res.data.count };
@@ -477,24 +341,28 @@
     if (!watch || !Array.isArray(jobs)) return;
     if (watch.jobId) {
       const j = jobs.find((x) => x.id === watch.jobId);
-      if (!j) return;
-      renderJob(j);
-    } else if (watch.batchId) {
-      const list = jobs.filter((x) => x.batchId === watch.batchId);
-      const total = watch.total || list.length;
-      const ok = list.filter((x) => x.status === S.SUCCESS).length;
-      const dup = list.filter((x) => x.status === S.DUPLICATE).length;
-      const failed = list.filter((x) => x.status === S.FAILED);
-      const done = ok + dup + failed.length;
-      setProgress(total ? (done / total) * 100 : null);
-      setStatus(t("status_board_progress", [String(done), String(total), String(ok), String(dup), String(failed.length)]),
-        done >= total ? (failed.length ? "err" : "ok") : "");
-      if (done >= total && failed.length) {
+      if (j) renderJob(j);
+      return;
+    }
+    const list = jobs.filter((x) => x.batchId === watch.batchId);
+    const total = watch.total || list.length;
+    const ok = list.filter((x) => x.status === S.SUCCESS).length;
+    const dup = list.filter((x) => x.status === S.DUPLICATE).length;
+    const failed = list.filter((x) => x.status === S.FAILED);
+    const done = ok + dup + failed.length;
+    setProgress(total ? (done / total) * 100 : null);
+    setStatus(t("status_board_progress", [String(done), String(total), String(ok), String(dup), String(failed.length)]),
+      done >= total ? (failed.length ? "err" : "ok") : "");
+    if (done >= total) {
+      watch = null;
+      if (failed.length) {
         setActions([button(t("btn_retry_failed"), async () => {
           for (const f of failed) await send({ type: "retry", jobId: f.id });
           setActions([]);
-        })]);
-      }
+          hideLater(2000);
+        }, true)]);
+        hideLater(15000);
+      } else hideLater(5000);
     }
   }
 
@@ -511,27 +379,28 @@
       case S.DOWNLOADING:
       case S.PROCESSING:
         setProgress(j.progress);
-        setStatus(
-          PD.waitText(j) ||
-            (j.status === S.PROCESSING ? t("status_processing") : t("status_downloading")) +
-              (j.progress != null ? ` ${Math.round(j.progress)}%` : "") +
-              (j.total > 1 ? ` (${j.index || 1}/${j.total})` : "")
-        );
+        setStatus(PD.waitText(j) || (j.status === S.PROCESSING ? t("status_processing") : t("status_downloading")) +
+          (j.progress != null ? ` ${Math.round(j.progress)}%` : "") + (j.total > 1 ? ` (${j.index || 1}/${j.total})` : ""));
         break;
       case S.SUCCESS: {
-        setProgress(100);
+        setProgress(false);
         const f = (j.files || [])[0];
-        const notes = (j.notes || []).join(" ");
-        setStatus(t("status_success") + (f && f.name ? `: ${f.name}` : "") + (notes ? ` — ${notes}` : ""), "ok");
+        setStatus(t("status_success") + (f && f.name ? `: ${f.name}` : ""), "ok");
         setActions(f && f.path ? [button(t("btn_show_file"), () => send({ type: "reveal", path: f.path }))] : []);
         watch = null;
+        hideLater(6000);
         break;
       }
       case S.DUPLICATE:
         setProgress(false);
-        setStatus(t("status_duplicate"), "");
-        setActions([button(t("btn_download_again"), () => startPin(true))]);
+        setStatus(t("status_duplicate"));
+        setActions([button(t("btn_download_again"), async () => {
+          const r = await send({ type: "retry", jobId: j.id, force: true });
+          if (r.ok) watch = { jobId: r.data.jobId };
+          setActions([]);
+        })]);
         watch = null;
+        hideLater(8000);
         break;
       case S.CANCELLED:
       case S.FAILED:
@@ -543,6 +412,7 @@
           setActions([]);
         }, true)]);
         watch = null;
+        hideLater(10000);
         break;
     }
   }
@@ -551,7 +421,7 @@
     if (area === "local" && changes.jobs) renderJobs(changes.jobs.newValue);
   });
 
-  // ========================================================================== messages from the popup
+  // ========================================================================== messages from the popup / right-click menu
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id || !msg) return false;
     if (msg.type === "pageInfo") {
@@ -560,11 +430,22 @@
         hints: current.platform === "pinterest" && current.type === "pin" ? collectHints() : null });
     } else if (msg.type === "startBoard") {
       if (current.platform === "pinterest" && current.type === "board") {
-        ui.pinned = true;
-        setOpen(true);
         startBoard();
         sendResponse({ ok: true });
       } else sendResponse({ ok: false });
+    } else if (msg.type === "watchJob" && msg.jobId) {
+      // a download started from the right-click menu: show its progress here
+      watch = { jobId: msg.jobId };
+      setActions([]);
+      setProgress(null);
+      setStatus(t("status_queued"));
+      sendResponse({ ok: true });
+    } else if (msg.type === "toastError") {
+      setActions([]);
+      setProgress(false);
+      setStatus(msg.text || t("err_UNKNOWN"), "err");
+      hideLater(8000);
+      sendResponse({ ok: true });
     }
     return false;
   });
@@ -578,16 +459,8 @@
     const type = plat ? plat.pageType(url) : "other";
     current = { platform, type, pinId: platform === "pinterest" && type === "pin" ? P.pinIdFromUrl(url) : "",
       contentId: plat ? plat.contentId(url) : "", url };
+    // a board collection belongs to its page; a running download keeps its toast
     if (collecting) collecting.cancel = true;
-    watch = null;
-    if (!ui.host) buildUI();
-    ui.host.style.display = type === "other" ? "none" : "";
-    ui.dock.classList.remove("ok", "err", "flash");
-    setStatus("");
-    setProgress(false);
-    renderButtons();
-    // the closeup video may appear a bit later: refresh the button label
-    if (platform === "pinterest" && type === "pin") setTimeout(() => current.url === url && !watch && renderButtons(), 2500);
   }
 
   onUrlChange();

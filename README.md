@@ -51,7 +51,7 @@ It follows [`CLAUDE.md`](CLAUDE.md): it runs the installer, checks that everythi
 
 ## 2. Use
 
-- **Download from a page:** open a Pinterest, TikTok or Instagram post. A **Media Downloader** panel appears at the bottom right. Or click the extension icon, paste a link and press **Download**.
+- **Download from a page:** right-click a Pinterest, TikTok or Instagram post (or any link to one, e.g. a reel in a profile grid) and choose **Download this post**. Or click the extension icon: it shows what you can do on the open page, or paste a link and press **Download**. On an Instagram profile, right-click → **Open in Reels Analyzer**; on a Pinterest board, right-click → **Download the whole board**.
 - **Instagram:** log in to instagram.com in Chrome, then in the extension's settings turn on **"Use Chrome's login"** (the Reels Analyzer also offers a **Use my Chrome login** button).
 - **Reels Analyzer:** on an Instagram profile click the extension icon → **Reels Analyzer** → **Analyze**. You get:
   - a **Success score** for every reel (🎯 hit / ✓ good): comments + like rate compared with that store's own reels — learned from successful reels of real stores,

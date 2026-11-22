@@ -1268,13 +1268,82 @@ chrome.notifications.onClicked.addListener((id) => {
   chrome.notifications.clear(id);
 });
 
+// ============================================================================ right-click menu
+// Instead of a button on top of the site: right-click a post / reel (or any link to one) to download
+// it, right-click an Instagram profile to open it in the Reels Analyzer, a Pinterest board to get it all.
+const CM_POST_PAGES = [
+  "https://*.instagram.com/p/*", "https://*.instagram.com/reel/*", "https://*.instagram.com/reels/*", "https://*.instagram.com/tv/*",
+  "https://*.instagram.com/stories/*", "https://*.instagram.com/*/p/*", "https://*.instagram.com/*/reel/*",
+  "https://*.tiktok.com/*/video/*", "https://*.tiktok.com/*/photo/*",
+  "https://*.pinterest.com/pin/*", "https://*.pinterest.ca/pin/*", "https://*.pinterest.co.uk/pin/*", "https://*.pinterest.de/pin/*",
+  "https://*.pinterest.fr/pin/*", "https://*.pinterest.es/pin/*", "https://*.pinterest.it/pin/*", "https://*.pinterest.com.au/pin/*",
+];
+const CM_POST_LINKS = CM_POST_PAGES.concat(["https://pin.it/*", "https://*.tiktok.com/t/*", "https://vm.tiktok.com/*"]);
+const CM_PINTEREST = ["com", "ca", "co.uk", "de", "fr", "es", "it", "com.au"].map((d) => `https://*.pinterest.${d}/*`);
+
+function setupMenus() {
+  chrome.contextMenus.removeAll(() => {
+    const add = (o) => chrome.contextMenus.create(o, () => void chrome.runtime.lastError);
+    add({ id: "md-link", title: PD.t("cm_download_link"), contexts: ["link"], targetUrlPatterns: CM_POST_LINKS });
+    add({ id: "md-page", title: PD.t("cm_download_page"), contexts: ["page", "video", "image", "frame"], documentUrlPatterns: CM_POST_PAGES });
+    add({ id: "md-meta", title: PD.t("cm_metadata_page"), contexts: ["page", "video", "image", "frame"], documentUrlPatterns: CM_POST_PAGES });
+    add({ id: "md-analyze", title: PD.t("cm_analyze"), contexts: ["page", "link"], documentUrlPatterns: ["https://*.instagram.com/*"] });
+    add({ id: "md-board", title: PD.t("cm_board"), contexts: ["page"], documentUrlPatterns: CM_PINTEREST });
+  });
+}
+
+/** Ask the tab's content script; null if it is not there (page opened before the extension loaded). */
+function askTab(tabId, msg) {
+  return new Promise((resolve) => {
+    if (tabId == null || tabId < 0) return resolve(null);
+    chrome.tabs.sendMessage(tabId, msg, (res) => resolve(chrome.runtime.lastError ? null : res));
+  });
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  await load();
+  const tabId = tab && tab.id;
+  const fail = (e) => {
+    const text = (e && e.message) || PD.errorText((e && e.code) || E.UNKNOWN);
+    askTab(tabId, { type: "toastError", text }).then((r) => r || notify(PD.t("notif_failed_title"), text));
+  };
+  try {
+    if (info.menuItemId === "md-analyze") {
+      const ig = PD.platforms.byId("instagram");
+      const profile = ig.profileName(info.linkUrl || "") || ig.profileName(info.pageUrl || "") || "";
+      await handlers.openAnalyzer({ profile });
+      return;
+    }
+    if (info.menuItemId === "md-board") {
+      const r = await askTab(tabId, { type: "startBoard" });
+      if (!r || !r.ok) throw new PDError(E.BAD_URL, PD.t("err_NOT_BOARD_PAGE"));
+      return;
+    }
+    let res;
+    const meta = info.menuItemId === "md-meta";
+    if (info.menuItemId === "md-link") {
+      res = await handlers.download({ url: info.linkUrl });
+    } else {
+      // the page itself: Pinterest needs the page's hints (image / video URLs) from the content script
+      const page = (await askTab(tabId, { type: "pageInfo" })) || {};
+      const msg = page.platform === "pinterest" && page.pinId ? { pinId: page.pinId, hints: page.hints || null } : { url: info.pageUrl };
+      res = meta ? await handlers.saveMetadata(msg) : await handlers.download(msg);
+    }
+    askTab(tabId, { type: "watchJob", jobId: res.jobId });
+  } catch (e) {
+    fail(e);
+  }
+});
+
 chrome.runtime.onInstalled.addListener(() => {
+  setupMenus();
   load();
   chrome.storage.local.get("settings").then((r) => {
     if (!r.settings) chrome.storage.local.set({ settings: PD.DEFAULT_SETTINGS });
   });
 });
 chrome.runtime.onStartup.addListener(() => {
+  setupMenus();
   load();
   checkForUpdate(false).catch(() => null); // quietly, at most every 6 hours
 });

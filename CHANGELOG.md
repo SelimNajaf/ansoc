@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.20.0
+
+- **No more button on top of Instagram / TikTok / Pinterest.** Instead, right-click: **Download this post** on a post, reel or pin (also on any link to one, e.g. a reel in a profile grid), **Open in Reels Analyzer** on Instagram, **Download the whole board** on a Pinterest board. A small note at the bottom shows the progress and disappears when done. The toolbar popup works as before.
+- Fixed: after an update, a second (dead) copy of the old page button could appear.
+- Reels Analyzer: the profile card shows the whole bio (it was cut off) and no longer repeats the follower count.
+- Removed the "What to do" and "Top reels" blocks.
+
 ## 2.19.0
 
 - **Reels Analyzer, verdicts first:** a new **What to do** block at the top turns the analysis into actions (best hours to post, reels per day, gap between posts, hits in the period, posting trend, long pauses). Click one to jump to the chart that proves it.

@@ -1489,64 +1489,25 @@
     "message": "Open post",
     "description": "Popup: open the downloaded post on its site"
   },
-  "pl_title": {
-    "message": "What to do"
+  "btn_close": {
+    "message": "Close"
   },
-  "pl_sub": {
-    "message": "The verdicts of this period. Click one to see the proof."
+  "cm_download_link": {
+    "message": "Download this post"
   },
-  "pl_time": {
-    "message": "Post between $1"
+  "cm_download_page": {
+    "message": "Download this post"
   },
-  "pl_time_sub": {
-    "message": "$1 success vs other hours · $2 reels"
+  "cm_metadata_page": {
+    "message": "Save metadata of this post"
   },
-  "pl_per_day": {
-    "message": "Post $1 reel(s) a day"
+  "cm_analyze": {
+    "message": "Open in Reels Analyzer"
   },
-  "pl_per_day_sub": {
-    "message": "≈ $1 hits a day at this pace · $2 days compared"
+  "cm_board": {
+    "message": "Download the whole board"
   },
-  "pl_gap": {
-    "message": "Leave $1 between posts"
-  },
-  "pl_gap_sub": {
-    "message": "$1 success vs other gaps · $2 reels"
-  },
-  "pl_hits": {
-    "message": "$1 hit(s) in this period"
-  },
-  "pl_no_hits": {
-    "message": "No hit in this period"
-  },
-  "pl_hits_sub": {
-    "message": "$1 of $2 reels scored 80 or more"
-  },
-  "pl_trend_up": {
-    "message": "Posting up $1%"
-  },
-  "pl_trend_down": {
-    "message": "Posting down $1%"
-  },
-  "pl_trend_sub": {
-    "message": "$1 reels in the last 30 days, $2 the 30 before"
-  },
-  "pl_quiet": {
-    "message": "No new reel for $1 days"
-  },
-  "pl_quiet_sub": {
-    "message": "Long pauses usually cost reach: post again soon."
-  },
-  "top_title": {
-    "message": "Top reels"
-  },
-  "top_sub": {
-    "message": "Best success score of the $1 reels in this period. Click one for details."
-  },
-  "top_all": {
-    "message": "All reels ↓"
-  },
-  "top_views": {
-    "message": "views"
+  "cm_parent": {
+    "message": "Media Downloader"
   }
 }
