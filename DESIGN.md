@@ -83,6 +83,13 @@ the filter panel (`.fpop`: opens with `--ease-io`, slider thumbs `.fp-thumb`, nu
   `--ease-io` (ease-in-out) for panels that open and close.
 - Loops only while something is happening (loading, a rising reel). `prefers-reduced-motion` turns animations off globally.
 
+## 6b. Reels Analyzer layout
+
+Verdicts first, proof below, raw data last (CSS `order` on `#results`): profile → time range →
+**What to do** (`renderPlan`, every item = action + evidence + a click to its proof) → key numbers →
+**Top reels** (`renderTop`) → posting activity / What works → views distribution → the reel list.
+A new insight goes into `renderPlan` only if a chart below can show its proof.
+
 ## 7. Checklist for a new screen or feature
 
 - [ ] Links `../ui/tokens.css` first.

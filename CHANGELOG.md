@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.19.0
+
+- **Reels Analyzer, verdicts first:** a new **What to do** block at the top turns the analysis into actions (best hours to post, reels per day, gap between posts, hits in the period, posting trend, long pauses). Click one to jump to the chart that proves it.
+- **Top reels:** the 8 best reels of the period (success score) as a gallery with score and views; click one for details.
+- New order: profile → time range → What to do → key numbers → top reels → posting activity → views distribution → the full reel list.
+- The profile is no longer shown twice after an analysis.
+
 ## 2.18.3
 
 - **The page panel no longer covers Instagram / TikTok / Pinterest:** it is now a small tab on the right edge of the window. Hover or click it to open the actions; drag it up or down to move it (the place is remembered). While downloading, the tab shows a progress ring; when done, a green or red dot.
