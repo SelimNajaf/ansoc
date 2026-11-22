@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.18.0
+
+- **Downloads now go to your Downloads folder and show up in Chrome's download list**, like any other download (Windows and macOS alike). No more folders on the Desktop.
+- **Several files at once come as one ZIP**: a carousel or slideshow, a Pinterest board, or reels picked in the Reels Analyzer. A single video or photo still comes as the file itself.
+- Your earlier downloads on the Desktop (*Medias* / *MediaDownloader*) are left where they are and are still recognised as duplicates. If you delete a downloaded file, it can be downloaded again.
+- **Open folder** and **Show file** now open the Downloads folder / the file through Chrome.
+- How it works: the helper prepares the file, then hands it to Chrome over a one-time link that only this computer can open (127.0.0.1). Nothing leaves your computer.
+- Needs the helper update: use **Update now** in the popup.
+
 ## 2.17.0
 
 - **The download folder is now *Desktop → Medias*** (was *Desktop → MediaDownloader*). Your old folder is renamed automatically the first time the helper runs, so all earlier downloads stay where they are and duplicates are still recognised. Works the same on Windows and macOS.

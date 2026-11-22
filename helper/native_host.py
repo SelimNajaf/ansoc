@@ -46,7 +46,7 @@ sys.stdin = open(os.devnull, "r")
 
 from common import (  # noqa: E402
     E_BAD_REQUEST, E_UNKNOWN, VERSION, HelperError, dependency_report, ensure_all_dirs, get_logger,
-    open_in_file_manager, root_dir,
+    legacy_root_dirs, open_in_file_manager, root_dir,
 )
 import router  # noqa: E402
 
@@ -110,6 +110,18 @@ _CANCEL: dict = {}
 _CANCEL_LOCK = threading.Lock()
 
 
+def _own_path(p) -> Path:
+    """p resolved, if it is inside the outbox or an earlier Desktop download folder (else ValueError)."""
+    rp = Path(str(p)).resolve()
+    for root in [root_dir()] + legacy_root_dirs():
+        try:
+            rp.relative_to(root.resolve())
+            return rp
+        except ValueError:
+            continue
+    raise ValueError(str(p))
+
+
 def handle(action: str, params: dict, progress) -> dict:
     if action == "cancel":  # stop a running request: its Downloader checks the event
         with _CANCEL_LOCK:
@@ -128,16 +140,23 @@ def handle(action: str, params: dict, progress) -> dict:
         return info
 
     if action == "paths_exist":  # duplicate check: is a previously downloaded file still there?
-        root = root_dir().resolve()
         out = []
         for p in (params.get("paths") or [])[:200]:
             try:
-                rp = Path(str(p)).resolve()
-                rp.relative_to(root)  # only answer for files inside Desktop/Medias
+                rp = _own_path(p)  # only answer for the outbox and the old Desktop folders
                 out.append(rp.is_file())
             except (ValueError, OSError):
                 out.append(False)
         return {"exists": out}
+
+    if action == "handoff":  # serve finished files to Chrome (one-time 127.0.0.1 links), optionally as one ZIP
+        import handoff
+
+        return handoff.prepare(params.get("paths") or [], str(params.get("zip_name") or ""))
+    if action == "handoff_done":  # Chrome saved them in Downloads: clear the outbox, update the duplicate index
+        import handoff
+
+        return handoff.done(params.get("items") or [])
 
     if action == "detect":  # purely local URL -> platform
         eng = router.detect(params.get("url", ""))
@@ -156,11 +175,10 @@ def handle(action: str, params: dict, progress) -> dict:
         return {"opened": str(target)}
 
     if action == "reveal":  # open the folder containing a file we saved
-        p = Path(params.get("path", ""))
         try:
-            p.resolve().relative_to(root_dir().resolve())
+            p = _own_path(params.get("path", ""))
         except ValueError:
-            raise HelperError(E_BAD_REQUEST, "Path is outside the Medias folder")
+            raise HelperError(E_BAD_REQUEST, "Path is not a helper file")
         open_in_file_manager(p.parent if p.is_file() else p)
         return {"opened": str(p)}
 
@@ -265,6 +283,12 @@ def worker(msg: dict) -> None:
 def main() -> int:
     log = get_logger()
     log.info("Native host %s started (pid %d)", VERSION, os.getpid())
+    try:
+        import handoff
+
+        handoff.cleanup_outbox()  # files Chrome never picked up (older than two days)
+    except Exception as exc:  # never block the start
+        log.warning("Outbox cleanup failed: %s", exc)
     pool = ThreadPoolExecutor(max_workers=3)
     try:
         while True:

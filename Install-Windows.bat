@@ -37,7 +37,8 @@ echo   3. Click "Load unpacked" and choose this folder:
 echo         %DEST%\extension
 echo   4. Updating? Just click the reload icon on the extension instead.
 echo.
-echo  Your downloads go to:  Desktop\Medias
+echo  Your downloads go to your Downloads folder and show up in Chrome's
+echo  download list. Several files at once come as one ZIP.
 echo ======================================================================
 pause
 endlocal

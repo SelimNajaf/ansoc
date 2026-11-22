@@ -218,15 +218,16 @@ class TikTokEngine(BaseEngine):
             if not images and not audio:
                 raise pick_error(errors or [HelperError(E_NO_MEDIA, "No images or audio in this post")])
 
-            saved, dups, existing = [], 0, ""
+            saved, dups, existing, existing_id = [], 0, "", None
 
             def keep(r: Dict[str, Any]) -> None:
-                nonlocal dups, existing
+                nonlocal dups, existing, existing_id
                 if r["status"] == "success":
                     saved.append(r["file"])
                 else:
                     dups += 1
                     existing = existing or r.get("existing_path", "")
+                    existing_id = existing_id if existing_id is not None else r.get("existing_download_id")
 
             for i, f in enumerate(images, 1):
                 pm = dict(meta.get("platform_metadata", {}), slideshow_image_count=len(images), slide_index=i)
@@ -240,7 +241,7 @@ class TikTokEngine(BaseEngine):
                                  "; ".join(e.message for e in errors))
             if not saved:
                 return {"status": "duplicate", "platform": self.id, "content_id": cid, "media_type": "slideshow",
-                        "existing_path": existing, "files": []}
+                        "existing_path": existing, "existing_download_id": existing_id, "files": []}
             out = {"status": "success", "platform": self.id, "content_id": cid, "media_type": "slideshow",
                    "files": saved, "file": saved[0], "duplicates": dups}
             if not images:

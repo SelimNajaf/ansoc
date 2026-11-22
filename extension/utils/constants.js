@@ -5,8 +5,6 @@
   const PD = (root.PD = root.PD || {});
 
   PD.HOST_NAME = "com.local.media_downloader";
-  PD.STAGING_DIR = "MediaDownloader_staging"; // inside Chrome's Downloads folder, helper moves files out
-  PD.FALLBACK_DIR = "MediaDownloader/Pinterest"; // used only when the helper is not installed
   PD.MAX_JOBS = 50;
   PD.RECENT_SHOWN = 10;
   PD.CONCURRENCY = 2;

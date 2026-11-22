@@ -61,7 +61,7 @@ It follows [`CLAUDE.md`](CLAUDE.md): it runs the installer, checks that everythi
   - click any reel for its **full description** (calls to action, prices, hashtags, music used).
   - Select reels and download them into one folder. File names end with the view count, e.g. `…_3.1M-views.mp4`.
   - **Download CSV** (next to *When do they post?*): one row per reel with posting time, results, success score and posting frequency. Export several stores and combine the files to find the best posting hours and posts per day. Pick **Excel (;)** or **Standard (,)** and use the same for all stores.
-- **Your files** go to **Desktop → Medias → Instagram / TikTok / Pinterest**.
+- **Your files** go to your **Downloads** folder and show up in Chrome's download list, like any download. Several files at once (a carousel, a board, reels picked in the Analyzer) come as **one ZIP**.
 
 ---
 
@@ -86,7 +86,6 @@ Double-click **`Uninstall-Windows.bat`** / **`Uninstall-Mac.command`** (in the `
 | Badge says **Helper not installed** | Run the installer again, then click the reload icon ↻ on the extension in `chrome://extensions`. |
 | A download stays at **Downloading** | Press **✕ Cancel** and **Retry**. If it says *Instagram rate limit*, wait 10–15 minutes: Instagram slows down accounts that make many requests. |
 | Mac: *"cannot be opened because it is from an unidentified developer"* | Right-click the file → **Open** → **Open**. Or in Terminal: `bash ~/Downloads/ansoc-main/Install-Mac.command` |
-| Mac asks to access the **Desktop** folder | Click **Allow** (that's where your downloads are saved). |
 | **Developer mode** can't be turned on | Your computer is managed by an organisation (office PC). Use a personal computer. |
 | Installer says *package install failed* | Check your internet connection (a company proxy can block it) and run it again. |
 
@@ -114,6 +113,6 @@ Still stuck? Open an [issue](https://github.com/SelimNajaf/ansoc/issues) and pas
    **Mac:** `Install-Mac.command` faylına sağ klik → *Open* → *Open*.
 3. Chrome-da `chrome://extensions` açın → sağ yuxarıda **Developer mode** → **Load unpacked** → ev qovluğunuzdakı `MediaDownloader/extension` qovluğunu seçin.
 4. Yeniləmə çıxanda extension-ın popup-ında **"Update now"** düyməsi görünəcək — basın, bu qədər.
-5. Fayllar **Desktop → Medias** qovluğuna düşür.
+5. Fayllar **Downloads** qovluğuna düşür və Chrome-un yükləmələr siyahısında görünür. Bir neçə fayl birlikdə bir **ZIP** kimi gəlir.
 
 Claude Code istifadə edirsinizsə, sadəcə yazın: *"Bunu mənim üçün qur: https://github.com/SelimNajaf/ansoc"* — qalanını Claude edəcək.

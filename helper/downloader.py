@@ -289,7 +289,8 @@ class Downloader:
                 except OSError:
                     pass
             self.log.info("Duplicate of %s (%s %s) skipped", existing["path"], self.platform, meta.get("content_id"))
-            return {"status": "duplicate", "existing_path": existing["path"], "sha256": digest}
+            return {"status": "duplicate", "existing_path": existing["path"], "sha256": digest,
+                    "existing_download_id": existing.get("download_id")}
 
         ext = sniff_ext(src, ext_of(src) or ("jpg" if kind == "image" else "mp4"))
         target_dir = self.dirs["images" if kind == "image" else "videos"]
@@ -374,7 +375,8 @@ class Downloader:
         saved = [r["file"] for r in results if r["status"] == "success"]
         dup = [r for r in results if r["status"] == "duplicate"]
         if not saved:
-            return {"status": "duplicate", "existing_path": dup[0]["existing_path"] if dup else "", "files": []}
+            return {"status": "duplicate", "existing_path": dup[0]["existing_path"] if dup else "", "files": [],
+                    "existing_download_id": dup[0].get("existing_download_id") if dup else None}
         return {"status": "success", "file": saved[0], "files": saved, "duplicates": len(dup)}
 
     # ------------------------------------------------------------------ ingest (chrome.downloads -> helper)

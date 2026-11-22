@@ -47,7 +47,7 @@ There are two kinds of requests. Figure out which one you have:
 
 5. **Instagram (only if they want it):** "Log in to instagram.com in Chrome. Then open the extension → Settings → turn on *Use Chrome's login*."
 
-6. **Explain usage in 3–4 lines** (see README "Use"): the panel on Pinterest/TikTok/Instagram pages, the popup with a link box, the Reels Analyzer on an Instagram profile, files in `Desktop/Medias`.
+6. **Explain usage in 3–4 lines** (see README "Use"): the panel on Pinterest/TikTok/Instagram pages, the popup with a link box, the Reels Analyzer on an Instagram profile, files land in the **Downloads** folder and in Chrome's download list (several at once = one ZIP).
 
 ### Troubleshooting
 
@@ -59,7 +59,6 @@ There are two kinds of requests. Figure out which one you have:
 | Downloads stuck at "Downloading" | Should not happen since 2.4.0 (children of the helper no longer inherit Chrome's stdin pipe). Ask them to press ✕ Cancel → Retry. Logs: `~/MediaDownloader/helper/logs/`. |
 | *Instagram rate limit* | Instagram throttles accounts that make many requests. Wait 10–15 minutes; avoid re-running Analyze repeatedly. |
 | macOS: "unidentified developer" | Right-click → Open, or run with `bash` as above. |
-| macOS asks for Desktop access | Click Allow: downloads go to `~/Desktop/Medias`. |
 
 ### Updating an existing install
 
@@ -96,6 +95,7 @@ Update-*  Uninstall-*    end-user update / uninstall scripts
 - Instagram's Reels-tab GraphQL returns **no captions and no `taken_at`**. Dates are decoded from the shortcode (`codeTime` in `stats.js`, `_code_time` in the engine); captions come from `reel_details` (one request per opened reel, cached).
 - Instagram rate-limits quickly: keep Instagram downloads to one at a time (`PLATFORM_CONCURRENCY` in background.js), never prefetch details in bulk.
 - Temporary download folders live in the system temp dir, not the (often OneDrive-synced) Desktop.
+- **Where files go (since 2.18):** the helper finishes files in its outbox (`root_dir()`, system temp), then `helper/handoff.py` serves them on a one-time `127.0.0.1` link and the extension downloads that with `chrome.downloads` (`deliver()` / `handOff()` in background.js). So files land in Chrome's Downloads folder and in its download list, on Windows and macOS alike, and the helper never touches ~/Downloads (macOS would ask for folder access). Several media files of one job, or all files of a bulk download (batch), go out as one ZIP (stored, not recompressed). Duplicate entries then carry Chrome's `download_id`; Chrome's `exists` flag tells whether the file is still there.
 - **Success score ("the brain")** is the main verdict: `success()` in `extension/analyzer/stats.js` (z of log comments + z of log like rate within the store, logistic weights). It was fitted on the user's picks with `tools/brain_model.py` on `research/*.json` (Export data files, git-ignored); refit and update the constants there when new picks arrive.
 - **Timing brains** (`bestTimeWindows`, `postsPerDay` in `stats.js`, both on the Success score): flexible best hour window chosen by the lower bound of its success lift; posts/day from success-per-reel vs ln(posts that day), ideal = fewest posts reaching 90 % of the best day.
 - **Seasons:** `activePeriods()` in `stats.js` (Time range periods): newest → oldest; pause = ≥ 14 days AND ≥ 10× the median gap of the current season; ≥ 3 reels per season. The helper's `gap_days` stop in `list_reels` mirrors it but the UI no longer offers it ("Current season" was removed in 2.16.2).

@@ -1,5 +1,5 @@
 @echo off
-rem Media Downloader - uninstall. Your downloaded files (Desktop\Medias) are NOT deleted.
+rem Media Downloader - uninstall. Your downloaded files (in Downloads) are NOT deleted.
 chcp 65001 >nul
 setlocal
 set "DEST=%USERPROFILE%\MediaDownloader"
@@ -18,6 +18,6 @@ rmdir /s /q "%DEST%"
 echo [ok] Program folder deleted.
 :done
 echo.
-echo Your downloads in Desktop\Medias were kept.
+echo Your downloaded files were kept.
 pause
 endlocal

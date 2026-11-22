@@ -159,7 +159,7 @@
     "message": "Video was a blob: URL; the real HLS stream was found and downloaded by the helper."
   },
   "note_fallback_folder": {
-    "message": "Helper missing: opened Downloads/MediaDownloader."
+    "message": "Opened your Downloads folder."
   },
   "notif_done_title": {
     "message": "Download complete"
@@ -201,7 +201,7 @@
     "message": "The local helper is not installed (or not registered for this extension ID). TikTok and Instagram need it. Run the installer in the helper folder."
   },
   "err_DIR_CREATE_FAILED": {
-    "message": "Cannot write to Desktop/Medias. macOS: click Allow when asked for Desktop access, or enable it in System Settings > Privacy & Security > Files and Folders."
+    "message": "Could not save the file. Check that the disk has free space and that Chrome can save to its Downloads folder."
   },
   "err_FILE_EXISTS": {
     "message": "A file with this name already exists. A new name was not possible."
@@ -230,8 +230,17 @@
   "err_INTERRUPTED": {
     "message": "Interrupted (browser or extension restarted). Press Retry."
   },
+  "err_handoff_failed": {
+    "message": "The files are ready, but Chrome could not save them to Downloads. Press Retry."
+  },
+  "an_saved_to_downloads": {
+    "message": "Downloads"
+  },
+  "an_saved_as_zip": {
+    "message": "Downloads (one ZIP: $1)"
+  },
   "err_UNKNOWN": {
-    "message": "Unexpected error. See Desktop/Medias/<Platform>/logs for details."
+    "message": "Unexpected error. Details: the logs folder in MediaDownloader/helper (in your home folder)."
   },
   "err_EXTENSION_RELOADED": {
     "message": "The extension was updated. Reload this page."
@@ -246,7 +255,7 @@
     "message": "That is a board link. Open the board and use “Download all pins on this board”."
   },
   "err_HOST_EXITED": {
-    "message": "The helper started but exited immediately. macOS: allow Chrome to access the Desktop folder (System Settings > Privacy & Security > Files and Folders) and rerun helper/install_mac.sh. Details: host-stderr.log in ~/Library/Application Support/MediaDownloader."
+    "message": "The helper started but exited immediately. Run the installer again (Install-Windows.bat / Install-Mac.command). Details: host-stderr.log in MediaDownloader/helper (in your home folder)."
   },
   "btn_download_images": {
     "message": "Download images"
@@ -1350,7 +1359,7 @@
     "message": "Capturing…"
   },
   "an_shot_done": {
-    "message": "📸 Saved ($1 px) to Downloads/MediaDownloader/Screenshots"
+    "message": "📸 Saved ($1 px) to Downloads"
   },
   "an_shot_done_copied": {
     "message": "📸 Saved ($1 px) and copied — paste with Ctrl+V"

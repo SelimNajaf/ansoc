@@ -2562,7 +2562,7 @@ async function downloadOne(r) {
   }] });
   if (!res.ok) return setActionMsg(res.error.message, "err");
   for (const j of res.data.jobs) state.jobs.set(j.code, j.jobId);
-  setActionMsg(t("an_queued", ["1", `Medias/Instagram/${res.data.folder}`]), "ok");
+  setActionMsg(t("an_queued", ["1", t("an_saved_to_downloads")]), "ok");
   renderTable();
   updateCancelAll();
 }
@@ -2795,7 +2795,7 @@ async function downloadSelected() {
     return;
   }
   for (const j of res.data.jobs) state.jobs.set(j.code, j.jobId);
-  setActionMsg(t("an_queued", [String(res.data.jobs.length), `Medias/Instagram/${res.data.folder}`]), "ok");
+  setActionMsg(t("an_queued", [String(res.data.jobs.length), res.data.jobs.length > 1 ? t("an_saved_as_zip", [res.data.folder]) : t("an_saved_to_downloads")]), "ok");
   renderTable();
 }
 
@@ -2905,7 +2905,7 @@ function saveCaptionsTxt() {
  * at least 2x pixels (zoom in on a phone and it still looks like the real screen). Uses the
  * Chrome DevTools protocol on this tab (chrome.debugger: Chrome shows a short "started
  * debugging" bar while it runs). Long pages are captured in slices and stitched on a canvas.
- * Saved to Downloads/MediaDownloader/Screenshots and copied to the clipboard.
+ * Saved to Downloads and copied to the clipboard.
  */
 let shotRun = false;
 function setShotMsg(text, kind) {
@@ -3033,7 +3033,7 @@ async function saveShot(canvas) {
   const d = new Date();
   const name = `${(state.data && state.data.username) || "reels"}_${today()}_${p2(d.getHours())}-${p2(d.getMinutes())}.png`;
   const url = URL.createObjectURL(blob);
-  await chrome.downloads.download({ url, filename: `MediaDownloader/Screenshots/${name}`, conflictAction: "uniquify" });
+  await chrome.downloads.download({ url, filename: name, conflictAction: "uniquify" });
   setTimeout(() => URL.revokeObjectURL(url), 60000);
   let copied = false;
   try {

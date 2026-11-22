@@ -118,14 +118,24 @@ class DuplicateIndex:
             entry = self._load().get(digest)
         if not entry:
             return None
+        if entry.get("download_id") is not None:
+            # Handed to Chrome (in the user's Downloads folder). On macOS the helper must not
+            # touch ~/Downloads (it would ask for folder access), so trust the entry there:
+            # the extension double-checks it with chrome.downloads (existing_download_id).
+            from common import IS_MAC
+
+            if IS_MAC or Path(entry.get("path", "")).exists():
+                return entry
+            return None
         p = Path(entry.get("path", ""))
         if p.exists():
             return entry
-        # Saved before the download folder was renamed (Desktop/MediaDownloader -> Desktop/Medias)?
-        from common import legacy_root_dir, root_dir
+        # Saved before 2.17 renamed the Desktop folder (Desktop/MediaDownloader -> Desktop/Medias)?
+        from common import legacy_root_dirs
 
+        medias, old = legacy_root_dirs()
         try:
-            moved = root_dir() / p.relative_to(legacy_root_dir())
+            moved = medias / p.relative_to(old)
         except ValueError:
             moved = None
         if moved is not None and moved.exists():
@@ -140,6 +150,36 @@ class DuplicateIndex:
             tmp = self.path.with_suffix(".tmp")
             tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
             os.replace(tmp, self.path)
+
+
+def repoint(moves: Dict[str, dict]) -> int:
+    """After Chrome took files from the outbox: point their index entries at the new place.
+
+    moves: old outbox path -> {"path": final path in Downloads, "download_id": Chrome's id}.
+    Returns how many entries were changed (all index files in the state folder are checked)."""
+    from common import STATE_DIR
+
+    changed = 0
+    if not moves or not STATE_DIR.is_dir():
+        return 0
+    moves = {os.path.realpath(k): v for k, v in moves.items()}
+    for f in STATE_DIR.glob("*.json"):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        hit = False
+        for entry in data.values():
+            key = os.path.realpath(str(entry.get("path") or "")) if isinstance(entry, dict) else ""
+            if key in moves:
+                entry.update(moves[key])
+                hit = True
+                changed += 1
+        if hit:
+            tmp = f.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
+            os.replace(tmp, f)
+    return changed
 
 
 # --------------------------------------------------------------------------- EXIF / image info

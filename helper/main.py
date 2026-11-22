@@ -3,7 +3,7 @@
 
     python main.py install [--extension-id ID]   register the native-messaging host
     python main.py uninstall                       remove the registration
-    python main.py setup                           create Desktop/Medias/<Platform>/{images,videos,metadata,logs}
+    python main.py setup                           create the helper's outbox folders (files wait there until Chrome takes them)
     python main.py check                           show dependency status
     python main.py detect <url>                    show which platform engine handles a URL
     python main.py download <url> [--force]        download a Pinterest / TikTok URL without the browser
@@ -109,11 +109,8 @@ def cmd_install(args) -> int:
             print(f"[x] Invalid extension ID: {i}")
             return 2
 
-    dirs = ensure_all_dirs()
-    print(f"[ok] Download folder: {dirs['root']}")
-    for k, v in dirs.items():
-        if k != "root":
-            print(f"     {k}: {v}")
+    ensure_all_dirs()
+    print("[ok] Downloads are saved by Chrome into your Downloads folder (they show up in Chrome's download list).")
     _remove_legacy()
 
     cfg = load_config()

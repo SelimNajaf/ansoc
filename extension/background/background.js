@@ -20,7 +20,7 @@ let loaded = null;
 const queue = []; // job ids waiting
 let running = 0;
 let saveTimer = null;
-const batches = new Map(); // batchId -> {total, done, ok, failed, dup, name}
+const batches = new Map(); // batchId -> {total, done, ok, failed, dup, name, platform, jobIds}
 
 function load() {
   if (!loaded) {
@@ -309,6 +309,13 @@ async function dupLookup(key) {
 async function dupHit(key) {
   const hit = await dupLookup(key);
   if (!hit || !hit.path) return hit;
+  if (hit.downloadId != null) {
+    // Saved through Chrome: Chrome knows whether the file is still there (search() re-checks it).
+    const item = await downloadItemById(hit.downloadId);
+    if (!item || (item.exists && item.state === "complete")) return hit; // history cleared: trust it
+    await dupForget(key);
+    return null;
+  }
   const st = await PD.native.status();
   if (!st.ok) return hit; // cannot check without the helper (Downloads fallback mode)
   try {
@@ -317,11 +324,146 @@ async function dupHit(key) {
   } catch (_e) {
     return hit;
   }
+  await dupForget(key);
+  return null;
+}
+
+async function dupForget(key) {
   const r = await chrome.storage.local.get("dupIndex");
   const idx = r.dupIndex || {};
   delete idx[key];
   await chrome.storage.local.set({ dupIndex: idx });
-  return null;
+}
+
+/** After a hand-off: entries that pointed at outbox files now point at the file in Downloads. */
+async function dupRepoint(moves) {
+  if (!moves.size) return;
+  const r = await chrome.storage.local.get("dupIndex");
+  const idx = r.dupIndex || {};
+  let changed = false;
+  for (const entry of Object.values(idx)) {
+    const m = entry && moves.get(entry.path);
+    if (m) {
+      Object.assign(entry, m);
+      changed = true;
+    }
+  }
+  if (changed) await chrome.storage.local.set({ dupIndex: idx });
+}
+
+function downloadItemById(id) {
+  return new Promise((resolve) => chrome.downloads.search({ id }, (items) => {
+    void chrome.runtime.lastError;
+    resolve((items && items[0]) || null);
+  }));
+}
+
+/**
+ * The helper reported a duplicate of a file that was saved through Chrome: is it really still in
+ * Downloads? (On macOS the helper cannot look there itself.) false = the user deleted it.
+ */
+async function duplicateStillThere(res) {
+  if (!res || res.existing_download_id == null) return true;
+  const item = await downloadItemById(res.existing_download_id);
+  return !item || (item.exists && item.state === "complete");
+}
+
+// ============================================================================ hand-off to Chrome
+const baseOf = (p) => String(p || "").split(/[\\/]/).pop();
+
+/**
+ * Files the helper finished wait in its outbox. Chrome downloads them from a one-time
+ * 127.0.0.1 link, so they land in the Downloads folder and show up in Chrome's download list.
+ * With zipName all paths become ONE download (a ZIP). Returns [{sources, path, name, size, downloadId}].
+ */
+async function deliver(paths, zipName) {
+  const res = await PD.native.request("handoff", { paths, zip_name: zipName || "" }, { timeout: 30 * 60 * 1000 });
+  const out = [];
+  const report = [];
+  try {
+    for (const it of res.items || []) {
+      const d = await chromeDownload(it.url, it.name);
+      out.push({ sources: it.sources, path: d.filename, name: baseOf(d.filename) || it.name,
+        size: d.fileSize || d.totalBytes || it.size, downloadId: d.id });
+      report.push({ token: it.token, ok: true, final_path: d.filename, download_id: d.id });
+    }
+  } finally {
+    for (const it of res.items || []) if (!report.some((r) => r.token === it.token)) report.push({ token: it.token, ok: false });
+    await PD.native.request("handoff_done", { items: report }, { timeout: 60000 }).catch(() => null);
+  }
+  const moves = new Map();
+  for (const o of out) for (const src of o.sources) moves.set(src, { path: o.path, downloadId: o.downloadId });
+  await dupRepoint(moves);
+  return out;
+}
+
+const isMedia = (f) => f && f.media_type !== "metadata";
+
+/**
+ * Hand a finished job's files to Chrome. One media file -> as it is; several (carousel,
+ * slideshow) -> one ZIP. Jobs of a bulk download wait and go out together as one ZIP at the end
+ * (deliverBatch). Returns the job's file list pointing at Downloads.
+ */
+async function handOff(job, files) {
+  const local = (files || []).filter((f) => f && f.path);
+  if (!local.length) return files;
+  const b = job.batchId && batches.get(job.batchId);
+  if (b) {
+    b.jobIds.add(job.id);
+    return files;
+  }
+  update(job, { status: S.PROCESSING, progress: null });
+  const paths = [];
+  for (const f of local) {
+    paths.push(f.path);
+    if (f.metadata_path) paths.push(f.metadata_path);
+  }
+  const media = local.filter(isMedia);
+  if (media.length > 1) {
+    const [z] = await deliver(paths, `${job.platform}_${job.contentId || "media"}_${timestamp()}.zip`);
+    return [{ path: z.path, name: z.name, size: z.size, media_type: "zip", count: media.length, downloadId: z.downloadId }];
+  }
+  const out = await deliver(paths, "");
+  const bySrc = new Map(out.map((o) => [o.sources[0], o]));
+  return local.map((f) => {
+    const o = bySrc.get(f.path);
+    const m = f.metadata_path && bySrc.get(f.metadata_path);
+    return Object.assign({}, f, o ? { path: o.path, name: o.name, downloadId: o.downloadId } : {},
+      m ? { metadata_path: m.path } : {});
+  });
+}
+
+/** End of a bulk download: every saved file of the batch in one ZIP (one line in Chrome's list). */
+async function deliverBatch(b) {
+  const batchJobs = [...b.jobIds].map(findJob).filter((j) => j && j.status === S.SUCCESS && (j.files || []).length);
+  const paths = [];
+  for (const j of batchJobs) {
+    for (const f of j.files) {
+      if (f.path) paths.push(f.path);
+      if (f.metadata_path) paths.push(f.metadata_path);
+    }
+  }
+  if (!paths.length) return null;
+  const media = batchJobs.reduce((n, j) => n + j.files.filter(isMedia).length, 0);
+  const single = batchJobs.length === 1 && media === 1;
+  const name = `${b.name || (b.platform === "pinterest" ? "pinterest_board" : `${b.platform}_collection`)}_${media}_files_${timestamp()}.zip`;
+  const out = await deliver(paths, single ? "" : name);
+  if (single) {
+    const j = batchJobs[0];
+    const bySrc = new Map(out.map((o) => [o.sources[0], o]));
+    update(j, { files: j.files.map((f) => {
+      const o = bySrc.get(f.path);
+      return o ? Object.assign({}, f, { path: o.path, name: o.name, downloadId: o.downloadId }) : f;
+    }) }, true);
+    return out[0];
+  }
+  const z = out[0];
+  for (const j of batchJobs) {
+    update(j, { files: [{ path: z.path, name: z.name, size: z.size, media_type: "zip", count: j.files.filter(isMedia).length,
+      downloadId: z.downloadId }] });
+  }
+  persist(true);
+  return z;
 }
 
 async function dupAdd(key, entry) {
@@ -401,66 +543,29 @@ async function downloadItem(job, info, item, baseName, helperOk, setProgress) {
   // ---- direct file (image / progressive mp4) ---------------------------------
   update(job, { status: S.DOWNLOADING });
   if (helperOk) {
-    let staged;
-    try {
-      // macOS protects ~/Downloads (TCC): the helper reading Chrome's staged file there
-      // triggers an "access Downloads folder" prompt every time. On macOS the helper
-      // therefore fetches the same CDN URL itself (byte-identical result).
-      if (job.helperPlatform === "darwin") throw new PDError(E.DOWNLOAD_INTERRUPTED, "direct helper download on macOS");
-      staged = await chromeDownload(plan.url, `${PD.STAGING_DIR}/${baseName}.${plan.ext}`, (p) => setProgress(p));
-    } catch (e) {
-      if (e.code === E.DIR_CREATE_FAILED || e.code === E.RATE_LIMITED) throw e;
-      // chrome.downloads failed: let the helper fetch the same CDN URL directly.
-      const res = await PD.native.request(
-        "download_url",
-        { url: plan.url, media_type: plan.mediaType, base_name: baseName, pin: pinMeta, force,
-          write_metadata: !!settings.saveMetadata, video_quality: settings.compatVideos ? "compatible" : "max" },
-        { onProgress: (m) => setProgress(m.percent), onId: (id) => (job.nativeId = id) }
-      );
-      if (res.status === "success") await dupAdd(key, { path: res.file.path, contentId: info.pin_id });
-      return res;
-    }
-    update(job, { status: S.PROCESSING });
-    let res;
-    try {
-      res = await PD.native.request("ingest", {
-        staged_path: staged.filename, media_type: plan.mediaType, base_name: baseName, pin: pinMeta,
-        original_url: item.url || item.mp4Url || plan.url, downloaded_url: plan.url, force,
-        write_metadata: !!settings.saveMetadata, video_quality: settings.compatVideos ? "compatible" : "max",
-      });
-      chrome.downloads.erase({ id: staged.id });
-    } catch (e) {
-      if ([E.HOST_EXITED, E.HOST_NOT_INSTALLED, E.PYTHON_MISSING].includes(e.code)) throw e;
-      // The helper could not read the staged file (e.g. macOS blocks access to ~/Downloads):
-      // remove it through Chrome and let the helper fetch the same CDN URL itself.
-      chrome.downloads.removeFile(staged.id, () => {
-        void chrome.runtime.lastError;
-        chrome.downloads.erase({ id: staged.id });
-      });
-      update(job, { status: S.DOWNLOADING });
-      res = await PD.native.request(
-        "download_url",
-        { url: plan.url, media_type: plan.mediaType, base_name: baseName, pin: pinMeta, force,
-          write_metadata: !!settings.saveMetadata, video_quality: settings.compatVideos ? "compatible" : "max" },
-        { onProgress: (m) => setProgress(m.percent), onId: (id) => (job.nativeId = id) }
-      );
-    }
+    // The helper fetches the CDN URL itself; the finished file is then handed to Chrome
+    // (handOff) so it lands in Downloads and shows up in Chrome's download list.
+    const res = await PD.native.request(
+      "download_url",
+      { url: plan.url, media_type: plan.mediaType, base_name: baseName, pin: pinMeta, force,
+        write_metadata: !!settings.saveMetadata, video_quality: settings.compatVideos ? "compatible" : "max" },
+      { onProgress: (m) => setProgress(m.percent), onId: (id) => (job.nativeId = id) }
+    );
     if (res.status === "success") await dupAdd(key, { path: res.file.path, contentId: info.pin_id });
     return res;
   }
 
-  // ---- no helper: save into Downloads/MediaDownloader/Pinterest/... with chrome.downloads only ----
-  const sub = plan.mediaType === "video" ? "videos" : "images";
-  const dl = await chromeDownload(plan.url, `${PD.FALLBACK_DIR}/${sub}/${baseName}.${plan.ext}`, (p) => setProgress(p));
+  // ---- no helper: save straight into Downloads with chrome.downloads only ----
+  const dl = await chromeDownload(plan.url, `${baseName}.${plan.ext}`, (p) => setProgress(p));
   const fileName = (dl.filename || "").split(/[\\/]/).pop();
   const meta = metadataFor(job, info, {
     media_type: plan.mediaType, original_url: item.url || item.mp4Url || plan.url, downloaded_url: plan.url,
     file_path: dl.filename || "", file_name: fileName, file_size: dl.fileSize || dl.totalBytes || "",
   });
   if (settings.saveMetadata) {
-    await chromeDownload(dataUrlJson(meta), `${PD.FALLBACK_DIR}/metadata/${baseName}.json`).catch(() => null);
+    await chromeDownload(dataUrlJson(meta), `${baseName}.json`).catch(() => null);
   }
-  await dupAdd(key, { path: dl.filename, contentId: info.pin_id });
+  await dupAdd(key, { path: dl.filename, contentId: info.pin_id, downloadId: dl.id });
   return { status: "success", file: { path: dl.filename, name: fileName, size: meta.file_size, media_type: plan.mediaType } };
 }
 
@@ -487,8 +592,9 @@ async function runJob(job) {
       let path;
       if (helperOk) {
         path = (await PD.native.request("save_metadata", { base_name: base, pin: meta })).metadata_path;
+        path = (await handOff(job, [{ path, media_type: "metadata" }]))[0].path;
       } else {
-        const d = await chromeDownload(dataUrlJson(meta), `${PD.FALLBACK_DIR}/metadata/${base}.json`);
+        const d = await chromeDownload(dataUrlJson(meta), `${base}.json`);
         path = d.filename;
       }
       update(job, { status: S.SUCCESS, progress: 100, title: info.title || job.title, files: [{ path, media_type: "metadata" }] }, true);
@@ -535,7 +641,11 @@ async function runJob(job) {
           const each = p === null || p === undefined ? null : (i * 100 + p) / n;
           update(job, { progress: each, index: i + 1 });
         };
-        const res = await downloadItem(job, info, r.media[i], base, helperOk, setProgress);
+        let res = await downloadItem(job, info, r.media[i], base, helperOk, setProgress);
+        if (res.status === "duplicate" && !(await duplicateStillThere(res))) {
+          job.force = true; // the earlier copy was deleted from Downloads: download it again
+          res = await downloadItem(job, info, r.media[i], base, helperOk, setProgress);
+        }
         if (res.status === "duplicate") {
           dupCount++;
           existing = existing || res.existing_path;
@@ -546,7 +656,8 @@ async function runJob(job) {
     if (!files.length && dupCount) {
       update(job, { status: S.DUPLICATE, progress: 100, existingPath: existing, notes: job.notes }, true);
     } else {
-      update(job, { status: S.SUCCESS, progress: 100, files, notes: job.notes, dupCount }, true);
+      const saved = helperOk ? await handOff(job, files) : files;
+      update(job, { status: S.SUCCESS, progress: 100, files: saved, notes: job.notes, dupCount }, true);
     }
   } catch (e) {
     const code = (e && e.code) || E.UNKNOWN;
@@ -571,7 +682,7 @@ async function runJob(job) {
       PD.native.request("save_metadata", {
         platform: job.platform, base_name: `${job.platform}_${job.contentId || "unknown"}_${timestamp()}`, status: "failed",
         error_code: code, error_message: String(detail).slice(0, 400), meta,
-      }).catch(() => null);
+      }).then((r) => (r && r.metadata_path && !job.batchId ? deliver([r.metadata_path], "") : null)).catch(() => null);
     }
   }
 }
@@ -682,11 +793,7 @@ function finishJob(job) {
     else if (job.status !== S.CANCELLED) b.failed++; // the user stopped it: not a failure
     if (b.done >= b.total) {
       batches.delete(job.batchId);
-      // nothing to report when the user cancelled the whole batch
-      if (b.ok + b.dup + b.failed > 0) {
-        notify(b.name ? PD.t("notif_collection_title", [b.name]) : PD.t("notif_board_title"),
-          PD.t("notif_board_body", [String(b.ok), String(b.dup), String(b.failed)]));
-      }
+      finishBatch(b);
     }
     return;
   }
@@ -697,6 +804,30 @@ function finishJob(job) {
     notify(PD.t("notif_failed_title"), job.errorMessage || "");
   } else if (job.status === S.DUPLICATE) {
     notify(PD.t("notif_dup_title"), job.existingPath || "");
+  }
+}
+
+/** All jobs of a bulk download are done: hand their files to Chrome as one ZIP, then report. */
+async function finishBatch(b) {
+  running++; // keeps the service worker (and the helper connection) alive during the hand-off
+  ensureKeepAlive();
+  let zip = null;
+  let err = null;
+  try {
+    zip = await deliverBatch(b);
+  } catch (e) {
+    err = e;
+  } finally {
+    running--;
+  }
+  if (err) {
+    notify(PD.t("notif_failed_title"), PD.t("err_handoff_failed"));
+    return;
+  }
+  // nothing to report when the user cancelled the whole batch
+  if (b.ok + b.dup + b.failed > 0) {
+    notify(b.name ? PD.t("notif_collection_title", [b.name]) : PD.t("notif_board_title"),
+      PD.t("notif_board_body", [String(b.ok), String(b.dup), String(b.failed)]) + (zip ? "\n" + zip.name : ""));
   }
 }
 
@@ -717,8 +848,8 @@ async function runHelperJob(job, helperOk) {
   if (!helperOk) throw new PDError(E.HOST_NOT_INSTALLED, `${plat ? plat.name : job.platform} needs the local helper`);
   if (job.kind === "metadata") {
     const res = await PD.native.request("save_metadata_url", { url: job.contentUrl, platform: job.platform, ...(await loginParams(job.platform)) });
-    update(job, { status: S.SUCCESS, progress: 100, mediaType: res.media_type || job.mediaType,
-      files: [{ path: res.metadata_path, name: res.metadata_path.split(/[\\/]/).pop(), media_type: "metadata" }] }, true);
+    const files = await handOff(job, [{ path: res.metadata_path, name: baseOf(res.metadata_path), media_type: "metadata" }]);
+    update(job, { status: S.SUCCESS, progress: 100, mediaType: res.media_type || job.mediaType, files }, true);
     return;
   }
   // Collections have their own duplicate scope (a reel may be added to several collections).
@@ -758,11 +889,16 @@ async function runHelperJob(job, helperOk) {
   if (res.warning === "IMAGES_MISSING") notes.push(PD.t("note_images_missing"));
   if (res.duplicates) notes.push(PD.t("note_some_duplicates", [String(res.duplicates)]));
   if (res.status === "duplicate") {
+    if (!job.force && !(await duplicateStillThere(res))) {
+      job.force = true; // the earlier copy was deleted from Downloads: download it again
+      return runHelperJob(job, helperOk);
+    }
     update(job, { status: S.DUPLICATE, progress: 100, mediaType: res.media_type || job.mediaType, existingPath: res.existing_path || "" }, true);
     return;
   }
   if (key && files[0]) await dupAdd(key, { path: files[0].path, contentId: job.contentId });
-  update(job, { status: S.SUCCESS, progress: 100, files, notes, mediaType: res.media_type || job.mediaType,
+  const saved = await handOff(job, files);
+  update(job, { status: S.SUCCESS, progress: 100, files: saved, notes, mediaType: res.media_type || job.mediaType,
     contentId: res.content_id || job.contentId }, true);
 }
 
@@ -845,7 +981,8 @@ const handlers = {
     const pins = (msg.pins || []).filter((p) => p && /^\d{5,25}$/.test(p.id));
     if (!pins.length) throw new PDError(E.PIN_NOT_FOUND, "No pins found on this board");
     const batchId = `b-${Date.now().toString(36)}`;
-    batches.set(batchId, { total: pins.length, done: 0, ok: 0, failed: 0, dup: 0, name: msg.boardName || "" });
+    batches.set(batchId, { total: pins.length, done: 0, ok: 0, failed: 0, dup: 0, name: msg.boardName || "",
+      platform: "pinterest", jobIds: new Set() });
     // oldest first so the newest end up at the top of the list
     for (const p of pins.slice().reverse()) {
       enqueue(newJob("pinterest", p.id, { batchId, board: msg.boardName || "", thumb: p.thumb || "", title: p.title || "",
@@ -910,7 +1047,7 @@ const handlers = {
     if (!valid.length) throw new PDError(E.BAD_URL, "No valid links selected");
     const collection = String(msg.collection || "").replace(/[^A-Za-z0-9._-]+/g, "_").replace(/\.{2,}/g, ".").replace(/^[._]+|[._]+$/g, "").slice(0, 120) || `${platform}_collection`;
     const batchId = `c-${Date.now().toString(36)}`;
-    batches.set(batchId, { total: valid.length, done: 0, ok: 0, failed: 0, dup: 0, name: collection });
+    batches.set(batchId, { total: valid.length, done: 0, ok: 0, failed: 0, dup: 0, name: collection, platform, jobIds: new Set() });
     const out = [];
     for (const it of valid.slice().reverse()) {
       const job = enqueue(newJob(platform, it.code || plat.contentId(it.url), { pipeline: "helper", contentUrl: it.url,
@@ -1051,15 +1188,28 @@ const handlers = {
   async helperStatus(msg) {
     return PD.native.status(!!msg.force);
   },
-  async openFolder(msg) {
-    const st = await PD.native.status();
-    if (st.ok) return PD.native.request("open_folder", { platform: msg.platform || "", sub: msg.sub || "" }, { timeout: 10000 });
-    chrome.downloads.showDefaultFolder();
-    return { fallback: true };
+  async openFolder() {
+    chrome.downloads.showDefaultFolder(); // everything is saved into Chrome's Downloads folder
+    return {};
   },
   async reveal(msg) {
+    // Saved through Chrome: let Chrome show it (works for files in Downloads on every OS).
+    const items = msg.path ? await new Promise((resolve) => chrome.downloads.search({ filename: msg.path }, (r) => {
+      void chrome.runtime.lastError;
+      resolve(r || []);
+    })) : [];
+    const item = items.find((it) => it.exists && it.state === "complete");
+    if (item) {
+      chrome.downloads.show(item.id);
+      return { shown: item.id };
+    }
+    // older downloads on the Desktop (Desktop/Medias, Desktop/MediaDownloader): the helper opens them
     const st = await PD.native.status();
-    if (st.ok && msg.path) return PD.native.request("reveal", { path: msg.path }, { timeout: 10000 });
+    if (st.ok && msg.path) {
+      try {
+        return await PD.native.request("reveal", { path: msg.path }, { timeout: 10000 });
+      } catch (_e) { /* not a helper file */ }
+    }
     chrome.downloads.showDefaultFolder();
     return { fallback: true };
   },

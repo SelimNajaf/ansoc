@@ -225,7 +225,7 @@ class InstagramEngine(BaseEngine):
                 media_type = "carousel" if kind != "story" else "story"
             else:
                 media_type = "video" if ext_of(media[0]) in VIDEO_EXTS else "image"
-            saved, dups, existing = [], 0, ""
+            saved, dups, existing, existing_id = [], 0, "", None
             for i, f in enumerate(media, 1):
                 fm = self.dl.gallery_dl_metadata(f)
                 item_meta = self._meta_from_gallery(fm, base_meta) if fm else meta
@@ -240,9 +240,10 @@ class InstagramEngine(BaseEngine):
                 else:
                     dups += 1
                     existing = existing or r.get("existing_path", "")
+                    existing_id = existing_id if existing_id is not None else r.get("existing_download_id")
             if not saved:
                 return {"status": "duplicate", "platform": self.id, "content_id": cid, "media_type": media_type,
-                        "existing_path": existing, "files": []}
+                        "existing_path": existing, "existing_download_id": existing_id, "files": []}
             return {"status": "success", "platform": self.id, "content_id": cid, "media_type": media_type,
                     "files": saved, "file": saved[0], "duplicates": dups}
         finally:
