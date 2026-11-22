@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.18.2
+
+- **Dark theme only**, the same on Windows and macOS.
+- Primary buttons are easier to read (the white text keeps full contrast on the whole gradient).
+- No text smaller than 12px any more; small buttons and links are easier to click.
+- The Reels Analyzer uses clean line icons instead of emoji (they looked different on every computer).
+- The panel on Instagram / TikTok / Pinterest pages now takes its colors from the same design tokens.
+
 ## 2.18.1
 
 - **Retry works after a failed save:** if Chrome stopped a download (or you cancelled it in Chrome's list), Retry now downloads it again instead of saying "already downloaded".

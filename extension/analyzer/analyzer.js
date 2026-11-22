@@ -34,7 +34,8 @@ function el(tag, attrs, children) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
     if (k === "class") n.className = v;
-    else if (k === "text") n.textContent = v;
+    else if (k === "text") n.append(document.createTextNode(v));
+    else if (k === "data-ico") n.prepend(PD.icon(v), " ");
     else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
     else n.setAttribute(k, v);
   }
@@ -318,9 +319,9 @@ async function loadPreview(name) {
 }
 function profileStats(p) {
   const chip = (icon, v, key) => (v == null ? null : el("span", { class: "pp-stat", title: t(key + "_tip") }, [
-    el("span", { class: "pp-i", text: icon }), el("strong", { text: cmp(v) }), el("span", { class: "muted", text: " " + t(key) }),
+    el("span", { class: "pp-i" }, [PD.icon(icon)]), el("strong", { text: cmp(v) }), el("span", { class: "muted", text: " " + t(key) }),
   ]));
-  return [chip("👥", p.followers, "an_pp_followers"), chip("🎬", p.posts, "an_pp_posts"), chip("➡", p.following, "an_pp_following")].filter(Boolean);
+  return [chip("users", p.followers, "an_pp_followers"), chip("film", p.posts, "an_pp_posts"), chip("user-plus", p.following, "an_pp_following")].filter(Boolean);
 }
 function renderPreview(p) {
   $("ppName").textContent = `@${p.username}${p.is_verified ? " ✓" : ""}${p.full_name ? " · " + p.full_name : ""}`;
@@ -328,8 +329,8 @@ function renderPreview(p) {
   $("ppCat").hidden = !p.category;
   $("ppCat").textContent = p.category || "";
   $("ppBio").textContent = p.biography || "";
-  $("ppLinks").replaceChildren(...(p.links || []).map((u) => el("a", { href: u, target: "_blank", rel: "noopener noreferrer", text: "🔗 " + u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60) })));
-  if (p.is_private) $("ppStats").append(el("span", { class: "pp-stat bad", text: "🔒 " + t("an_pp_private") }));
+  $("ppLinks").replaceChildren(...(p.links || []).map((u) => el("a", { href: u, target: "_blank", rel: "noopener noreferrer", "data-ico": "link", text: u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60) })));
+  if (p.is_private) $("ppStats").append(el("span", { class: "pp-stat bad" }, [PD.icon("lock"), document.createTextNode(" " + t("an_pp_private"))]));
   // a count choice bigger than the store makes no sense: hint at it
   $("ppHint").textContent = p.posts != null ? t("an_pp_hint", [cmp(p.posts)]) : "";
   state.previewPosts = p.posts;
@@ -774,7 +775,7 @@ function renderProfile() {
   $("profileMeta").textContent = parts.join(" · ");
   $("profileExtra").replaceChildren(...[...profileStats(p),
     p.category ? el("span", { class: "chip pp-cat", text: p.category }) : null,
-    ...(p.links || []).slice(0, 2).map((u) => el("a", { class: "pp-link", href: u, target: "_blank", rel: "noopener noreferrer", text: "🔗 " + u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 40) }))].filter(Boolean));
+    ...(p.links || []).slice(0, 2).map((u) => el("a", { class: "pp-link", href: u, target: "_blank", rel: "noopener noreferrer", "data-ico": "link", text: u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 40) }))].filter(Boolean));
   $("profileBio").textContent = p.biography || "";
   $("profileBio").hidden = !p.biography;
   const notes = [periodText(d)].filter(Boolean);
@@ -800,7 +801,7 @@ function renderCards() {
     ]);
   };
   const group = (icon, title, nodes, cls) => el("div", { class: "kgroup " + cls }, [
-    el("div", { class: "kg-head" }, [el("span", { class: "kg-i", text: icon }), el("span", { text: title })]),
+    el("div", { class: "kg-head" }, [el("span", { class: "kg-i" }, [PD.icon(icon)]), el("span", { text: title })]),
     el("div", { class: "kg-grid" }, nodes),
   ]);
   const views = [
@@ -830,8 +831,8 @@ function renderCards() {
       ]),
     }));
   }
-  box.append(group("👁", t("an_kg_views"), views, "kg-views"));
-  if (eng.length) box.append(group("💬", t("an_kg_eng"), eng, "kg-eng"));
+  box.append(group("eye", t("an_kg_views"), views, "kg-views"));
+  if (eng.length) box.append(group("message", t("an_kg_eng"), eng, "kg-eng"));
 }
 
 /** "Typical" tile with a spread bar on a log scale: min - max line, P25-P75 box, median tick, P90 dot. */
@@ -940,7 +941,7 @@ function renderChart() {
     if (nHit) {
       const hh = Math.max(2, (nHit / yMax) * ph);
       const hr = svg("rect", { class: "abin-hit", x, y: m.t + ph - hh, width: Math.max(1, bw - 4), height: hh, rx: 3 });
-      hr.append(svg("title", {}, `🎯 ${t("an_act_tip_hit", [String(nHit)])}`));
+      hr.append(svg("title", {}, `${t("an_act_tip_hit", [String(nHit)])}`));
       root.append(hr);
     }
     if (b.count) root.append(svg("text", { class: "count", x: x + (bw - 4) / 2, y: y - 4, "text-anchor": "middle" }, String(b.count)));
@@ -1043,31 +1044,31 @@ function renderActivityCards() {
     const node = el(opts.onClick ? "button" : "div", {
       class: "kpi" + (opts.cls ? " " + opts.cls : ""), title: opts.title || "", type: opts.onClick ? "button" : "",
     }, [
-      el("div", { class: "k" }, [el("span", { class: "k-i", text: icon }), el("span", { text: k })]),
+      el("div", { class: "k" }, [el("span", { class: "k-i" }, [PD.icon(icon)]), el("span", { text: k })]),
       el("div", { class: "v", text: v }), sub ? el("div", { class: "s" + (opts.subCls ? " " + opts.subCls : ""), text: sub }) : null,
     ]);
     if (opts.onClick) node.addEventListener("click", opts.onClick);
     box.append(node);
   };
-  kpi("📅", t("an_act_per1"), rate(a.perDay), t("an_kpi_pace_sub", [rate(a.per7), rate(a.per30)]), { cls: "hero" });
+  kpi("calendar", t("an_act_per1"), rate(a.perDay), t("an_kpi_pace_sub", [rate(a.per7), rate(a.per30)]), { cls: "hero" });
   if (a.trendComparable && a.prev30 != null) {
     const ch = a.prev30 ? a.last30 / a.prev30 - 1 : 1;
     const tone = ch >= 0.25 ? "up" : ch <= -0.25 ? "down" : "";
-    kpi(tone === "up" ? "📈" : tone === "down" ? "📉" : "➡️", t("an_kpi_last30"), String(a.last30),
+    kpi(tone === "up" ? "trending-up" : tone === "down" ? "trending-down" : "arrow-right", t("an_kpi_last30"), String(a.last30),
       t("an_kpi_before", [String(a.prev30)]), { subCls: tone, title: t(ch >= 0.25 ? "an_ai_trend_up" : ch <= -0.25 ? "an_ai_trend_down" : "an_ai_trend_flat", [String(a.last30), String(a.prev30)]) });
   }
-  kpi("⏱", t("an_kpi_gap"), dur(a.medianGap), t("an_kpi_gap_sub", [dur(a.meanGap)]), { title: t("an_tip_gap") });
-  if (a.maxGap) kpi("⏸", t("an_act_gap_max"), dur(a.maxGap.hours), `${dateShort(a.maxGap.from)} – ${dateShort(a.maxGap.to)}`);
+  kpi("timer", t("an_kpi_gap"), dur(a.medianGap), t("an_kpi_gap_sub", [dur(a.meanGap)]), { title: t("an_tip_gap") });
+  if (a.maxGap) kpi("pause", t("an_act_gap_max"), dur(a.maxGap.hours), `${dateShort(a.maxGap.from)} – ${dateShort(a.maxGap.to)}`);
   const silent = a.sinceLastDays >= 14;
-  kpi(silent ? "💤" : "🕒", t("an_act_last"), t("an_act_ago", [dur(a.sinceLastDays * 24)]), dateLong(a.last), {
+  kpi(silent ? "moon" : "clock", t("an_act_last"), t("an_act_ago", [dur(a.sinceLastDays * 24)]), dateLong(a.last), {
     cls: silent ? "bad" : "", title: silent ? t("an_ai_inactive", [String(Math.floor(a.sinceLastDays))]) : "",
   });
-  kpi("✅", t("an_act_active"), pct(a.activeShare), t("an_act_active_sub", [String(a.activeDays), String(a.spanDays)]), { title: t("an_tip_active") });
-  kpi("⚡", t("an_act_max_day"), String(a.maxPerDay), t("an_act_posts"));
+  kpi("check-circle", t("an_act_active"), pct(a.activeShare), t("an_act_active_sub", [String(a.activeDays), String(a.spanDays)]), { title: t("an_tip_active") });
+  kpi("zap", t("an_act_max_day"), String(a.maxPerDay), t("an_act_posts"));
   // hot right now: the best views/day of the last 30 days -> opens that reel
   const hot = state.rows.filter((r) => r.vpd != null && r.ts > state.windowEnd - 30 * St.DAY).sort((x, y) => y.vpd - x.vpd)[0];
   if (hot) {
-    kpi("🔥", t("an_kpi_hot"), cmp(Math.round(hot.vpd)), t("an_kpi_hot_sub"), {
+    kpi("flame", t("an_kpi_hot"), cmp(Math.round(hot.vpd)), t("an_kpi_hot_sub"), {
       cls: "hot", onClick: () => openDetails(hot.code),
       title: t("an_ai_hot", [cmp(Math.round(hot.vpd)), dateLong(hot.ts), (captionOf(hot) || hot.code).split("\n")[0].slice(0, 60)]),
     });
@@ -1171,7 +1172,7 @@ function renderActivityChart() {
       const vh = Math.max(2, (nViral / yMax) * ph);
       const vr = svg("rect", { class: "abin-hit", x, y: m.t + ph - vh, width: Math.max(1, bw - (bw > 6 ? 4 : 1)), height: vh, rx: bw > 6 ? 3 : 0 });
       vr.append(svg("title", {}, `${dateRangeLabel(b.from, b.to)}
-🎯 ${t("an_act_tip_hit", [String(nViral)])}`));
+${t("an_act_tip_hit", [String(nViral)])}`));
       root.append(vr);
     }
     if (b.count && bw >= 14) root.append(svg("text", { class: "count", x: x + (bw - 4) / 2, y: y - 4, "text-anchor": "middle" }, String(b.count)));
@@ -1213,9 +1214,9 @@ const WW_WINDOWS = [12, 15, 18, 21, 0, 3, 6, 9]; // same order as the heatmap (m
 const p2h = (h) => String(h).padStart(2, "0");
 const WW_DIMS = {
   window: { icon: "⏰", title: "ww_time", order: WW_WINDOWS, label: (w) => `${p2h(w)}–${p2h((w + 3) % 24)}` },
-  perDay: { icon: "🔁", title: "ww_per_day", order: St.BUCKETS.perDay.order, label: (g) => t("ww_per_day_v", [g]) },
-  perWeek: { icon: "📆", title: "ww_per_week", order: St.BUCKETS.perWeek.order, label: (g) => t("ww_per_week_v", [g]) },
-  gap: { icon: "⏱", title: "ww_gap", order: St.BUCKETS.gap.order, label: (g) => g },
+  perDay: { icon: "repeat", title: "ww_per_day", order: St.BUCKETS.perDay.order, label: (g) => t("ww_per_day_v", [g]) },
+  perWeek: { icon: "calendar-days", title: "ww_per_week", order: St.BUCKETS.perWeek.order, label: (g) => t("ww_per_week_v", [g]) },
+  gap: { icon: "timer", title: "ww_gap", order: St.BUCKETS.gap.order, label: (g) => g },
 };
 
 /** For every reel in range (with a score, not still growing): its group in each dimension. */
@@ -1267,7 +1268,7 @@ function renderWhatWorks() {
   const conf = (c) => el("span", { class: `fx-conf ${c}`, title: t(`fx_conf_${c}`), text: c === "clear" ? "●●●" : c === "likely" ? "●●○" : "●○○" });
   const tile = (key, icon, titleKey, value, pill, pillTone, sub, c) => {
     const node = el("button", { type: "button", class: "fx-tile" + (value ? "" : " empty") + (state.wwDim === key ? " on" : ""), onclick: pick(key) }, [
-      el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon", text: icon }), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
+      el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon" }, [PD.icon(icon)]), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
       el("div", { class: "fx-tile-val", text: value || t("fx_not_enough") }),
       value ? el("div", { class: "fx-tile-sub" }, [pill ? el("span", { class: "fx-pill " + pillTone, text: pill }) : null, el("span", { class: "fx-tile-n", text: sub }), conf(c)])
         : el("div", { class: "fx-tile-sub muted", text: t("fx_need_more") }),
@@ -1278,7 +1279,7 @@ function renderWhatWorks() {
   tile("window", "⏰", "ww_time", w ? windowLabel(w) : "", w ? PD.effectsUI.fmt(w.lift) : "", w ? (w.lift >= 1.05 ? "good" : "mid") : "",
     w ? t("ww_window_sub", [String(w.len), String(w.n)]) : "", w ? w.confidence : "few");
   const dd = state.wwDay;
-  tile("perDay", "🔁", "ww_per_day", dd ? t(dd.ideal.n >= dd.maxN && dd.top.n === dd.maxN ? "ww_per_day_edge" : "ww_per_day_v2", [String(dd.ideal.n)]) : "",
+  tile("perDay", "repeat", "ww_per_day", dd ? t(dd.ideal.n >= dd.maxN && dd.top.n === dd.maxN ? "ww_per_day_edge" : "ww_per_day_v2", [String(dd.ideal.n)]) : "",
     dd ? t("ww_hits_day", [dd.ideal.perDay.toFixed(1)]) : "", "good", dd ? t("ww_days", [String(dd.days)]) : "", dd ? dd.confidence : "few");
   for (const key of ["perWeek", "gap"]) {
     const dim = WW_DIMS[key];
@@ -1569,7 +1570,7 @@ const TIER_FILTERS = {
   engaged: (r) => !!r.perf && (r.perf.highEr || r.perf.talk),
   rising: (r) => !!r.perf && r.perf.rising,
 };
-const TIER_ICON = { hit: "🎯", good: "✓", viral: "🚀", strong: "💪", winner: "🏆", engaged: "💬", rising: "🌱" };
+const TIER_ICON = { hit: "target", good: "check", viral: "rocket", strong: "award", winner: "trophy", engaged: "message", rising: "sprout" };
 // metrics shown in percent
 const PCT_KEYS = new Set(["er", "likeRate", "commentRate", "commentShare"]);
 // counts spread over orders of magnitude: the slider moves on a log scale
@@ -1657,7 +1658,7 @@ function quickPicks(key, vals) {
   if (key === "success") {
     return [
       { label: `✓ ${t("an_tier_good")} ≥ 50`, preset: "v:50", min: 50 },
-      { label: `🎯 ${t("an_tier_hit")} ≥ 80`, preset: "v:80", min: 80 },
+      { label: `${t("an_tier_hit")} ≥ 80`, preset: "v:80", min: 80 },
       { label: "≥ 90", preset: "v:90", min: 90 },
     ];
   }
@@ -1703,7 +1704,7 @@ function renderChain(pools) {
   const box = $("filterChain");
   box.replaceChildren();
   box.append(el("span", { class: "fc-start", title: t("an_fc_total") }, [
-    el("span", { class: "fc-icon", text: "⛃" }), el("strong", { text: String(pools[0].length) }),
+    el("span", { class: "fc-icon" }, [PD.icon("layers")]), el("strong", { text: String(pools[0].length) }),
   ]));
   state.filters.forEach((f, i) => {
     const kept = pools[i + 1].length;
@@ -1715,7 +1716,7 @@ function renderChain(pools) {
       el("button", {
         type: "button", class: "fc-body", onclick: (e) => (f.tier ? null : openFilterPop(f.key, colHead(f.key) || e.currentTarget)),
       }, [
-        f.tier ? el("span", { text: TIER_ICON[f.tier] || "•" }) : el("span", { class: "fc-key", text: t(`an_col_${f.key}`) }),
+        f.tier ? el("span", { class: "fc-tier-i" }, [PD.icon(TIER_ICON[f.tier] || "check")]) : el("span", { class: "fc-key", text: t(`an_col_${f.key}`) }),
         el("span", { class: "fc-range", text: rangeText(f) }),
       ]),
       el("span", { class: "fc-kept" + (kept ? "" : " zero"), text: String(kept) }),
@@ -2198,7 +2199,7 @@ function successCell(r, extraTip) {
     class: "succ" + (s.tier ? " " + s.tier : ""),
     title: [successText(r), extraTip].filter(Boolean).join("\n\n"),
     style: `--p:${s.score}`,
-  }, [s.tier === "hit" ? el("span", { class: "succ-i", text: "🎯" }) : null, el("span", { text: String(s.score) })])]);
+  }, [s.tier === "hit" ? el("span", { class: "succ-i" }, [PD.icon("target")]) : null, el("span", { text: String(s.score) })])]);
 }
 
 /** Tooltip for the "vs typical" cell: the score explained plus every signal of the reel, one per line. */
@@ -2448,8 +2449,8 @@ function renderDetails() {
 
   // signals as small badges under the title
   const badges = el("div", { class: "dr-badges" });
-  const badge = (cls, key) => badges.append(el("span", { class: `sig ${cls}`, text: t(key) }));
-  if (r.success && r.success.tier) badge(r.success.tier === "hit" ? "winner" : "strong", r.success.tier === "hit" ? "an_sig_hit" : "an_sig_good");
+  const badge = (cls, key, icon) => badges.append(el("span", { class: `sig ${cls}` }, [icon ? PD.icon(icon) : null, document.createTextNode((icon ? " " : "") + t(key))]));
+  if (r.success && r.success.tier) badge(r.success.tier === "hit" ? "winner" : "strong", r.success.tier === "hit" ? "an_sig_hit" : "an_sig_good", r.success.tier === "hit" ? "target" : "check");
   if (pf) {
     if (pf.tier === "viral") badge("viral", "an_sig_viral");
     else if (pf.tier === "strong") badge("strong", "an_sig_strong");
@@ -2677,7 +2678,7 @@ function renderTable() {
         el("div", { class: "reel-date", title: d ? d.toLocaleString(LANG) : "" }, [
           el("span", { text: d ? dateLong(r.ts) : "–" }),
           d ? el("span", { class: "reel-time", text: `${p2(d.getHours())}:${p2(d.getMinutes())}` }) : null,
-          r.pinned ? el("span", { class: "pin", title: t("an_pinned"), text: "📌" }) : null,
+          r.pinned ? el("span", { class: "pin", title: t("an_pinned"), "aria-label": t("an_pinned") }, [PD.icon("pin")]) : null,
         ]),
         el("a", {
           class: "reel-cap" + (cap ? "" : " empty"), href: r.url, target: "_blank", rel: "noopener noreferrer",
@@ -2899,7 +2900,7 @@ function saveCaptionsTxt() {
   }, 1000);
 }
 
-// ------------------------------------------------------------------ 📸 full-page screenshot
+// ------------------------------------------------------------------ full-page screenshot
 /*
  * The whole page, top to bottom, like DevTools' "Capture full size screenshot", but sharper:
  * at least 2x pixels (zoom in on a phone and it still looks like the real screen). Uses the

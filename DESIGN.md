@@ -9,15 +9,18 @@ The values live in **`extension/ui/tokens.css`**; every page links it before its
 2. **Show, don't tell.** A bar, a chip, a color or an icon instead of a sentence. Explanations go in tooltips (`title`).
 3. **Short English text.** Labels of 1–3 words. No sentences in the UI unless it is an error.
 4. **One look everywhere.** A new screen reuses the tokens and components below; it never invents a color, radius or font size.
-5. **Light and dark.** Every token has a dark value; never hard-code a color that only works on white.
+5. **Dark only.** Since 2.18.2 there is one theme (dark), the same on every system. Text keeps at least 4.5:1 contrast.
+6. **Icons, not emoji.** Icons come from `ui/icons.js` (`PD.icon("name")`, or `<svg class="ico" data-icon="name">` in HTML): one stroke style, identical on Windows and macOS. Typographic marks (✓ ✕ ★ –) are fine as text.
+7. **Targets.** Anything clickable is at least `--tap` (28px) tall; text is never below 12px.
 
 ## 2. Colors
 
-| Token | Light | Use for |
+| Token | Value | Use for |
 |---|---|---|
-| `--brand-grad` (`--brand-1 → --brand-2 → --brand-3`) | red `#e60023` → orange `#ff6a3d` → amber `#f59e0b` | the logo, primary buttons, progress bars, big counters |
+| `--brand-grad` (`--brand-1 → --brand-2 → --brand-3`) | red `#e60023` → orange `#ff6a3d` → amber `#f59e0b` | progress bars, big counters, decorative fills (no text on it) |
+| `--action-grad` | the same flame, deeper (`#e60023 → #c2410c → #b45309`) | anything with white text on it: the logo, primary buttons, number badges |
 | `--brand-grad-up` | red → orange, bottom to top | plain data bars (one reel, one bin, one period) |
-| `--brand` | `#f0412f` | solid stand-in for the gradient: focus rings, outlines, selected item |
+| `--brand` | `#ff5a45` | solid stand-in for the gradient: focus rings, outlines, selected item |
 | `--data`, `--data-hover`, `--data-dim` | coral | lines, selection tints, hover, faded bars |
 | `--hit`, `--hit-grad`, `--hit-glow` | gold | **a hit**: viral, winner, best reel. Gold is reserved for this (SVG: `fill: url(#gHit)`) |
 | `--good` | green | better than usual, success, "best window" |
@@ -40,11 +43,13 @@ System font (`--font`), numbers with `font-variant-numeric: tabular-nums`.
 
 | Token | Size | Use |
 |---|---|---|
-| `--fs-xs` | 11px | tooltips, chart axes, tiny chips |
-| `--fs-s` | 12px | labels, chips, secondary text |
+| `--fs-xs` / `--fs-s` | 12px | chart axes, chips, labels, secondary text (the smallest size anywhere) |
 | `--fs-m` | 13px | body text, buttons |
+| `--fs-ml` | 14px | emphasised body text |
 | `--fs-l` | 15px | section titles |
+| `--fs-lg` | 17px | card numbers |
 | `--fs-xl` | 18px | page title |
+| `--fs-2xl`, `--fs-3xl` | 22 / 24px | big KPI numbers |
 | `--fs-hero` | 40px | one big number per screen (e.g. reels found), filled with `--brand-grad` |
 
 Weights: 400 text, 600 buttons/labels, 700–800 numbers and titles.
@@ -83,6 +88,6 @@ the filter panel (`.fpop`: opens with `--ease-io`, slider thumbs `.fp-thumb`, nu
 - [ ] Links `../ui/tokens.css` first.
 - [ ] No hex / rgb colors in the page stylesheet or in JS — only `var(--token)` (shadows from `--sh-*`).
 - [ ] Gold only for hits, green/rose only for better/worse.
-- [ ] Looks right in light **and** dark mode.
+- [ ] Readable on the dark theme (4.5:1 for text); no emoji as icons; nothing clickable below `--tap`.
 - [ ] Text is short English; the rest is in a tooltip.
-- [ ] The on-page panel (`content/content.js`, shadow DOM) cannot load `tokens.css`: it mirrors the few values it needs at the top of its CSS — keep them in sync.
+- [ ] The on-page panel (`content/content.js`, shadow DOM) copies the `:root` variables of `tokens.css` at start (`loadTokens`); the values at the top of its CSS are only a first-paint fallback.

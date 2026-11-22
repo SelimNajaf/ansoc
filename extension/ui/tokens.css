@@ -2,45 +2,50 @@
    Rules (see DESIGN.md): color = meaning. Brand gradient = actions and "ours"; gold = a hit;
    green / red = better / worse than usual; blue = info and links; everything else is neutral.
    Never write a hex color in a page stylesheet: add a token here instead. */
+/* Dark only (since 2.18.2): one theme, the same on every system. */
 :root {
+  color-scheme: dark;
   /* neutrals */
-  --bg: #f6f6f8;
-  --surface: #ffffff;
-  --soft: #f0f0f3;
-  --line: #e4e4ea;
-  --fg: #16161a;
-  --muted: #6c6c78;
+  --bg: #111113;
+  --surface: #1b1b1e;
+  --soft: #27272b;
+  --line: #313137;
+  --fg: #f2f2f4;
+  --muted: #9e9eaa;                 /* 5.6:1 or more on every background */
   --on-color: #ffffff;              /* text on brand / hit / good / bad fills */
 
   /* brand: the flame gradient (red -> orange -> amber) */
   --brand-1: #e60023;
   --brand-2: #ff6a3d;
   --brand-3: #f59e0b;
-  --brand: #f0412f;                 /* solid stand-in for the gradient (outlines, focus, text) */
-  --brand-grad: linear-gradient(135deg, var(--brand-1), var(--brand-2) 60%, var(--brand-3));
+  --brand: #ff5a45;                 /* solid stand-in for the gradient (outlines, focus, text) */
+  --brand-grad: linear-gradient(135deg, var(--brand-1), var(--brand-2) 60%, var(--brand-3));   /* fills without text */
   --brand-grad-up: linear-gradient(to top, var(--brand-1), var(--brand-2));
+  /* the same flame, deep enough for white text (4.5:1 or more at every point): buttons, badges */
+  --action-grad: linear-gradient(135deg, #e60023, #c2410c 60%, #b45309);
 
   /* data: plain bars / lines / selection use the brand hue */
-  --data: #f0533e;
-  --data-hover: #c8321f;
-  --data-dim: #f7cdc5;
-  --neutral: #8b8b98;               /* a bar with no verdict */
+  --data: #ff6b57;
+  --data-hover: #ff9c8c;
+  --data-dim: #57291f;
+  --neutral: #74747f;               /* a bar with no verdict (never text) */
 
   /* meaning */
-  --hit: #e8930a;                   /* viral / winner / hit — gold */
+  --hit: #fbbf24;                   /* viral / winner / hit — gold */
   --hit-1: #f59e0b;
   --hit-2: #fde047;
   --hit-grad: linear-gradient(to top, var(--hit-1), var(--hit-2));
   --hit-glow: 0 0 10px rgba(251, 191, 36, .6);
   --on-hit: #3d2800;                /* text on the gold gradient */
-  --good: #12924a;
-  --bad: #d0244d;
-  --warn: #a8660a;
-  --info: #2f6fed;
+  --good: #3ccf7a;
+  --bad: #ff6b8a;
+  --warn: #e6b54a;
+  --info: #6ea0ff;
+  --flash: #ffffff;                 /* screenshot flash */
 
   /* platforms (chips only) */
-  --pinterest: #e60023;
-  --instagram: #c13584;
+  --pinterest: #ff5a6e;
+  --instagram: #f06292;
   --tiktok: var(--fg);
 
   /* shape */
@@ -49,19 +54,26 @@
   --r-m: 10px;
   --r-l: 14px;
   --r-pill: 999px;
-  --sh-1: 0 1px 2px rgba(0, 0, 0, .12);
-  --sh-2: 0 6px 24px rgba(0, 0, 0, .18);
-  --sh-3: 0 24px 64px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .2);
+  --sh-1: 0 1px 2px rgba(0, 0, 0, .3);
+  --sh-2: 0 6px 24px rgba(0, 0, 0, .4);
+  --sh-3: 0 24px 64px rgba(0, 0, 0, .55), 0 2px 8px rgba(0, 0, 0, .3);
 
-  /* type: 11 / 12 / 13 / 15 / 18 / 40 */
+  /* type: 12 is the smallest size anywhere */
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
-  --fs-xs: 11px;
+  --fs-xs: 12px;
   --fs-s: 12px;
   --fs-m: 13px;
+  --fs-ml: 14px;
   --fs-l: 15px;
+  --fs-lg: 17px;
   --fs-xl: 18px;
+  --fs-2xl: 22px;
+  --fs-3xl: 24px;
   --fs-hero: 40px;
+
+  /* hit targets */
+  --tap: 28px;                      /* smallest clickable height */
 
   /* motion */
   --ease: cubic-bezier(.2, .8, .2, 1);
@@ -69,27 +81,6 @@
   --t-fast: .15s;
   --t: .25s;
   --ease-io: cubic-bezier(.45, 0, .25, 1);   /* panels opening / closing */
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111113;
-    --surface: #1b1b1e;
-    --soft: #27272b;
-    --line: #313137;
-    --fg: #f2f2f4;
-    --muted: #9e9eaa;
-    --brand: #ff5a45;
-    --data: #ff6b57;
-    --data-hover: #ff9c8c;
-    --data-dim: #57291f;
-    --neutral: #74747f;
-    --hit: #fbbf24;
-    --good: #3ccf7a;
-    --bad: #ff6b8a;
-    --warn: #e6b54a;
-    --info: #6ea0ff;
-    --instagram: #e1306c;
-  }
 }
 
 /* ---------- base components shared by every page ---------- */
@@ -99,21 +90,21 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: var(--fs-m)/1.4
 a { color: var(--info); }
 .muted { color: var(--muted); }
 .logo {
-  border-radius: 50%; background: var(--brand-grad); color: var(--on-color);
+  border-radius: 50%; background: var(--action-grad); color: var(--on-color);
   display: inline-flex; align-items: center; justify-content: center; font-weight: 800; flex: none;
 }
 button {
-  border: 0; border-radius: var(--r-pill); padding: 8px 14px; font: 600 var(--fs-m)/1 var(--font);
+  min-height: var(--tap); border: 0; border-radius: var(--r-pill); padding: 8px 14px; font: 600 var(--fs-m)/1 var(--font);
   background: var(--soft); color: var(--fg); cursor: pointer; white-space: nowrap;
   transition: filter var(--t-fast), box-shadow var(--t-fast);
 }
-button:hover:not(:disabled) { filter: brightness(.95); }
+button:hover:not(:disabled) { filter: brightness(1.12); }
 button:disabled { opacity: .5; cursor: default; }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-button.primary, .btn-primary { background: var(--brand-grad); color: var(--on-color); }
+button.primary, .btn-primary { background: var(--action-grad); color: var(--on-color); }
 button.primary:hover:not(:disabled), .btn-primary:hover { filter: brightness(1.06) saturate(1.05); }
 button.danger { background: transparent; color: var(--bad); box-shadow: inset 0 0 0 1.5px var(--bad); }
-button.link { background: none; padding: 2px 4px; color: var(--muted); text-decoration: underline; }
+button.link { background: none; padding: 4px 6px; min-height: var(--tap); color: var(--muted); text-decoration: underline; }
 input[type="text"], select {
   border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: var(--r-m);
   padding: 8px 10px; font: inherit; min-width: 0;
@@ -126,6 +117,8 @@ input[type="text"]:focus, select:focus { outline: 2px solid var(--brand); outlin
 .badge.bad { color: var(--bad); }
 .badge.warn { color: var(--warn); }
 /* SVG gradient stops for chart bars: <linearGradient id="gData"> in the page, fill: url(#gData) */
+.ico { width: 1em; height: 1em; vertical-align: -0.14em; flex: none; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 svg.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .g-data-1 { stop-color: var(--brand-1); }
 .g-data-2 { stop-color: var(--brand-2); }

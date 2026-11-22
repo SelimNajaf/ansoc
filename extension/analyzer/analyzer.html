@@ -20,7 +20,7 @@
       <p class="muted small" data-i18n="an_subtitle"></p>
     </div>
     <span id="shotMsg" class="shot-msg small" aria-live="polite"></span>
-    <button type="button" id="shotBtn" class="shot-btn" data-i18n-title="an_shot_tip" data-i18n-aria="an_shot_tip">📷</button>
+    <button type="button" id="shotBtn" class="shot-btn" data-i18n-title="an_shot_tip" data-i18n-aria="an_shot_tip"><svg class="ico" data-icon="camera"></svg></button>
     <span id="helperBadge" class="badge"></span>
   </header>
 
@@ -225,7 +225,7 @@
             <span id="selViews" class="muted small"></span>
           </div>
           <label class="ab-folder" data-i18n-title="an_folder">
-            <span class="ab-folder-i" aria-hidden="true">📁</span>
+            <span class="ab-folder-i" aria-hidden="true"><svg class="ico" data-icon="folder"></svg></span>
             <input id="collectionInput" type="text" spellcheck="false" data-i18n-aria="an_folder">
           </label>
           <button type="button" id="copyLinks" data-i18n="an_copy_links"></button>
@@ -274,7 +274,7 @@
         </div>
         <div class="legend small er-legend table-foot">
           <span data-i18n="an_col_success"></span>
-          <span><i class="succ hit" style="--p:90"><span class="succ-i">🎯</span>90</i> <span data-i18n="an_tier_hit"></span> ≥ 80</span>
+          <span><i class="succ hit" style="--p:90"><span class="succ-i"><svg class="ico" data-icon="target"></svg></span>90</i> <span data-i18n="an_tier_hit"></span> ≥ 80</span>
           <span><i class="succ good" style="--p:60">60</i> <span data-i18n="an_tier_good"></span> ≥ 50</span>
           <span><i class="fresh rising"></i><span data-i18n="an_sig_rising"></span></span>
           <span><i class="fresh"></i><span data-i18n="an_sig_new"></span></span>
@@ -321,6 +321,7 @@
 
   <script src="../utils/constants.js"></script>
   <script src="../utils/platforms.js"></script>
+  <script src="../ui/icons.js"></script>
   <script src="stats.js"></script>
   <script src="effects.js"></script>
   <script src="analyzer.js"></script>

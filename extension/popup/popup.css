@@ -1,22 +1,22 @@
 body { width: 380px; padding: 12px 14px 14px; line-height: 1.4; background: var(--surface); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-h1 { font-size: 15px; margin: 0; flex: 1; }
-h2 { font-size: 13px; margin: 0; }
+h1 { font-size: var(--fs-l); margin: 0; flex: 1; }
+h2 { font-size: var(--fs-m); margin: 0; }
 .logo { width: 24px; height: 24px; }
 .badge { border: 0; padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer; font-weight: 400; }
 .badge::before { content: "●"; margin-right: 4px; }
 .help {
-  background: var(--soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px;
+  background: var(--soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; font-size: var(--fs-s);
 }
-.help code { font-size: 11px; word-break: break-all; }
+.help code { font-size: var(--fs-xs); word-break: break-all; }
 .row { display: flex; gap: 6px; }
 input[type="text"] { flex: 1; border-radius: var(--r-pill); padding: 8px 12px; }
 button { padding: 8px 12px; }
 button.link { font-weight: 500; text-decoration: none; }
-button.small { padding: 5px 9px; font-size: 11px; }
+button.small { padding: 5px 9px; font-size: var(--fs-xs); }
 .detected { min-height: 18px; margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { font-size: 11px; font-weight: 600; border-radius: 10px; padding: 2px 8px; background: var(--soft); color: var(--muted); }
+.chip { font-size: var(--fs-xs); font-weight: 600; border-radius: 10px; padding: 2px 8px; background: var(--soft); color: var(--muted); }
 .chip.pinterest { color: var(--pinterest); }
 .chip.instagram { color: var(--instagram); }
 .chip.tiktok { color: var(--fg); }
@@ -25,8 +25,8 @@ button.small { padding: 5px 9px; font-size: 11px; }
 .stack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 .stack #folderBtn, .stack #analyzerBtn { grid-column: span 1; }
 .status-box { margin: 10px 0 4px; min-height: 18px; }
-.status { font-size: 12px; color: var(--muted); }
-.error { color: var(--bad); font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
+.status { font-size: var(--fs-s); color: var(--muted); }
+.error { color: var(--bad); font-size: var(--fs-s); margin-top: 4px; white-space: pre-wrap; }
 .bar { margin-top: 6px; }
 .list-head { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
 .recent { list-style: none; margin: 6px 0 0; padding: 0; max-height: 290px; overflow-y: auto; }
@@ -34,13 +34,13 @@ button.small { padding: 5px 9px; font-size: 11px; }
 .thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--soft); flex: none; }
 .info { flex: 1; min-width: 0; }
 .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.st { font-size: 11px; font-weight: 600; }
+.sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st { font-size: var(--fs-xs); font-weight: 600; }
 .actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-.small { font-size: 11px; }
+.small { font-size: var(--fs-xs); }
 .settings { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
 .settings summary { cursor: pointer; font-weight: 600; }
-.settings label { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; font-size: 12px; }
+.settings label { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; font-size: var(--fs-s); }
 /* cancel buttons */
 button.danger { box-shadow: inset 0 0 0 1px var(--bad); }
 button.link.danger { box-shadow: none; text-decoration: underline; margin-right: 8px; }
@@ -48,6 +48,6 @@ button.link.danger { box-shadow: none; text-decoration: underline; margin-right:
 .update { border: 1px solid var(--brand); border-radius: 12px; padding: 8px 10px; margin: 8px 0; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .update.ok { border-color: var(--good); }
 .update.bad { border-color: var(--bad); }
-.update-text { font-size: 12px; flex: 1 1 200px; }
+.update-text { font-size: var(--fs-s); flex: 1 1 200px; }
 .update-actions { display: flex; gap: 8px; align-items: center; }
 .update-actions a { color: var(--muted); }

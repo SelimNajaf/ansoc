@@ -1332,10 +1332,10 @@
     "message": "Good"
   },
   "an_sig_hit": {
-    "message": "🎯 HIT"
+    "message": "HIT"
   },
   "an_sig_good": {
-    "message": "✓ GOOD"
+    "message": "GOOD"
   },
   "an_act_tip_hit": {
     "message": "$1 hit(s)"
@@ -1344,13 +1344,13 @@
     "message": "Success $1 / 100 — comments and like rate, vs this store's other reels"
   },
   "an_succ_tip_c": {
-    "message": "💬 Comments $1 · top $2 of the store"
+    "message": "Comments $1 · top $2 of the store"
   },
   "an_succ_tip_l": {
-    "message": "❤ Like rate $1 · top $2 of the store"
+    "message": "Like rate $1 · top $2 of the store"
   },
   "an_hours_tip_succ": {
-    "message": "Success $1 vs usual · 🎯 $2 hit(s)"
+    "message": "Success $1 vs usual · $2 hit(s)"
   },
   "an_shot_tip": {
     "message": "Screenshot of the whole page (sharp, 2×)"
@@ -1359,10 +1359,10 @@
     "message": "Capturing…"
   },
   "an_shot_done": {
-    "message": "📸 Saved ($1 px) to Downloads"
+    "message": "Saved ($1 px) to Downloads"
   },
   "an_shot_done_copied": {
-    "message": "📸 Saved ($1 px) and copied — paste with Ctrl+V"
+    "message": "Saved ($1 px) and copied — paste with Ctrl+V"
   },
   "an_shot_err": {
     "message": "Screenshot failed: $1"
@@ -1470,13 +1470,13 @@
     "message": "≤ $1 reels"
   },
   "an_per_since": {
-    "message": "📅 Last $1 days: since $2"
+    "message": "Last $1 days: since $2"
   },
   "an_per_limit": {
-    "message": "📅 Newest $1 reels"
+    "message": "Newest $1 reels"
   },
   "an_per_all": {
-    "message": "📅 All $1 reels"
+    "message": "All $1 reels"
   },
   "an_col_shares": {
     "message": "Shares"

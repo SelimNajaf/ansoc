@@ -179,26 +179,30 @@
   }
 
   // ========================================================================== toolbar UI
-  // Colors mirror extension/ui/tokens.css (a page stylesheet can't reach into this shadow root).
+  // Colors and sizes come from extension/ui/tokens.css: loadTokens() copies its variables into this
+  // shadow root (a page stylesheet can't reach in). The values below are only a first-paint fallback.
   const CSS = `
-    :host { all: initial; --surface: #fff; --soft: #f0f0f3; --fg: #16161a; --muted: #6c6c78; --good: #12924a; --bad: #d0244d;
-      --brand-grad: linear-gradient(135deg, #e60023, #ff6a3d 60%, #f59e0b); }
-    .wrap { position: fixed; right: 18px; bottom: 18px; z-index: 2147483000; font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: var(--fg); background: var(--surface); border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 10px; width: 250px; box-sizing: border-box; }
+    :host { all: initial; --surface: #1b1b1e; --soft: #27272b; --fg: #f2f2f4; --muted: #9e9eaa; --good: #3ccf7a; --bad: #ff6b8a;
+      --brand-grad: linear-gradient(135deg, #e60023, #ff6a3d 60%, #f59e0b); --action-grad: linear-gradient(135deg, #e60023, #c2410c 60%, #b45309);
+      --on-color: #fff; --sh-2: 0 6px 24px rgba(0,0,0,.4); --fs-xs: 12px; --fs-s: 12px; --fs-m: 13px; --fs-ml: 14px; --tap: 28px;
+      color-scheme: dark; }
+    .wrap { position: fixed; right: 18px; bottom: 18px; z-index: 2147483000; font: var(--fs-m)/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--fg); background: var(--surface); border-radius: 16px; box-shadow: var(--sh-2); padding: 10px; width: 250px; box-sizing: border-box; }
     .wrap.min { width: auto; padding: 6px; }
     .head { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 8px; }
     .wrap.min .head { margin: 0; }
     .wrap.min .body { display: none; }
-    .logo { width: 18px; height: 18px; border-radius: 50%; background: var(--brand-grad); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+    .logo { width: 18px; height: 18px; border-radius: 50%; background: var(--action-grad); color: var(--on-color); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: 800; }
     .grow { flex: 1; }
-    .icon { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 8px; color: var(--muted); }
+    .icon { border: 0; background: transparent; cursor: pointer; font-size: var(--fs-ml); min-width: var(--tap); min-height: var(--tap); padding: 2px 6px; border-radius: 8px; color: var(--muted); }
     .icon:hover { background: var(--soft); }
     .btns { display: flex; flex-direction: column; gap: 6px; }
-    button.b { border: 0; border-radius: 20px; padding: 8px 12px; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; background: var(--soft); color: var(--fg); }
-    button.b.primary { background: var(--brand-grad); color: #fff; }
-    button.b:hover { filter: brightness(.95); }
+    button.b { border: 0; border-radius: 20px; min-height: var(--tap); padding: 8px 12px; font: 600 var(--fs-m)/1 inherit; font-family: inherit; cursor: pointer; background: var(--soft); color: var(--fg); }
+    button.b.primary { background: var(--action-grad); color: var(--on-color); }
+    button.b:hover { filter: brightness(1.12); }
+    button.b:focus-visible, .icon:focus-visible { outline: 2px solid var(--brand, #ff5a45); outline-offset: 2px; }
     button.b:disabled { opacity: .55; cursor: default; }
-    .status { margin-top: 8px; font-size: 12px; color: #444; word-break: break-word; }
+    .status { margin-top: 8px; font-size: var(--fs-s); color: var(--muted); word-break: break-word; }
     .status.err { color: var(--bad); }
     .status.ok { color: var(--good); }
     .bar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
@@ -207,9 +211,16 @@
     .fill.indet { width: 35%; animation: slide 1.1s infinite ease-in-out; }
     @keyframes slide { from { margin-left: -35%; } to { margin-left: 100%; } }
     .row { display: flex; gap: 6px; margin-top: 6px; }
-    @media (prefers-color-scheme: dark) {
-      :host { --surface: #1b1b1e; --soft: #27272b; --fg: #f2f2f4; --muted: #9e9eaa; --good: #3ccf7a; --bad: #ff6b8a; }
-    }`;
+    @media (prefers-reduced-motion: reduce) { .fill, .fill.indet { transition: none; animation: none; } }`;
+
+  /** Copy the variables of ui/tokens.css into the panel, so it always matches the extension's pages. */
+  async function loadTokens(shadow) {
+    try {
+      const css = await (await fetch(chrome.runtime.getURL("ui/tokens.css"))).text();
+      const vars = (css.match(/:root\s*\{([^}]*)\}/) || [])[1];
+      if (vars) shadow.appendChild(el("style", { text: `:host { ${vars} }` }));
+    } catch (_e) { /* the fallback values above stay */ }
+  }
 
   const ui = {};
   let current = { platform: "", type: "other", pinId: "", contentId: "", url: "" };
@@ -219,6 +230,7 @@
     const host = el("div", { id: "pinterest-downloader-root" });
     const shadow = host.attachShadow({ mode: "closed" });
     shadow.appendChild(el("style", { text: CSS }));
+    loadTokens(shadow);
     ui.wrap = el("div", { class: "wrap", role: "region", "aria-label": "Media Downloader" });
     ui.min = el("button", { class: "icon", title: t("ui_minimize"), text: "–", onclick: toggleMin });
     ui.head = el("div", { class: "head" }, [el("span", { class: "logo", text: "↓" }), el("span", { class: "grow", text: "Media Downloader" }), ui.min]);

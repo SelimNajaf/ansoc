@@ -92,7 +92,7 @@
   function tile(icon, titleKey, effects, label, onClick) {
     const best = PD.stats.bestEffect(effects);
     const node = el(onClick ? "button" : "div", { class: "fx-tile" + (best ? "" : " empty"), type: onClick ? "button" : null }, [
-      el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon", text: icon }), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
+      el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon" }, [PD.icon(icon)]), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
       el("div", { class: "fx-tile-val", text: best ? label(best.group) : t("fx_not_enough") }),
       best ? el("div", { class: "fx-tile-sub" }, [
         el("span", { class: "fx-pill " + tone(best.ratio), text: fmt(best.ratio) }),

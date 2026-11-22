@@ -101,7 +101,7 @@ Update-*  Uninstall-*    end-user update / uninstall scripts
 - **Seasons:** `activePeriods()` in `stats.js` (Time range periods): newest → oldest; pause = ≥ 14 days AND ≥ 10× the median gap of the current season; ≥ 3 reels per season. The helper's `gap_days` stop in `list_reels` mirrors it but the UI no longer offers it ("Current season" was removed in 2.16.2).
 - Statistics (viral / strong / winner) are documented at the top of `performance()` in `extension/analyzer/stats.js`: robust z-score on log views against a time-local baseline; engagement judged against a Theil–Sen fit on reach.
 
-- **Design:** follow `DESIGN.md`. Colors, gradients, radii and font sizes come only from `extension/ui/tokens.css` (`var(--token)`); never hard-code a color. Gold = hit, green/rose = better/worse, brand gradient = actions.
+- **Design:** follow `DESIGN.md`. Dark theme only. Colors, gradients, radii and font sizes come only from `extension/ui/tokens.css` (`var(--token)`); never hard-code a color. Icons from `extension/ui/icons.js`, never emoji. Gold = hit, green/rose = better/worse, `--action-grad` = buttons with text.
 
 ### Windows + macOS (both are used every day)
 
