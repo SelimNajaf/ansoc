@@ -29,8 +29,11 @@ function load() {
       settings = Object.assign({}, PD.DEFAULT_SETTINGS, r.settings || {});
       // Jobs that were running when the worker stopped can be retried by the user.
       for (const j of jobs) {
-        if (!PD.isFinal(j.status)) {
-          Object.assign(j, { status: S.FAILED, errorCode: E.INTERRUPTED, errorMessage: PD.errorText(E.INTERRUPTED) });
+        // A finished job of a bulk download whose ZIP was never made (Chrome closed mid-way)
+        // is not in Downloads either: Retry downloads it again.
+        if (!PD.isFinal(j.status) || j.pendingHandoff) {
+          Object.assign(j, { status: S.FAILED, errorCode: E.INTERRUPTED, errorMessage: PD.errorText(E.INTERRUPTED),
+            pendingHandoff: false });
         }
       }
       persist(true);
@@ -351,11 +354,20 @@ async function dupRepoint(moves) {
   if (changed) await chrome.storage.local.set({ dupIndex: idx });
 }
 
-function downloadItemById(id) {
+function searchDownload(id) {
   return new Promise((resolve) => chrome.downloads.search({ id }, (items) => {
     void chrome.runtime.lastError;
     resolve((items && items[0]) || null);
   }));
+}
+
+/** Chrome's download item with an up-to-date "exists" flag: a search() starts the file check,
+ *  its answer may still be stale, so ask once more after a short wait when it says "exists". */
+async function downloadItemById(id) {
+  const first = await searchDownload(id);
+  if (!first || !first.exists) return first;
+  await sleep(400);
+  return (await searchDownload(id)) || first;
 }
 
 /**
@@ -410,6 +422,7 @@ async function handOff(job, files) {
   const b = job.batchId && batches.get(job.batchId);
   if (b) {
     b.jobIds.add(job.id);
+    job.pendingHandoff = true; // cleared once the batch ZIP is in Downloads (see load())
     return files;
   }
   update(job, { status: S.PROCESSING, progress: null });
@@ -435,7 +448,24 @@ async function handOff(job, files) {
 
 /** End of a bulk download: every saved file of the batch in one ZIP (one line in Chrome's list). */
 async function deliverBatch(b) {
-  const batchJobs = [...b.jobIds].map(findJob).filter((j) => j && j.status === S.SUCCESS && (j.files || []).length);
+  const all = [...b.jobIds].map(findJob).filter(Boolean);
+  try {
+    return await deliverBatchFiles(b, all.filter((j) => j.status === S.SUCCESS && (j.files || []).length));
+  } catch (e) {
+    // The ZIP did not reach Downloads: these jobs did not either. Retry downloads them again.
+    for (const j of all) {
+      if (j.status === S.SUCCESS && j.pendingHandoff) {
+        update(j, { status: S.FAILED, errorCode: E.DOWNLOAD_INTERRUPTED, errorMessage: PD.t("err_handoff_failed") });
+      }
+    }
+    throw e;
+  } finally {
+    for (const j of all) j.pendingHandoff = false;
+    persist(true);
+  }
+}
+
+async function deliverBatchFiles(b, batchJobs) {
   const paths = [];
   for (const j of batchJobs) {
     for (const f of j.files) {

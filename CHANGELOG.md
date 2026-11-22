@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.18.1
+
+- **Retry works after a failed save:** if Chrome stopped a download (or you cancelled it in Chrome's list), Retry now downloads it again instead of saying "already downloaded".
+- **Bulk downloads interrupted by closing Chrome** are marked as interrupted, and Retry downloads them again.
+- A bulk download no longer needs twice the disk space while its ZIP is made.
+- Windows: a file briefly locked by antivirus no longer breaks the save; it is cleaned up later.
+- A file you just deleted from Downloads is recognised as gone right away.
+- Leftover temporary files are now also cleaned up while the helper keeps running.
+
 ## 2.18.0
 
 - **Downloads now go to your Downloads folder and show up in Chrome's download list**, like any other download (Windows and macOS alike). No more folders on the Desktop.

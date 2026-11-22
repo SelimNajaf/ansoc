@@ -26,7 +26,9 @@ from urllib.parse import quote
 from common import E_BAD_REQUEST, E_NO_MEDIA, HelperError, get_logger, root_dir, safe_name
 
 OUTBOX_MAX_AGE = 2 * 24 * 3600  # files nobody picked up (Chrome closed mid-way) are removed after 2 days
+CLEANUP_EVERY = 3600  # also clean up while the helper keeps running
 BUNDLE_DIR = "_bundles"
+_last_cleanup = 0.0
 
 _lock = threading.Lock()
 _server: Optional[ThreadingHTTPServer] = None
@@ -104,9 +106,21 @@ def _zip_stem(zip_name: str) -> str:
     return safe_name(name, "media")
 
 
+def _remove(p: Path) -> bool:
+    """Delete a file; False if it is locked (Windows antivirus / indexer). Locked files are
+    left for cleanup_outbox() instead of failing the whole hand-off."""
+    try:
+        p.unlink(missing_ok=True)
+        return True
+    except OSError as exc:
+        get_logger().info("Could not remove %s yet: %s", p, exc)
+        return False
+
+
 def _bundle(paths: List[Path], zip_name: str) -> Path:
     """One ZIP of several files. ZIP_STORED: photos and videos are already compressed, so
-    storing is as small and much faster; nothing is re-encoded."""
+    storing is as small and much faster; nothing is re-encoded. Each file leaves the outbox as
+    soon as it is in the ZIP, so a big bulk download never needs twice the disk space."""
     folder = root_dir() / BUNDLE_DIR
     folder.mkdir(parents=True, exist_ok=True)
     dest = folder / f"{_zip_stem(zip_name)}_{secrets.token_hex(3)}.zip"
@@ -119,6 +133,7 @@ def _bundle(paths: List[Path], zip_name: str) -> Path:
                 arc = f"{p.stem}_{n}{p.suffix}"
             used.add(arc.lower())
             zf.write(p, arc)
+            _remove(p)
     return dest
 
 
@@ -129,6 +144,13 @@ def prepare(paths: List[str], zip_name: str = "") -> dict:
         raise HelperError(E_BAD_REQUEST, "paths must be a non-empty list")
     files = [_inside_outbox(str(p)) for p in paths[:2000]]
     port = _ensure_server()
+    global _last_cleanup
+    if time.time() - _last_cleanup > CLEANUP_EVERY:
+        _last_cleanup = time.time()
+        try:
+            cleanup_outbox()
+        except Exception as exc:  # never block a hand-off
+            get_logger().warning("Outbox cleanup failed: %s", exc)
     if zip_name:
         z = _bundle(files, zip_name)
         name = f"{_zip_stem(zip_name)}.zip"
@@ -147,7 +169,8 @@ def prepare(paths: List[str], zip_name: str = "") -> dict:
 
 def done(items: list) -> dict:
     """Chrome finished (ok) or gave up (not ok). Delivered files leave the outbox and their
-    duplicate-index entries move to the final path; failed ones stay for a retry until cleanup."""
+    duplicate-index entries move to the final path. Failed ones are removed too: Retry downloads
+    them again (an outbox file never counts as a duplicate)."""
     from metadata import repoint
 
     moves: Dict[str, dict] = {}
@@ -160,17 +183,19 @@ def done(items: list) -> dict:
         if not entry:
             continue
         if not it.get("ok"):
+            for src in entry["sources"]:
+                _remove(Path(src))
             if entry["bundle"]:
-                entry["path"].unlink(missing_ok=True)
+                _remove(entry["path"])
             continue
         final = str(it.get("final_path") or "")
         did = it.get("download_id")
         for src in entry["sources"]:
             moves[src] = {"path": final, "download_id": did}
-            Path(src).unlink(missing_ok=True)
+            _remove(Path(src))
             removed += 1
         if entry["bundle"]:
-            entry["path"].unlink(missing_ok=True)
+            _remove(entry["path"])
     changed = repoint(moves) if moves else 0
     return {"removed": removed, "index_updated": changed}
 

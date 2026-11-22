@@ -122,6 +122,14 @@ def _own_path(p) -> Path:
     raise ValueError(str(p))
 
 
+def _in_outbox(rp: Path) -> bool:
+    try:
+        rp.relative_to(root_dir().resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def handle(action: str, params: dict, progress) -> dict:
     if action == "cancel":  # stop a running request: its Downloader checks the event
         with _CANCEL_LOCK:
@@ -144,7 +152,9 @@ def handle(action: str, params: dict, progress) -> dict:
         for p in (params.get("paths") or [])[:200]:
             try:
                 rp = _own_path(p)  # only answer for the outbox and the old Desktop folders
-                out.append(rp.is_file())
+                # A file still in the outbox never reached Downloads (Chrome failed or was closed):
+                # it does not count as downloaded, so Retry downloads it again.
+                out.append(rp.is_file() and not _in_outbox(rp))
             except (ValueError, OSError):
                 out.append(False)
         return {"exists": out}

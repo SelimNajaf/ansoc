@@ -128,6 +128,10 @@ class DuplicateIndex:
                 return entry
             return None
         p = Path(entry.get("path", ""))
+        if _in_outbox(p):
+            # Still waiting in the outbox = never reached Downloads (Chrome failed, was closed or
+            # the bulk download was interrupted): not a duplicate, download it again.
+            return None
         if p.exists():
             return entry
         # Saved before 2.17 renamed the Desktop folder (Desktop/MediaDownloader -> Desktop/Medias)?
@@ -150,6 +154,16 @@ class DuplicateIndex:
             tmp = self.path.with_suffix(".tmp")
             tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
             os.replace(tmp, self.path)
+
+
+def _in_outbox(p: Path) -> bool:
+    from common import root_dir
+
+    try:
+        Path(os.path.realpath(p)).relative_to(os.path.realpath(root_dir()))
+        return True
+    except (ValueError, OSError):
+        return False
 
 
 def repoint(moves: Dict[str, dict]) -> int:
