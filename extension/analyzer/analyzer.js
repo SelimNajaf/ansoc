@@ -148,7 +148,7 @@ async function analyze(e) {
 // height = its views (log scale against the biggest so far), gold = a hit (3x the running median).
 // So the strip is the progress bar and a first look at the profile at the same time.
 const loader = { slots: [], views: [], shown: 0, target: 0, t0: 0, timer: 0, raf: 0, step: "",
-  queue: [], pace: 0, lastIn: 0, burstAt: 0, gap: 1400, burstN: 0, size: 12 };
+  queue: [], pace: 0, lastIn: 0, burstAt: 0, gap: 0, burstN: 0, size: 12, readAt: 0 };
 
 function loaderStart(profile, limit) {
   const L = loader;
@@ -161,9 +161,10 @@ function loaderStart(profile, limit) {
   L.pace = 0;
   L.lastIn = 0;
   L.burstAt = 0;
-  L.gap = 1400;
+  L.gap = 0;
   L.burstN = 0;
   L.size = 12;
+  L.readAt = 0;
   const strip = $("ldStrip");
   strip.replaceChildren();
   L.slots = Array.from({ length: Math.max(1, Math.min(500, limit || 120)) }, () => {
@@ -196,6 +197,7 @@ function loaderStop() {
 function loaderStep(step) {
   if (loader.step === step) return;
   loader.step = step;
+  if (step === "reels" && !loader.readAt) loader.readAt = Date.now(); // the first batch's wait starts here
   const order = ["connect", "reels", "details"];
   const at = order.indexOf(step);
   for (const li of $("ldSteps").children) {
@@ -209,9 +211,9 @@ function loaderStep(step) {
 }
 
 /**
- * Instagram hands reels over 12 at a time. Instead of jumping by 12, they are revealed one by one,
- * spread over the time until the next batch is expected (measured from the batches so far), so the
- * count and the strip move steadily. When reading ends, the rest is shown quickly.
+ * Instagram hands reels over 12 at a time (about every 12 s). Instead of jumping by 12, they are
+ * revealed one by one at the measured pace (≈ one a second): the first batch's reels show while the
+ * second is read, and so on. When reading ends, the rest is shown quickly.
  */
 function loaderAdd(n, views) {
   const L = loader;
@@ -219,8 +221,11 @@ function loaderAdd(n, views) {
   if (now - L.lastIn > 300) {
     // a new batch: learn the rhythm (moving average of the time between batches and of their size)
     if (L.burstAt) {
-      L.gap = Math.max(300, Math.min(6000, L.gap * 0.6 + (now - L.burstAt) * 0.4));
+      L.gap = Math.max(300, Math.min(30000, L.gap * 0.6 + (now - L.burstAt) * 0.4));
       if (L.burstN) L.size = Math.max(1, Math.round(L.size * 0.5 + L.burstN * 0.5));
+    } else {
+      // first batch: its wait (from the start of reading) is the best guess for the next ones
+      L.gap = Math.max(300, Math.min(30000, now - (L.readAt || L.t0)));
     }
     L.burstAt = now;
     L.burstN = 0;
@@ -239,9 +244,12 @@ function loaderPace() {
   const it = L.queue.shift();
   loaderApply(it.n, it.views);
   const reading = L.step === "reels";
-  // spread a batch over the time until the next one is due (a little less); 25–250 ms per reel.
-  // The timer runs even when the queue is empty, so reels of the same batch never show at once.
-  const delay = reading ? Math.max(25, Math.min(250, (L.gap * 0.85) / Math.max(L.queue.length + 1, L.size))) : 12;
+  // A steady pace: one reel every (time per batch / reels per batch), e.g. 12 s / 12 = one a second,
+  // so batch N shows while batch N+1 is being read. Only if we fall behind (more than ~1.5 batches
+  // waiting) does it speed up. The timer runs even when the queue is empty, so a batch never shows at once.
+  const per = L.gap / Math.max(1, L.size);
+  const behind = L.queue.length > L.size * 1.5 ? (L.size * 1.5) / L.queue.length : 1;
+  const delay = reading ? Math.max(30, Math.min(3000, per * behind)) : 12;
   L.pace = setTimeout(loaderPace, delay);
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.21.1
+
+- Analyzing: reels now appear at a steady pace (about one a second): the first group of 12 is shown while the next group is read, so it looks like one reel is checked every second.
+
 ## 2.21.0
 
 - **Instagram profile: a fixed "Analyze reels" button at the top right.** One click opens the Reels Analyzer for that profile (only on profile pages).
