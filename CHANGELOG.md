@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.18.3
+
+- **The page panel no longer covers Instagram / TikTok / Pinterest:** it is now a small tab on the right edge of the window. Hover or click it to open the actions; drag it up or down to move it (the place is remembered). While downloading, the tab shows a progress ring; when done, a green or red dot.
+- **Cleaner popup:** only the actions that fit the open page are shown (no greyed-out buttons), nothing runs off the side any more, and recent downloads show a platform icon, the status and "Open post".
+
 ## 2.18.2
 
 - **Dark theme only**, the same on Windows and macOS.

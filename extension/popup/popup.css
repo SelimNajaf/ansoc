@@ -1,53 +1,73 @@
-body { width: 380px; padding: 12px 14px 14px; line-height: 1.4; background: var(--surface); }
+body { width: 380px; padding: 14px 16px 16px; line-height: 1.4; background: var(--bg); overflow-x: hidden; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-h1 { font-size: var(--fs-l); margin: 0; flex: 1; }
-h2 { font-size: var(--fs-m); margin: 0; }
-.logo { width: 24px; height: 24px; }
-.badge { border: 0; padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer; font-weight: 400; }
-.badge::before { content: "●"; margin-right: 4px; }
-.help {
-  background: var(--soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; font-size: var(--fs-s);
-}
+header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+h1 { font-size: var(--fs-l); margin: 0; flex: 1; min-width: 0; }
+h2 { font-size: var(--fs-s); margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.logo { width: 26px; height: 26px; }
+.logo .ico { width: 15px; height: 15px; stroke-width: 2.5; }
+.badge { border: 0; padding: 4px 10px; font-size: var(--fs-xs); cursor: pointer; font-weight: 600; }
+.badge::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; }
+.help { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m); padding: 10px 12px; margin-bottom: 10px; font-size: var(--fs-s); }
 .help code { font-size: var(--fs-xs); word-break: break-all; }
-.row { display: flex; gap: 6px; }
-input[type="text"] { flex: 1; border-radius: var(--r-pill); padding: 8px 12px; }
-button { padding: 8px 12px; }
+.row { display: flex; gap: 8px; }
+input[type="text"] { flex: 1; border-radius: var(--r-pill); padding: 9px 14px; background: var(--surface); }
+button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; min-width: 0; }
+button > span { overflow: hidden; text-overflow: ellipsis; }
 button.link { font-weight: 500; text-decoration: none; }
-button.small { padding: 5px 9px; font-size: var(--fs-xs); }
-.detected { min-height: 18px; margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { font-size: var(--fs-xs); font-weight: 600; border-radius: 10px; padding: 2px 8px; background: var(--soft); color: var(--muted); }
+button.small { padding: 5px 10px; font-size: var(--fs-xs); }
+button.ghost { background: var(--surface); border: 1px solid var(--line); color: var(--fg); font-weight: 600; }
+button.ghost .ico { color: var(--muted); }
+.detected { min-height: 0; margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.detected:empty { margin: 0; }
+.chip { font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-pill); padding: 2px 8px; background: var(--soft); color: var(--muted); }
 .chip.pinterest { color: var(--pinterest); }
 .chip.instagram { color: var(--instagram); }
 .chip.tiktok { color: var(--fg); }
 .chip.bad { color: var(--bad); }
-.thumb.ph { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
-.stack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.stack #folderBtn, .stack #analyzerBtn { grid-column: span 1; }
-.status-box { margin: 10px 0 4px; min-height: 18px; }
+/* what you can do on the open tab */
+.page-card { margin-top: 12px; padding: 10px 12px; border-radius: var(--r-l); background: var(--surface); border: 1px solid var(--line); }
+.page-head { display: flex; align-items: center; gap: 6px; font-size: var(--fs-s); color: var(--muted); margin-bottom: 8px; }
+.page-head strong { color: var(--fg); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-ic { display: inline-grid; place-items: center; width: 18px; height: 18px; }
+.page-ic.instagram { color: var(--instagram); }
+.page-ic.pinterest { color: var(--pinterest); }
+.page-actions { display: flex; flex-direction: column; gap: 6px; }
+.page-actions button { width: 100%; min-height: 36px; }
+.tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-top: 10px; }
+.tools button { min-height: 36px; }
+.status-box { margin: 10px 0 0; }
+.status-box:has(#statusText:empty):has(#statusBar[hidden]):has(#errorText[hidden]) { display: none; }
 .status { font-size: var(--fs-s); color: var(--muted); }
 .error { color: var(--bad); font-size: var(--fs-s); margin-top: 4px; white-space: pre-wrap; }
 .bar { margin-top: 6px; }
-.list-head { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
-.recent { list-style: none; margin: 6px 0 0; padding: 0; max-height: 290px; overflow-y: auto; }
-.recent li { display: flex; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); }
-.thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--soft); flex: none; }
+.list-head { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.list-head h2 { flex: 1; }
+.recent { list-style: none; margin: 8px 0 0; padding: 0; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.recent li { display: flex; gap: 10px; padding: 10px; border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--line); }
+.thumb { width: 36px; height: 36px; border-radius: var(--r-s); object-fit: cover; background: var(--soft); flex: none; }
+.thumb.ph { display: inline-grid; place-items: center; color: var(--muted); }
+.thumb.ph.instagram { color: var(--instagram); }
+.thumb.ph.pinterest { color: var(--pinterest); }
+.thumb.ph .ico { width: 18px; height: 18px; }
 .info { flex: 1; min-width: 0; }
 .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta { display: flex; gap: 6px; align-items: center; font-size: var(--fs-xs); color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; }
+.meta .st { font-weight: 700; }
+.sub { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 .st { font-size: var(--fs-xs); font-weight: 600; }
-.actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.actions .ico { width: 13px; height: 13px; }
 .small { font-size: var(--fs-xs); }
-.settings { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
-.settings summary { cursor: pointer; font-weight: 600; }
-.settings label { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; font-size: var(--fs-s); }
+.settings { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.settings summary { cursor: pointer; font-weight: 600; min-height: var(--tap); display: flex; align-items: center; }
+.settings label { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; font-size: var(--fs-s); }
 /* cancel buttons */
 button.danger { box-shadow: inset 0 0 0 1px var(--bad); }
-button.link.danger { box-shadow: none; text-decoration: underline; margin-right: 8px; }
+button.link.danger { box-shadow: none; text-decoration: underline; }
 /* update banner */
-.update { border: 1px solid var(--brand); border-radius: 12px; padding: 8px 10px; margin: 8px 0; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.update { border: 1px solid var(--brand); border-radius: var(--r-m); padding: 8px 12px; margin: 0 0 10px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--surface); }
 .update.ok { border-color: var(--good); }
 .update.bad { border-color: var(--bad); }
 .update-text { font-size: var(--fs-s); flex: 1 1 200px; }
 .update-actions { display: flex; gap: 8px; align-items: center; }
-.update-actions a { color: var(--muted); }
+.update-actions a { color: var(--muted); font-size: var(--fs-s); }

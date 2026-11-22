@@ -90,4 +90,5 @@ the filter panel (`.fpop`: opens with `--ease-io`, slider thumbs `.fp-thumb`, nu
 - [ ] Gold only for hits, green/rose only for better/worse.
 - [ ] Readable on the dark theme (4.5:1 for text); no emoji as icons; nothing clickable below `--tap`.
 - [ ] Text is short English; the rest is in a tooltip.
+- [ ] The on-page panel is a tab docked to the right edge (`.dock` in `content/content.js`): it must never sit over the site's own controls.
 - [ ] The on-page panel (`content/content.js`, shadow DOM) copies the `:root` variables of `tokens.css` at start (`loadTokens`); the values at the top of its CSS are only a first-paint fallback.

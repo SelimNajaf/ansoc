@@ -180,17 +180,16 @@ function renderJobs(jobs) {
       thumb = el("img", { class: "thumb", alt: "", referrerpolicy: "no-referrer" });
       thumb.src = j.thumb;
     } else {
-      thumb = el("span", { class: "thumb ph", text: (plat ? plat.name : platform).slice(0, 2) });
+      thumb = el("span", { class: "thumb ph " + platform, title: plat ? plat.name : platform }, [PD.icon(platform)]);
     }
     const f = (j.files || [])[0];
     const id = j.contentId || j.pinId || "";
-    const tags = el("div", { class: "detected" }, [chip(plat ? plat.name : platform, platform)]);
     const mt = j.kind === "metadata" ? "metadata" : j.mediaType;
-    if (mt) tags.append(chip(mediaTypeLabel(mt)));
+    const meta = el("div", { class: "meta" }, [el("span", { class: "st " + j.status, text: statusLabel(j) })]);
+    if (mt) meta.append(el("span", { text: "· " + mediaTypeLabel(mt) }));
     const info = el("div", { class: "info" }, [
       el("div", { class: "title", title: j.title || id, text: j.title || `${plat ? plat.name : platform} ${id}`.trim() }),
-      tags,
-      el("div", { class: "st " + j.status, text: statusLabel(j) }),
+      meta,
     ]);
     if (j.status === S.SUCCESS && f) {
       const more = (j.files || []).length > 1 ? ` (+${j.files.length - 1})` : "";
@@ -206,19 +205,20 @@ function renderJobs(jobs) {
     }
 
     const actions = el("div", { class: "actions" });
+    const act = (cls, ico, label, onclick) => el("button", { class: cls, type: "button", onclick }, [ico ? PD.icon(ico) : null, el("span", { text: label })]);
     if (!PD.isFinal(j.status) && !j.cancelRequested) {
       actions.append(el("button", { class: "small danger", type: "button", text: t("btn_cancel"), onclick: () => send({ type: "cancel", jobId: j.id }) }));
     }
     if (j.status === S.FAILED || j.status === S.CANCELLED) {
-      actions.append(el("button", { class: "small primary", type: "button", text: t("btn_retry"), onclick: () => send({ type: "retry", jobId: j.id }) }));
+      actions.append(act("small primary", "retry", t("btn_retry"), () => send({ type: "retry", jobId: j.id })));
     }
     if (j.status === S.DUPLICATE) {
       actions.append(el("button", { class: "small", type: "button", text: t("btn_download_again"), onclick: () => send({ type: "retry", jobId: j.id, force: true }) }));
     }
     if (j.status === S.SUCCESS && f && f.path) {
-      actions.append(el("button", { class: "small", type: "button", text: t("btn_show_file"), onclick: () => send({ type: "reveal", path: f.path }) }));
+      actions.append(act("small", "file", t("btn_show_file"), () => send({ type: "reveal", path: f.path })));
     }
-    actions.append(el("button", { class: "small link", type: "button", text: t("btn_open_pin"), onclick: () => chrome.tabs.create({ url: j.contentUrl || j.pinUrl }) }));
+    actions.append(act("small link", "external", t(platform === "pinterest" ? "btn_open_pin" : "btn_open_post"), () => chrome.tabs.create({ url: j.contentUrl || j.pinUrl })));
     info.append(actions);
     list.append(el("li", {}, [thumb, info]));
   }
@@ -235,9 +235,8 @@ function renderJobs(jobs) {
     setStatus(active.length > 1 ? t("status_active_many", [String(active.length)]) + " · " + statusLabel(cur) : statusLabel(cur));
     setBar(cur.progress == null ? null : cur.progress);
   } else {
-    const last = jobs[0];
     setBar(false);
-    setStatus(last ? `${statusLabel(last)}${last.title ? " — " + last.title : ""}` : "");
+    setStatus(""); // the list below already shows how the last downloads went
   }
 }
 
@@ -320,7 +319,7 @@ async function inspectTab() {
     try {
       await chrome.scripting.executeScript({
         target: { tabId: activeTab.id },
-        files: ["utils/constants.js", "utils/pinterest.js", "utils/platforms.js", "content/content.js"],
+        files: ["utils/constants.js", "utils/pinterest.js", "utils/platforms.js", "ui/icons.js", "content/content.js"],
       });
       res = await ask();
     } catch (_e) { /* not allowed on this page */ }
@@ -334,12 +333,21 @@ function isDownloadablePage() {
   return pageInfo.platform === "pinterest" ? pageInfo.type === "pin" : true;
 }
 
+/** Only the actions that fit the open tab are shown (no greyed-out buttons). */
 function updateButtons() {
   const board = pageInfo.platform === "pinterest" && pageInfo.type === "board";
-  $("currentBtn").disabled = !isDownloadablePage();
-  $("boardBtn").disabled = !board;
-  $("currentBtn").title = isDownloadablePage() ? "" : t("err_NOT_CONTENT_PAGE");
-  $("boardBtn").title = board ? "" : t("err_NOT_BOARD_PAGE");
+  const profile = pageInfo.platform === "instagram" && pageInfo.type === "profile";
+  const plat = PD.platforms.byId(pageInfo.platform);
+  $("currentBtn").hidden = !isDownloadablePage();
+  $("boardBtn").hidden = !board;
+  $("profileBtn").hidden = !profile;
+  $("pageCard").hidden = !(isDownloadablePage() || board || profile);
+  $("pageName").textContent = profile && plat ? "@" + (plat.profileName(activeTab.url) || "") : plat ? plat.name : "";
+  $("pageIcon").className = "page-ic " + (pageInfo.platform || "");
+  $("pageIcon").replaceChildren(pageInfo.platform ? PD.icon(pageInfo.platform) : "");
+  // on a profile the Analyzer is the page action; the tools row keeps only "Open folder" then
+  $("analyzerBtn").hidden = profile;
+  $("folderBtn").parentElement.style.gridTemplateColumns = profile ? "minmax(0, 1fr)" : "";
 }
 
 // ------------------------------------------------------------------------ settings
@@ -371,6 +379,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("currentBtn").addEventListener("click", downloadCurrent);
   $("boardBtn").addEventListener("click", downloadBoard);
   $("folderBtn").addEventListener("click", openFolder);
+  $("profileBtn").addEventListener("click", () => $("analyzerBtn").click());
   $("analyzerBtn").addEventListener("click", () => {
     const ig = PD.platforms.byId("instagram");
     const profile = activeTab && activeTab.url && ig.profileName(activeTab.url);

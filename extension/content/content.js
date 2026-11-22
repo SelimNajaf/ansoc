@@ -182,36 +182,60 @@
   // Colors and sizes come from extension/ui/tokens.css: loadTokens() copies its variables into this
   // shadow root (a page stylesheet can't reach in). The values below are only a first-paint fallback.
   const CSS = `
-    :host { all: initial; --surface: #1b1b1e; --soft: #27272b; --fg: #f2f2f4; --muted: #9e9eaa; --good: #3ccf7a; --bad: #ff6b8a;
-      --brand-grad: linear-gradient(135deg, #e60023, #ff6a3d 60%, #f59e0b); --action-grad: linear-gradient(135deg, #e60023, #c2410c 60%, #b45309);
+    :host { all: initial; --surface: #1b1b1e; --soft: #27272b; --line: #313137; --fg: #f2f2f4; --muted: #9e9eaa; --good: #3ccf7a; --bad: #ff6b8a;
+      --brand: #ff5a45; --brand-grad: linear-gradient(135deg, #e60023, #ff6a3d 60%, #f59e0b); --action-grad: linear-gradient(135deg, #e60023, #c2410c 60%, #b45309);
       --on-color: #fff; --sh-2: 0 6px 24px rgba(0,0,0,.4); --fs-xs: 12px; --fs-s: 12px; --fs-m: 13px; --fs-ml: 14px; --tap: 28px;
-      color-scheme: dark; }
-    .wrap { position: fixed; right: 18px; bottom: 18px; z-index: 2147483000; font: var(--fs-m)/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: var(--fg); background: var(--surface); border-radius: 16px; box-shadow: var(--sh-2); padding: 10px; width: 250px; box-sizing: border-box; }
-    .wrap.min { width: auto; padding: 6px; }
-    .head { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 8px; }
-    .wrap.min .head { margin: 0; }
-    .wrap.min .body { display: none; }
-    .logo { width: 18px; height: 18px; border-radius: 50%; background: var(--action-grad); color: var(--on-color); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: 800; }
-    .grow { flex: 1; }
-    .icon { border: 0; background: transparent; cursor: pointer; font-size: var(--fs-ml); min-width: var(--tap); min-height: var(--tap); padding: 2px 6px; border-radius: 8px; color: var(--muted); }
-    .icon:hover { background: var(--soft); }
+      --ease: cubic-bezier(.2, .8, .2, 1); color-scheme: dark; }
+    /* A small tab docked to the right edge of the window (out of the way of the site's own buttons).
+       Hover or click opens the card; drag the tab up / down to move it. */
+    .dock { position: fixed; right: 0; top: 40%; z-index: 2147483000; display: flex; align-items: center; flex-direction: row-reverse;
+      font: var(--fs-m)/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); }
+    .tab { position: relative; width: 40px; height: 44px; border: 0; padding: 0 0 0 4px; cursor: grab; touch-action: none;
+      border-radius: 22px 0 0 22px; background: var(--surface); border: 1px solid var(--line); border-right: 0; box-shadow: var(--sh-2); display: grid; place-items: center;
+      opacity: .72; transform: translateX(6px); transition: opacity .15s, transform .2s var(--ease); }
+    .dock:hover .tab, .dock.open .tab, .dock.busy .tab, .dock.flash .tab, .tab:focus-visible { opacity: 1; transform: none; }
+    .tab:focus-visible, button.b:focus-visible, .x:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .tab.drag { cursor: grabbing; }
+    .logo { width: 26px; height: 26px; border-radius: 50%; background: var(--action-grad); color: var(--on-color); display: grid; place-items: center; }
+    .logo .ico { width: 15px; height: 15px; stroke-width: 2.5; }
+    .ring { position: absolute; left: 3px; top: 50%; width: 34px; height: 34px; margin-top: -17px; transform: rotate(-90deg); display: none; }
+    .dock.busy .ring { display: block; }
+    .ring circle { fill: none; stroke-width: 3; }
+    .ring .trk { stroke: var(--soft); }
+    .ring .val { stroke: var(--brand); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset .3s; }
+    .ring.indet .val { stroke-dashoffset: 70; animation: spin 1s linear infinite; transform-origin: center; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .dot { position: absolute; right: 6px; top: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface); display: none; }
+    .dock.ok .dot { display: block; background: var(--good); }
+    .dock.err .dot { display: block; background: var(--bad); }
+    .card { width: 260px; margin-right: 8px; padding: 12px; box-sizing: border-box; border-radius: 16px; background: var(--surface);
+      border: 1px solid var(--line); box-shadow: var(--sh-2); opacity: 0; transform: translateX(12px) scale(.98); pointer-events: none;
+      transition: opacity .15s, transform .2s var(--ease); }
+    .dock.open .card, .dock.flash .card { opacity: 1; transform: none; pointer-events: auto; }
+    .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 700; }
+    .head .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .x { border: 0; background: transparent; color: var(--muted); width: var(--tap); height: var(--tap); border-radius: 8px; cursor: pointer; display: grid; place-items: center; }
+    .x:hover { background: var(--soft); color: var(--fg); }
     .btns { display: flex; flex-direction: column; gap: 6px; }
-    button.b { border: 0; border-radius: 20px; min-height: var(--tap); padding: 8px 12px; font: 600 var(--fs-m)/1 inherit; font-family: inherit; cursor: pointer; background: var(--soft); color: var(--fg); }
+    button.b { display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 999px; min-height: 34px; padding: 8px 12px;
+      font: 600 var(--fs-m)/1 inherit; font-family: inherit; cursor: pointer; background: var(--soft); color: var(--fg); }
     button.b.primary { background: var(--action-grad); color: var(--on-color); }
     button.b:hover { filter: brightness(1.12); }
-    button.b:focus-visible, .icon:focus-visible { outline: 2px solid var(--brand, #ff5a45); outline-offset: 2px; }
     button.b:disabled { opacity: .55; cursor: default; }
     .status { margin-top: 8px; font-size: var(--fs-s); color: var(--muted); word-break: break-word; }
+    .status:empty { display: none; }
     .status.err { color: var(--bad); }
     .status.ok { color: var(--good); }
-    .bar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
+    .bar { height: 4px; background: var(--soft); border-radius: 2px; overflow: hidden; margin-top: 8px; display: none; }
     .bar.on { display: block; }
     .fill { height: 100%; width: 0; background: var(--brand-grad); transition: width .2s; }
     .fill.indet { width: 35%; animation: slide 1.1s infinite ease-in-out; }
     @keyframes slide { from { margin-left: -35%; } to { margin-left: 100%; } }
-    .row { display: flex; gap: 6px; margin-top: 6px; }
-    @media (prefers-reduced-motion: reduce) { .fill, .fill.indet { transition: none; animation: none; } }`;
+    .row { display: flex; gap: 6px; margin-top: 8px; }
+    .row:empty { display: none; }
+    .row button.b { flex: 1; }
+    .ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    @media (prefers-reduced-motion: reduce) { .tab, .card, .fill, .fill.indet, .ring .val { transition: none; animation: none; } }`;
 
   /** Copy the variables of ui/tokens.css into the panel, so it always matches the extension's pages. */
   async function loadTokens(shadow) {
@@ -226,43 +250,113 @@
   let current = { platform: "", type: "other", pinId: "", contentId: "", url: "" };
   let watch = null; // {pinId?, batchId?, jobId?, since}
 
+  const icon = (name) => (PD.icon ? PD.icon(name) : document.createTextNode(""));
+  let closeTimer = null;
+
   function buildUI() {
     const host = el("div", { id: "pinterest-downloader-root" });
     const shadow = host.attachShadow({ mode: "closed" });
     shadow.appendChild(el("style", { text: CSS }));
     loadTokens(shadow);
-    ui.wrap = el("div", { class: "wrap", role: "region", "aria-label": "Media Downloader" });
-    ui.min = el("button", { class: "icon", title: t("ui_minimize"), text: "–", onclick: toggleMin });
-    ui.head = el("div", { class: "head" }, [el("span", { class: "logo", text: "↓" }), el("span", { class: "grow", text: "Media Downloader" }), ui.min]);
+    ui.dock = el("div", { class: "dock", role: "region", "aria-label": "Media Downloader" });
+    // the tab: logo + progress ring + result dot
+    const ns = "http://www.w3.org/2000/svg";
+    ui.ring = document.createElementNS(ns, "svg");
+    ui.ring.setAttribute("class", "ring");
+    ui.ring.setAttribute("viewBox", "0 0 36 36");
+    ui.ring.innerHTML = '<circle class="trk" cx="18" cy="18" r="15.9" pathLength="100"/><circle class="val" cx="18" cy="18" r="15.9" pathLength="100"/>';
+    ui.ringVal = ui.ring.lastChild;
+    ui.tab = el("button", { class: "tab", type: "button", title: "Media Downloader", "aria-label": "Media Downloader", "aria-expanded": "false" },
+      [el("span", { class: "logo" }, [icon("download")]), el("span", { class: "dot" })]);
+    ui.tab.prepend(ui.ring);
+    // the card
+    ui.title = el("span", { class: "t", text: "Media Downloader" });
+    const close = el("button", { class: "x", type: "button", title: t("ui_minimize"), "aria-label": t("ui_minimize"), onclick: () => setOpen(false) }, [icon("x")]);
     ui.btns = el("div", { class: "btns" });
     ui.status = el("div", { class: "status", "aria-live": "polite" });
     ui.fill = el("div", { class: "fill" });
     ui.bar = el("div", { class: "bar" }, [ui.fill]);
     ui.actions = el("div", { class: "row" });
-    ui.body = el("div", { class: "body" }, [ui.btns, ui.bar, ui.status, ui.actions]);
-    ui.wrap.append(ui.head, ui.body);
-    shadow.appendChild(ui.wrap);
-    try {
-      if (sessionStorage.getItem("pd-min") === "1") ui.wrap.classList.add("min");
-    } catch (_e) { /* ignore */ }
+    ui.card = el("div", { class: "card" }, [el("div", { class: "head" }, [ui.title, close]), ui.btns, ui.bar, ui.status, ui.actions]);
+    ui.dock.append(ui.tab, ui.card);
+    shadow.appendChild(ui.dock);
     ui.host = host;
     (document.body || document.documentElement).appendChild(host);
+
+    // open on hover (desktop) or click; leave = close after a moment (not while pinned open by a click)
+    ui.dock.addEventListener("mouseenter", () => { clearTimeout(closeTimer); ui.dock.classList.add("hover"); });
+    ui.dock.addEventListener("mouseleave", () => {
+      ui.dock.classList.remove("hover");
+      clearTimeout(closeTimer);
+      if (!ui.pinned) closeTimer = setTimeout(() => setOpen(false), 500);
+    });
+    ui.tab.addEventListener("mouseenter", () => setOpen(true));
+    // drag the tab up / down (a click without movement toggles the card)
+    let drag = null;
+    ui.tab.addEventListener("pointerdown", (e) => {
+      drag = { y: e.clientY, top: ui.dock.getBoundingClientRect().top, moved: false };
+      ui.tab.setPointerCapture(e.pointerId);
+    });
+    ui.tab.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const dy = e.clientY - drag.y;
+      if (Math.abs(dy) > 4) drag.moved = true;
+      if (!drag.moved) return;
+      ui.tab.classList.add("drag");
+      placeDock(drag.top + dy);
+    });
+    ui.tab.addEventListener("pointerup", () => {
+      if (!drag) return;
+      const moved = drag.moved;
+      drag = null;
+      ui.tab.classList.remove("drag");
+      if (moved) {
+        try { chrome.storage.local.set({ dockTop: ui.dock.getBoundingClientRect().top / window.innerHeight }); } catch (_e) { /* ignore */ }
+      } else {
+        ui.pinned = !(ui.pinned && ui.dock.classList.contains("open"));
+        setOpen(ui.pinned);
+      }
+    });
+    document.addEventListener("pointerdown", (e) => {
+      if (ui.pinned && !e.composedPath().includes(ui.host)) { ui.pinned = false; setOpen(false); }
+    }, true);
+    window.addEventListener("resize", () => placeDock(ui.dock.getBoundingClientRect().top));
+    try {
+      chrome.storage.local.get("dockTop", (r) => {
+        if (r && typeof r.dockTop === "number") placeDock(r.dockTop * window.innerHeight);
+      });
+    } catch (_e) { /* ignore */ }
   }
 
-  function toggleMin() {
-    ui.wrap.classList.toggle("min");
-    ui.min.textContent = ui.wrap.classList.contains("min") ? "+" : "–";
-    try {
-      sessionStorage.setItem("pd-min", ui.wrap.classList.contains("min") ? "1" : "0");
-    } catch (_e) { /* ignore */ }
+  function placeDock(top) {
+    const max = window.innerHeight - 60;
+    ui.dock.style.top = Math.max(12, Math.min(max, top)) + "px";
+  }
+
+  function setOpen(open) {
+    if (!open) ui.pinned = false;
+    ui.dock.classList.toggle("open", !!open);
+    ui.tab.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  /** Show the card for a few seconds (a download finished or failed), then fold back. */
+  function flash() {
+    ui.dock.classList.add("flash");
+    clearTimeout(ui.flashTimer);
+    ui.flashTimer = setTimeout(() => ui.dock.classList.remove("flash"), 4000);
   }
 
   function setStatus(text, kind) {
     ui.status.textContent = text || "";
     ui.status.className = "status" + (kind ? " " + kind : "");
+    ui.dock.classList.toggle("ok", kind === "ok");
+    ui.dock.classList.toggle("err", kind === "err");
+    if (kind) flash();
   }
 
   function setProgress(p) {
+    const busy = p !== false && p !== 100;
+    ui.dock.classList.toggle("busy", busy);
     if (p === false) {
       ui.bar.classList.remove("on");
       return;
@@ -271,9 +365,12 @@
     if (p === null || p === undefined) {
       ui.fill.classList.add("indet");
       ui.fill.style.width = "";
+      ui.ring.classList.add("indet");
     } else {
       ui.fill.classList.remove("indet");
       ui.fill.style.width = Math.max(2, Math.min(100, p)) + "%";
+      ui.ring.classList.remove("indet");
+      ui.ringVal.style.strokeDashoffset = String(100 - Math.max(2, Math.min(100, p)));
     }
   }
 
@@ -281,30 +378,33 @@
     ui.actions.replaceChildren(...buttons);
   }
 
-  function button(label, onClick, primary) {
-    return el("button", { class: "b" + (primary ? " primary" : ""), type: "button", text: label, onclick: onClick });
+  function button(label, onClick, primary, ico) {
+    return el("button", { class: "b" + (primary ? " primary" : ""), type: "button", onclick: onClick },
+      [ico ? icon(ico) : null, el("span", { text: label })]);
   }
 
   function renderButtons() {
     ui.btns.replaceChildren();
     setActions([]);
+    const platObj = PD.platforms.byId(current.platform);
+    ui.title.textContent = platObj ? `Media Downloader · ${platObj.name}` : "Media Downloader";
     if (current.platform && current.platform !== "pinterest" && current.type !== "other") {
       // TikTok / Instagram / ...: the local helper (yt-dlp / gallery-dl) does the work; label per post type.
       const plat = PD.platforms.byId(current.platform);
       if (current.type === "profile") {
         // Instagram profile: open the Reels Analyzer (views, statistics, pick & bulk download).
-        ui.mainBtn = button(t("btn_analyze_reels"), () => send({ type: "openAnalyzer", profile: plat.profileName(current.url) }), true);
+        ui.mainBtn = button(t("btn_analyze_reels"), () => send({ type: "openAnalyzer", profile: plat.profileName(current.url) }), true, "chart");
         ui.btns.append(ui.mainBtn);
       } else {
-        ui.mainBtn = button(t(plat && plat.buttonKey ? plat.buttonKey(current.type) : "btn_download"), () => startPin(false), true);
+        ui.mainBtn = button(t(plat && plat.buttonKey ? plat.buttonKey(current.type) : "btn_download"), () => startPin(false), true, "download");
         ui.btns.append(ui.mainBtn, button(t("btn_save_metadata"), startMetadata));
       }
     } else if (current.type === "pin") {
       const hints = collectHints();
-      ui.mainBtn = button(hints.isVideo ? t("btn_download_video") : t("btn_download_image"), () => startPin(false), true);
+      ui.mainBtn = button(hints.isVideo ? t("btn_download_video") : t("btn_download_image"), () => startPin(false), true, "download");
       ui.btns.append(ui.mainBtn, button(t("btn_save_metadata"), startMetadata));
     } else if (current.type === "board") {
-      ui.mainBtn = button(t("btn_download_all"), startBoard, true);
+      ui.mainBtn = button(t("btn_download_all"), startBoard, true, "download");
       ui.btns.append(ui.mainBtn);
     }
   }
@@ -460,7 +560,8 @@
         hints: current.platform === "pinterest" && current.type === "pin" ? collectHints() : null });
     } else if (msg.type === "startBoard") {
       if (current.platform === "pinterest" && current.type === "board") {
-        if (ui.wrap.classList.contains("min")) toggleMin();
+        ui.pinned = true;
+        setOpen(true);
         startBoard();
         sendResponse({ ok: true });
       } else sendResponse({ ok: false });
@@ -481,6 +582,7 @@
     watch = null;
     if (!ui.host) buildUI();
     ui.host.style.display = type === "other" ? "none" : "";
+    ui.dock.classList.remove("ok", "err", "flash");
     setStatus("");
     setProgress(false);
     renderButtons();

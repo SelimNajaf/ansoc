@@ -9,10 +9,10 @@
     "message": "Download"
   },
   "btn_download_current": {
-    "message": "Download current page"
+    "message": "Download this post"
   },
   "btn_download_board": {
-    "message": "Download all pins on this board"
+    "message": "Download the whole board"
   },
   "btn_open_folder": {
     "message": "Open folder"
@@ -54,7 +54,7 @@
     "message": "Pin URL"
   },
   "ui_url_placeholder": {
-    "message": "Paste a Pinterest, TikTok or Instagram link"
+    "message": "Paste a link…"
   },
   "ui_recent": {
     "message": "Recent downloads"
@@ -321,7 +321,7 @@
     "message": "Analyze reels"
   },
   "btn_reels_analyzer": {
-    "message": "Instagram Reels Analyzer"
+    "message": "Reels Analyzer"
   },
   "notif_collection_title": {
     "message": "Collection “$1” finished"
@@ -1480,5 +1480,13 @@
   },
   "an_col_shares": {
     "message": "Shares"
+  },
+  "ui_on_page": {
+    "message": "On this page:",
+    "description": "Popup: label before the open tab's platform / page"
+  },
+  "btn_open_post": {
+    "message": "Open post",
+    "description": "Popup: open the downloaded post on its site"
   }
 }

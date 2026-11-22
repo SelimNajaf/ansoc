@@ -9,7 +9,7 @@
 </head>
 <body>
   <header>
-    <span class="logo" aria-hidden="true">↓</span>
+    <span class="logo" aria-hidden="true"><svg class="ico" data-icon="download"></svg></span>
     <h1>Media Downloader</h1>
     <button id="helperBadge" class="badge" type="button" aria-live="polite"></button>
   </header>
@@ -31,14 +31,21 @@
   </form>
   <div id="detected" class="detected" aria-live="polite"></div>
 
-  <div class="stack">
-    <button id="currentBtn" type="button" data-i18n="btn_download_current"></button>
-    <button id="boardBtn" type="button" data-i18n="btn_download_board"></button>
-    <button id="folderBtn" type="button" data-i18n="btn_open_folder"></button>
-    <button id="analyzerBtn" type="button" data-i18n="btn_reels_analyzer"></button>
+  <section id="pageCard" class="page-card" hidden>
+    <div class="page-head"><span id="pageIcon" class="page-ic" aria-hidden="true"></span><span data-i18n="ui_on_page"></span> <strong id="pageName"></strong></div>
+    <div class="page-actions">
+      <button id="currentBtn" class="primary" type="button" hidden><svg class="ico" data-icon="download"></svg><span data-i18n="btn_download_current"></span></button>
+      <button id="boardBtn" class="primary" type="button" hidden><svg class="ico" data-icon="download"></svg><span data-i18n="btn_download_board"></span></button>
+      <button id="profileBtn" class="primary" type="button" hidden><svg class="ico" data-icon="chart"></svg><span data-i18n="btn_analyze_reels"></span></button>
+    </div>
+  </section>
+
+  <div class="tools">
+    <button id="folderBtn" class="ghost" type="button"><svg class="ico" data-icon="folder"></svg><span data-i18n="btn_open_folder"></span></button>
+    <button id="analyzerBtn" class="ghost" type="button"><svg class="ico" data-icon="chart"></svg><span data-i18n="btn_reels_analyzer"></span></button>
   </div>
 
-  <section class="status-box" aria-live="polite">
+  <section id="statusBox" class="status-box" aria-live="polite">
     <div id="statusText" class="status"></div>
     <div id="statusBar" class="bar" hidden><div class="fill"></div></div>
     <div id="errorText" class="error" hidden></div>
@@ -67,6 +74,7 @@
   <script src="../utils/constants.js"></script>
   <script src="../utils/pinterest.js"></script>
   <script src="../utils/platforms.js"></script>
+  <script src="../ui/icons.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
