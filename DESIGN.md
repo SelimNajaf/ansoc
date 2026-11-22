@@ -96,6 +96,6 @@ views distribution → the reel list.
 - [ ] Readable on the dark theme (4.5:1 for text); no emoji as icons; nothing clickable below `--tap`.
 - [ ] Text is short English; the rest is in a tooltip.
 - [ ] Nothing sits permanently on the sites' pages: page actions are in the popup and the right-click menu
-  (`setupMenus` in background.js). The only on-page UI is a toast (`content/content.js`) shown while
+  (`setupMenus` in background.js). On an Instagram profile there is one fixed **Analyze reels** button at the top right (`.ig`). Otherwise the only on-page UI is a toast (`content/content.js`) shown while
   something the user started runs, and it hides itself when done.
 - [ ] The on-page toast (`content/content.js`, shadow DOM) copies the `:root` variables of `tokens.css` at start (`loadTokens`); the values at the top of its CSS are only a first-paint fallback.

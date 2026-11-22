@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.21.0
+
+- **Instagram profile: a fixed "Analyze reels" button at the top right.** One click opens the Reels Analyzer for that profile (only on profile pages).
+- **Analyzing feels smoother:** reels now appear one by one instead of jumping 12 at a time (Instagram still sends them in groups of 12; they are spread over the wait until the next group).
+
 ## 2.20.0
 
 - **No more button on top of Instagram / TikTok / Pinterest.** Instead, right-click: **Download this post** on a post, reel or pin (also on any link to one, e.g. a reel in a profile grid), **Open in Reels Analyzer** on Instagram, **Download the whole board** on a Pinterest board. A small note at the bottom shows the progress and disappears when done. The toolbar popup works as before.

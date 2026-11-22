@@ -211,6 +211,15 @@
     button.b.primary { background: var(--action-grad); color: var(--on-color); }
     button.b:hover { filter: brightness(1.12); }
     button.b:focus-visible, .x:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    /* Instagram profile: one fixed button, top right, opens the Reels Analyzer */
+    .ig { position: fixed; top: 14px; right: 16px; z-index: 2147483000; display: none; align-items: center; gap: 8px;
+      height: 36px; padding: 0 14px 0 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+      color: var(--fg); box-shadow: var(--sh-2); cursor: pointer; font: 600 var(--fs-m)/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: filter .15s, transform .15s; }
+    .ig.on { display: inline-flex; }
+    .ig:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .ig:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .ig .logo { width: 26px; height: 26px; }
     .ico { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     @media (prefers-reduced-motion: reduce) { .toast, .fill, .fill.indet { transition: none; animation: none; } }`;
 
@@ -250,6 +259,17 @@
     ui.toast = el("div", { class: "toast", role: "status" }, [
       el("div", { class: "top" }, [el("span", { class: "logo" }, [icon("download")]), ui.status, close]), ui.bar, ui.actions]);
     shadow.appendChild(ui.toast);
+    ui.ig = el("button", { class: "ig", type: "button", title: t("btn_analyze_reels") }, [
+      el("span", { class: "logo" }, [icon("chart")]), el("span", { text: t("btn_analyze_reels") })]);
+    ui.ig.addEventListener("click", async () => {
+      const plat = PD.platforms.byId("instagram");
+      const res = await send({ type: "openAnalyzer", profile: plat.profileName(location.href) || "" });
+      if (!res.ok) {
+        setStatus(res.error.message, "err");
+        hideLater(8000);
+      }
+    });
+    shadow.appendChild(ui.ig);
     ui.host = host;
     (document.body || document.documentElement).appendChild(host);
   }
@@ -461,6 +481,10 @@
       contentId: plat ? plat.contentId(url) : "", url };
     // a board collection belongs to its page; a running download keeps its toast
     if (collecting) collecting.cancel = true;
+    // Instagram profile -> the fixed "Analyze reels" button (only there)
+    const igProfile = platform === "instagram" && type === "profile";
+    if (igProfile) ensureUI();
+    if (ui.ig) ui.ig.classList.toggle("on", igProfile);
   }
 
   onUrlChange();
