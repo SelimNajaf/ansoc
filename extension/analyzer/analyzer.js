@@ -510,6 +510,82 @@ function applyRange() {
   updateActionBar();
 }
 
+// ------------------------------------------------------------------ chart picks + rich hover (shared)
+/** Reels of the range posted in these local hours. */
+function rowsInHours(hours) {
+  const set = new Set(hours);
+  return state.rows.filter((r) => r.ts && set.has(new Date(r.ts).getHours()));
+}
+/** Reels of the range posted on days with exactly n reels (counted over the whole profile, like What works). */
+function rowsOnDaysWith(n) {
+  const perDay = new Map();
+  for (const r of state.allRows) if (r.ts) perDay.set(St.dayStart(r.ts), (perDay.get(St.dayStart(r.ts)) || 0) + 1);
+  return state.rows.filter((r) => r.ts && perDay.get(St.dayStart(r.ts)) === n);
+}
+/** Show these reels in the table (a second click on the same pick clears it). */
+function pickRows(src, label, rows) {
+  const same = state.filter && state.filter.src === src;
+  state.filter = same || !rows.length ? null : { kind: "codes", codes: new Set(rows.map((r) => r.code)), label, src };
+  hideRowsTip();
+  renderChart();
+  renderActivityChart();
+  renderTable();
+}
+const hitLine = (rows) => {
+  const n = rows.filter(TIER_FILTERS.hit).length;
+  return n ? `${t("an_tier_hit")}: ${n}` : "";
+};
+const IG_THUMB = /^https:\/\/[^/]*(cdninstagram\.com|fbcdn\.net)\//;
+/** Floating card next to the pointer: title, numbers and the pictures of the best reels (by Success). */
+function showRowsTip(ev, head, lines, rows) {
+  let tip = $("rowsTip");
+  if (!tip) {
+    tip = el("div", { id: "rowsTip", class: "rows-tip", hidden: "" });
+    document.body.append(tip);
+  }
+  const best = (rows || []).filter((r) => r.thumbnail && IG_THUMB.test(r.thumbnail))
+    .sort((a, b) => (b.successScore ?? -1) - (a.successScore ?? -1) || (b.views || 0) - (a.views || 0)).slice(0, 4);
+  const pics = best.map((r) => {
+    const tier = r.success && r.success.tier === "hit" ? " hit" : r.success && r.success.tier ? " good" : "";
+    const img = el("img", { class: "rt-img" + tier, alt: "", referrerpolicy: "no-referrer" });
+    img.src = r.thumbnail;
+    img.addEventListener("error", () => img.remove());
+    return img;
+  });
+  tip.replaceChildren(
+    el("div", { class: "rt-head", text: head }),
+    ...lines.filter(Boolean).map((l) => el("div", { class: "rt-line", text: l })),
+    pics.length ? el("div", { class: "rt-pics" }, pics) : null,
+  );
+  tip.hidden = false;
+  moveRowsTip(ev);
+}
+function moveRowsTip(ev) {
+  const tip = $("rowsTip");
+  if (!tip || tip.hidden) return;
+  const w = tip.offsetWidth;
+  const h = tip.offsetHeight;
+  let x = ev.clientX + 14;
+  if (x + w > window.innerWidth - 8) x = ev.clientX - w - 14;
+  let y = ev.clientY + 14;
+  if (y + h > window.innerHeight - 8) y = ev.clientY - h - 14;
+  tip.style.left = `${Math.max(8, Math.round(x))}px`;
+  tip.style.top = `${Math.max(8, Math.round(y))}px`;
+}
+function hideRowsTip() {
+  const tip = $("rowsTip");
+  if (tip) tip.hidden = true;
+}
+/** Rich hover on a chart element; fn() returns {head, lines, rows} when the pointer arrives. */
+function bindRowsTip(node, fn) {
+  node.addEventListener("pointerenter", (ev) => {
+    const o = fn();
+    showRowsTip(ev, o.head, o.lines, o.rows);
+  });
+  node.addEventListener("pointermove", moveRowsTip);
+  node.addEventListener("pointerleave", hideRowsTip);
+}
+
 // ------------------------------------------------------------------ calendar (one square per day)
 /*
  * Rows = months (newest on top), columns = day of the month 1–31. Weekdays are left out on purpose.
@@ -582,8 +658,9 @@ function renderCalendar() {
       if (d.young) tip.push(t("an_map_new"));
       const cell = el("button", {
         type: "button", class: `cal-c ${tone}` + (d.young ? " young" : "") + (on ? " on" : "") + (f && f.kind === "date" && !on ? " dim" : ""),
-        title: tip.join("\n"), "aria-label": tip.join(", "), text: String(d.n),
+        "aria-label": tip.join(", "), text: String(d.n),
       });
+      bindRowsTip(cell, () => ({ head: tip[0], lines: tip.slice(1), rows: state.rows.filter((r) => r.ts >= k && r.ts < St.addDays(k, 1)) }));
       cell.addEventListener("click", () => {
         state.filter = on ? null : { kind: "date", from: k, to: St.addDays(k, 1) };
         renderChart();
@@ -756,9 +833,6 @@ function pickMapZone(view, zone, label, pts) {
   if (same || !pts.length) {
     state.filter = null;
   } else {
-    // the corner replaces the table steps for now (a "Buyers" corner under "Views ≥ avg" would be empty)
-    if (!state.savedSteps) state.savedSteps = state.filters;
-    state.filters = [];
     state.filter = { kind: "codes", codes: new Set(pts.map((p) => p.r.code)), label };
     state.mapZone = { view, zone };
   }
@@ -1260,7 +1334,10 @@ function renderChart() {
       rx: 3, tabindex: b.count ? "0" : "-1", role: "button",
       "aria-label": `${rangeLabel(b.from, b.to)}: ${b.count}`,
     });
-    rect.append(svg("title", {}, `${rangeLabel(b.from, b.to)} ${t("an_views_word")}\n${t("an_reels_count", [String(b.count)])}`));
+    bindRowsTip(rect, () => {
+      const rows = state.rows.filter((r) => r.views != null && r.views >= b.from && (r.views < b.to || i === bins.length - 1));
+      return { head: `${rangeLabel(b.from, b.to)} ${t("an_views_word")}`, lines: [t("an_reels_count", [String(b.count)]), hitLine(rows)], rows };
+    });
     const pick = () => {
       if (!b.count) return;
       const same = state.filter && state.filter.kind === "views" && state.filter.from === b.from && state.filter.to === b.to;
@@ -1488,9 +1565,10 @@ function renderActivityChart() {
       rx: bw > 6 ? 3 : 0, tabindex: b.count ? "0" : "-1", role: "button",
       "aria-label": `${dateRangeLabel(b.from, b.to)}: ${b.count}`,
     });
-    const tip = [dateRangeLabel(b.from, b.to), t("an_reels_count", [String(b.count)])];
-    tip.push(...tipViews(b));
-    rect.append(svg("title", {}, tip.join("\n")));
+    bindRowsTip(rect, () => {
+      const rows = state.rows.filter((r) => r.ts >= b.from && r.ts < b.to);
+      return { head: dateRangeLabel(b.from, b.to), lines: [t("an_reels_count", [String(b.count)]), ...tipViews(b), hitLine(rows)], rows };
+    });
     const pick = () => {
       if (!b.count) return;
       const same = f && f.kind === "date" && f.from === b.from && f.to === b.to;
@@ -1685,7 +1763,13 @@ function hoursChart(tw) {
     const first = runs.reduce((x, r) => (r[1] - r[0] > x[1] - x[0] ? r : x));
     const cx = m.l + ((first[0] + first[1] + 1) / 2) * cw;
     const tx = Math.max(m.l + 90, Math.min(W - m.r - 90, cx));
-    root.append(svg("text", { class: `hc-label ${cls}`, x: tx, y: m.t - 8, "text-anchor": "middle" }, label));
+    const hours = [];
+    for (let k = 0; k < w.len; k++) hours.push((w.start + k) % 24);
+    const src = `win:${w.start}:${w.len}`;
+    const lab = svg("text", { class: `hc-label ${cls} pick` + (state.filter && state.filter.src === src ? " on" : ""), x: tx, y: m.t - 8, "text-anchor": "middle" }, label);
+    lab.append(svg("title", {}, t("an_pick_hint")));
+    lab.addEventListener("click", () => pickRows(src, windowLabel(w), rowsInHours(hours)));
+    root.append(lab);
   };
   if (tw.second) band(tw.second, "also", `${t("ww_also")} ${windowLabel(tw.second)} · ${PD.effectsUI.fmt(tw.second.lift)}`);
   if (tw.best) band(tw.best, "best", `★ ${windowLabel(tw.best)} · ${PD.effectsUI.fmt(tw.best.lift)}`);
@@ -1707,10 +1791,16 @@ function hoursChart(tw) {
     const lab = svg("text", { class: "axis hc-hour" + (h === 0 ? " midnight" : ""), x: x + cw / 2, y: H - 10, "text-anchor": "middle" }, p2h(h));
     root.append(lab);
     // hover target with the hour's numbers
-    const hit = svg("rect", { class: "hc-hit", x, y: m.t - 22, width: cw, height: ph + 22 });
-    const lines = [hourRange(h), t("an_reels_count", [String(c.n)])];
-    if (c.lift != null) lines.push(t("an_hours_tip_succ", [`${c.lift.toFixed(1)}×`, String(state.rows.filter((r) => r.ts && new Date(r.ts).getHours() === h && TIER_FILTERS.hit(r)).length)]));
-    hit.append(svg("title", {}, lines.join("\n")));
+    const src = `hour:${h}`;
+    const hit = svg("rect", { class: "hc-hit" + (c.n ? " pick" : "") + (state.filter && state.filter.src === src ? " on" : ""),
+      x, y: m.t - 22, width: cw, height: ph + 22 });
+    const rowsOf = () => rowsInHours([h]);
+    bindRowsTip(hit, () => {
+      const lines = [t("an_reels_count", [String(c.n)])];
+      if (c.lift != null) lines.push(t("an_hours_tip_succ", [`${c.lift.toFixed(1)}×`, String(rowsOf().filter(TIER_FILTERS.hit).length)]));
+      return { head: hourRange(h), lines, rows: rowsOf() };
+    });
+    if (c.n) hit.addEventListener("click", () => pickRows(src, hourRange(h), rowsOf()));
     root.append(hit);
   });
   // midnight divider
@@ -1766,7 +1856,12 @@ function perDayChart(dd) {
     const g = byN.get(n);
     if (g) {
       const r = svg("rect", { class: "hc-bar day" + (g.days < 2 ? " thin" : ""), x: x + cw * 0.2, y: y(g.perDay), width: cw * 0.6, height: Math.max(2, m.t + ph - y(g.perDay)), rx: 3 });
-      r.append(svg("title", {}, t("ww_day_tip", [String(n), String(g.days), g.perDay.toFixed(2)])));
+      const src = `perday:${n}`;
+      if (state.filter && state.filter.src === src) r.classList.add("on");
+      const rowsOf = () => rowsOnDaysWith(n);
+      bindRowsTip(r, () => ({ head: t("ww_per_day_v2", [String(n)]), lines: [t("ww_day_tip", [String(n), String(g.days), g.perDay.toFixed(2)])], rows: rowsOf() }));
+      r.addEventListener("click", () => pickRows(src, t("ww_per_day_v2", [String(n)]), rowsOf()));
+      r.classList.add("pick");
       root.append(r);
       root.append(svg("text", { class: "hc-n", x: x + cw / 2, y: m.t + ph + 28, "text-anchor": "middle" }, t("ww_days_short", [String(g.days)])));
     }
@@ -2976,8 +3071,13 @@ let lastClickedCode = null; // anchor for Shift+click range selection
 function renderTable() {
   const body = $("reelBody");
   body.replaceChildren();
-  // a map corner was cleared: the table steps it put aside come back (unless new ones were made meanwhile)
-  if (state.savedSteps && !(state.filter && state.filter.kind === "codes")) {
+  // A chart pick (bar, day, hour, map corner) shows exactly those reels: the table steps are put aside
+  // ("Views >= avg" would hide most of a low-views bar) and come back when the pick is cleared
+  // (unless new steps were made meanwhile).
+  if (state.filter && !state.savedSteps) {
+    state.savedSteps = state.filters;
+    state.filters = [];
+  } else if (!state.filter && state.savedSteps) {
     if (!state.filters.length) state.filters = state.savedSteps;
     state.savedSteps = null;
   }
@@ -2986,6 +3086,12 @@ function renderTable() {
     renderMap();
   }
   renderCalendar(); // marks the picked day
+  // the What works charts mark a picked hour / window / posts-per-day bar
+  const src = (state.filter && state.filter.src) || "";
+  if (src !== (state.wwSrc || "") && (src.match(/^(hour|win|perday):/) || (state.wwSrc || "").match(/^(hour|win|perday):/))) {
+    state.wwSrc = src;
+    renderWhatWorks();
+  } else state.wwSrc = src;
   const pools = chainPools();
   const rows = visibleRows();
   renderChain(pools);

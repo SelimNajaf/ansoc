@@ -133,6 +133,9 @@ README.md  CHANGELOG.md  DESIGN.md
 - **Seasons:** `activePeriods()` newest → oldest; pause = ≥ 14 days AND ≥ 10× the season's median gap; ≥ 3 reels per season.
 - **Viral / strong / winner** (documented at the top of `performance()`): robust z-score of log views against a
   time-local baseline; engagement judged against a Theil–Sen fit on reach.
+- **Chart picks:** any chart click sets `state.filter` (`views` / `date` / `codes` with a `src` like `hour:5`, `win:3:8`,
+  `perday:2`); `renderTable()` then puts the table steps aside in `state.savedSteps` and restores them when the
+  filter is cleared. Hover cards on charts go through `bindRowsTip()` (numbers + best reels' thumbnails).
 - Known store patterns from research: "Comment X" call to action + original audio, 12–16 s reels;
   best windows mostly at night Baku time (US morning).
 

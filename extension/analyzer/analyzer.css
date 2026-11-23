@@ -851,3 +851,22 @@ button.cal-c:focus-visible { outline: 2px solid var(--brand); outline-offset: 1p
 .sw.cal.good { background: var(--good); }
 .sw.cal.posted { background: color-mix(in srgb, var(--neutral) 55%, transparent); }
 .sw.cal.none { background: var(--soft); }
+
+/* ---------------------------------------------------------------- chart picks + rich hover */
+.hc .hc-hit.pick { cursor: pointer; }
+.hc .hc-hit.on { fill: color-mix(in srgb, var(--brand) 14%, transparent); stroke: var(--brand); stroke-width: 1.5; }
+.hc .hc-label.pick { cursor: pointer; text-decoration: underline dotted; }
+.hc .hc-label.on { text-decoration: underline solid; }
+.hc .hc-bar.pick { cursor: pointer; }
+.hc .hc-bar.pick:hover { filter: brightness(1.15); }
+.hc .hc-bar.on { stroke: var(--brand); stroke-width: 2; }
+.rows-tip { position: fixed; z-index: 1000; pointer-events: none; max-width: 300px; padding: 8px 10px;
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-m); box-shadow: var(--sh-2);
+  font-size: var(--fs-s); font-variant-numeric: tabular-nums; }
+.rows-tip[hidden] { display: none; }
+.rows-tip .rt-head { font-weight: 700; margin-bottom: 3px; }
+.rows-tip .rt-line { color: var(--muted); }
+.rows-tip .rt-pics { display: flex; gap: 6px; margin-top: 8px; }
+.rows-tip .rt-img { width: 56px; height: 100px; object-fit: cover; border-radius: var(--r-s); background: var(--soft); border: 2px solid transparent; }
+.rows-tip .rt-img.hit { border-color: var(--hit); }
+.rows-tip .rt-img.good { border-color: var(--good); }

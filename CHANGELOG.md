@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.25.0
+
+- **Every chart now leads to its reels.** Click and the Reels table shows exactly those reels:
+  - *Views distribution* bar, *Posting activity* bar, a *Calendar* day (as before),
+  - **new:** an hour in the *Best time* chart, the ★ best window label (e.g. *03:00–11:00*), a bar in *Reels per day*.
+  - Click the same thing again (or *Clear*) to go back.
+- **Your table filters step aside** while a chart pick is on (a low-views bar under *Views ≥ avg* used to show nothing) and come back when you clear it.
+- **Hover shows the reels:** bars, hours and days now show a small card with the numbers and the pictures of the best reels in it (gold / green frame = hit / good).
+
 ## 2.24.0
 
 - **Reels Analyzer: new Calendar** (under *Posting activity*). One square per day, a row per month (no weekdays):

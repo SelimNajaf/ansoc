@@ -1623,5 +1623,8 @@
   },
   "an_cal_hint": {
     "message": "Number = reels · click a day to filter"
+  },
+  "an_pick_hint": {
+    "message": "Click to see these reels in the table"
   }
 }
