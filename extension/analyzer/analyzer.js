@@ -510,6 +510,97 @@ function applyRange() {
   updateActionBar();
 }
 
+// ------------------------------------------------------------------ calendar (one square per day)
+/*
+ * Rows = months (newest on top), columns = day of the month 1–31. Weekdays are left out on purpose.
+ * A square = one day of the range: gold = a hit was posted that day, green = a good reel, gray = posted,
+ * empty = no reel. The number = reels posted that day. Ring = the day holds a reel younger than 3 days.
+ * Click a day: the table (and the activity chart) show that day; click again to clear.
+ */
+function renderCalendar() {
+  const wrap = $("calWrap");
+  if (!wrap) return;
+  wrap.replaceChildren();
+  const days = new Map(); // dayStart -> {n, best, views, hit, good, young}
+  for (const r of state.rows) {
+    if (!r.ts) continue;
+    const k = St.dayStart(r.ts);
+    const d = days.get(k) || { n: 0, best: null, views: 0, hit: 0, good: 0, young: false };
+    d.n++;
+    d.views += r.views || 0;
+    if (isNum(r.successScore)) d.best = Math.max(d.best == null ? -1 : d.best, r.successScore);
+    if (r.success && r.success.tier === "hit") d.hit++;
+    else if (r.success && r.success.tier) d.good++;
+    if (r.perf && r.perf.isNew) d.young = true;
+    days.set(k, d);
+  }
+  const keys = [...days.keys()];
+  if (!keys.length) {
+    $("calSub").textContent = "";
+    return;
+  }
+  const rg = state.range;
+  const first = rg ? rg.from : Math.min(...keys);
+  const last = rg ? rg.to - 1 : Math.max(state.windowEnd || 0, ...keys);
+  const posted = keys.filter((k) => k >= first && k <= last);
+  const hitDays = posted.filter((k) => days.get(k).hit).length;
+  $("calSub").textContent = t("an_cal_sub", [String(posted.length), String(hitDays)]);
+  const f = state.filter;
+  const grid = el("div", { class: "cal-grid", role: "grid", "aria-label": t("an_cal_title") });
+  // header: day numbers
+  grid.append(el("span", { class: "cal-m" }));
+  for (let i = 1; i <= 31; i++) grid.append(el("span", { class: "cal-dn", text: i % 5 === 0 || i === 1 ? String(i) : "" }));
+  const firstD = new Date(first);
+  let y = new Date(last).getFullYear();
+  let mo = new Date(last).getMonth();
+  while (y > firstD.getFullYear() || (y === firstD.getFullYear() && mo >= firstD.getMonth())) {
+    const label = new Date(y, mo, 1).toLocaleString("en", { month: "short" }) + (y !== new Date().getFullYear() ? ` ${String(y).slice(2)}` : "");
+    grid.append(el("span", { class: "cal-m", text: label }));
+    const len = new Date(y, mo + 1, 0).getDate();
+    for (let day = 1; day <= 31; day++) {
+      if (day > len) {
+        grid.append(el("span", { class: "cal-c void" }));
+        continue;
+      }
+      const k = St.dayStart(new Date(y, mo, day).getTime());
+      const inRange = k >= St.dayStart(first) && k <= last;
+      const d = days.get(k);
+      if (!inRange) {
+        grid.append(el("span", { class: "cal-c out" }));
+        continue;
+      }
+      if (!d) {
+        grid.append(el("span", { class: "cal-c none", title: dateLong(k) }));
+        continue;
+      }
+      const tone = d.hit ? "hit" : d.good ? "good" : "posted";
+      const on = f && f.kind === "date" && f.from <= k && k < f.to;
+      const tip = [dateLong(k), t("an_reels_count", [String(d.n)]), `${t("an_col_views")}: ${fmt(d.views)}`,
+        `${t("an_cal_best")}: ${d.best == null ? "–" : Math.round(d.best)}`];
+      if (d.hit) tip.push(`${t("an_tier_hit")}: ${d.hit}`);
+      if (d.good) tip.push(`${t("an_tier_good")}: ${d.good}`);
+      if (d.young) tip.push(t("an_map_new"));
+      const cell = el("button", {
+        type: "button", class: `cal-c ${tone}` + (d.young ? " young" : "") + (on ? " on" : "") + (f && f.kind === "date" && !on ? " dim" : ""),
+        title: tip.join("\n"), "aria-label": tip.join(", "), text: String(d.n),
+      });
+      cell.addEventListener("click", () => {
+        state.filter = on ? null : { kind: "date", from: k, to: St.addDays(k, 1) };
+        renderChart();
+        renderActivityChart();
+        renderTable();
+      });
+      grid.append(cell);
+    }
+    mo--;
+    if (mo < 0) {
+      mo = 11;
+      y--;
+    }
+  }
+  wrap.append(grid);
+}
+
 // ------------------------------------------------------------------ reaction map (two scatter views, four corners)
 /*
  * "vs": x = views (log), y = Success 0–100. Split at the median views of the range and at Success 50.
@@ -2894,6 +2985,7 @@ function renderTable() {
     state.mapZone = null;
     renderMap();
   }
+  renderCalendar(); // marks the picked day
   const pools = chainPools();
   const rows = visibleRows();
   renderChain(pools);

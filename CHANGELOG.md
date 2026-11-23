@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.24.0
+
+- **Reels Analyzer: new Calendar** (under *Posting activity*). One square per day, a row per month (no weekdays):
+  - **gold** = a hit was posted that day, **green** = a good reel, **gray** = posted, empty = no reel;
+  - the number = reels posted that day; a ring = a reel younger than 3 days.
+  - The title line says how many posting days there were and how many had a hit.
+- **Click a day** to see its reels in the table (the activity chart follows); click it again to go back. Hover a day for views, best Success and hits.
+
 ## 2.23.0
 
 - **Reels Analyzer: new Reaction map** (right above the Reels table). Every reel is a dot; dashed lines split them into four corners.
