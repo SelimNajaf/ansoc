@@ -176,8 +176,11 @@ README.md  CHANGELOG.md  DESIGN.md
 2. Add a plain-words, user-facing entry at the top of `CHANGELOG.md`; say "Needs the helper update: use **Update now**" when helper files changed.
 3. Commit (`2.x.y: short summary`) and push to `main`. Only push what is ready for users.
 
-Installed copies check `raw.githubusercontent.com/SelimNajaf/ansoc/main/extension/manifest.json` (every 6 h and
-whenever the popup opens; raw GitHub can lag ~5 min) and offer **Update now**.
+Installed copies check the version (every 6 h and whenever the popup opens, max 1 min old) and offer **Update now**.
+Since 2.30.1 the check asks the GitHub API first (`api.github.com/repos/SelimNajaf/ansoc/contents/extension/manifest.json`,
+~1 min fresh, 60 requests/h/IP) and raw.githubusercontent.com as fallback; raw alone was CDN-cached 5 min (a query string
+does not bypass it), which is why "the update doesn't show" right after a push. `self_update` downloads the ZIP of the
+exact newest commit (API `commits/main` → `codeload …/zip/<sha>`), falling back to the branch ZIP.
 **The owner presses Update now themselves** — don't run `updater.self_update` for them (they want to see it arrive).
 Exception: repairing a broken install on their machine (helper won't start) — fix the installed files directly and say so.
 

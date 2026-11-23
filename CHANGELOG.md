@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.30.1
+
+- **Updates show up right away.** The popup used to ask a GitHub address that keeps an old copy for ~5 minutes, so a new version was invisible for a while after it came out. It now asks GitHub directly (the old address stays as a backup), and **Update now** installs the exact newest version. Needs the helper update: use **Update now** (this one may still take up to 5 minutes to appear, the next ones won't).
+
 ## 2.30.0
 
 - **Reaction map (Views × Success) reads better:**

@@ -746,8 +746,11 @@ let detailsRequestId = null; // running "reels_details" helper request (cancella
 let detailsCancelled = false; // Stop pressed during the one-by-one fallback
 
 // ============================================================================ updates
-// The published version lives in the GitHub repo's manifest.json (raw.githubusercontent.com
-// answers with CORS "*", so no extra permission is needed). Checked at most every 6 hours.
+// The published version lives in the GitHub repo's manifest.json. Both URLs answer with CORS "*",
+// so no extra permission is needed. raw.githubusercontent.com is cached by its CDN for 5 minutes
+// (a query string does not bypass it), so a fresh push stayed invisible: the GitHub API (60 s cache,
+// 60 requests / hour / IP) is asked first, raw is the fallback, and the higher version wins.
+const UPDATE_API_URL = "https://api.github.com/repos/SelimNajaf/ansoc/contents/extension/manifest.json?ref=main";
 const UPDATE_MANIFEST_URL = "https://raw.githubusercontent.com/SelimNajaf/ansoc/main/extension/manifest.json";
 const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000;
 
@@ -764,11 +767,19 @@ async function checkForUpdate(force, maxAgeMs) {
   const current = chrome.runtime.getManifest().version;
   const saved = (await chrome.storage.local.get("updateInfo")).updateInfo;
   if (!force && saved && saved.current === current && Date.now() - saved.at < (maxAgeMs || UPDATE_CHECK_MS)) return saved;
-  let latest = null;
-  try {
-    const r = await fetch(UPDATE_MANIFEST_URL, { cache: "no-store", credentials: "omit" });
-    if (r.ok) latest = String((await r.json()).version || "") || null;
-  } catch (_e) { /* offline: try again next time */ }
+  const read = async (url, headers) => {
+    try {
+      const r = await fetch(url, { cache: "no-store", credentials: "omit", headers });
+      return r.ok ? String((await r.json()).version || "") || null : null;
+    } catch (_e) {
+      return null; // offline / rate limited: the other source or the next check
+    }
+  };
+  const found = (await Promise.all([
+    read(UPDATE_API_URL, { Accept: "application/vnd.github.raw+json" }),
+    read(UPDATE_MANIFEST_URL),
+  ])).filter(Boolean);
+  const latest = found.reduce((a, b) => (newerVersion(b, a) ? b : a), found[0] || null);
   const info = { at: Date.now(), current, latest, available: !!latest && newerVersion(latest, current) };
   await chrome.storage.local.set({ updateInfo: info });
   return info;

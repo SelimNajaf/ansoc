@@ -30,6 +30,10 @@ REPO = "SelimNajaf/ansoc"
 BRANCH = "main"
 MANIFEST_URL = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/extension/manifest.json"
 ZIP_URL = f"https://codeload.github.com/{REPO}/zip/refs/heads/{BRANCH}"
+# The branch ZIP / raw files can be a few minutes old (CDN cache). The API names the newest commit,
+# and a ZIP of that exact commit is never stale.
+COMMIT_API_URL = f"https://api.github.com/repos/{REPO}/commits/{BRANCH}"
+SHA_ZIP_URL = f"https://codeload.github.com/{REPO}/zip/{{sha}}"
 MAX_ZIP_BYTES = 60 * 1024 * 1024
 
 # never overwritten in the installed helper folder (per-user state)
@@ -69,6 +73,20 @@ def _fetch(url: str, limit: int, progress: Optional[ProgressFn] = None) -> bytes
         raise
     except Exception as exc:
         raise HelperError(E_NETWORK, f"Could not reach GitHub: {exc}") from exc
+
+
+def _latest_zip_url() -> str:
+    """ZIP of the newest commit on the branch; the branch ZIP if the API can't be reached (rate limit, offline)."""
+    try:
+        req = urllib.request.Request(COMMIT_API_URL, headers={
+            "User-Agent": "MediaDownloader-updater", "Accept": "application/vnd.github.sha"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            sha = resp.read(100).decode("ascii", "replace").strip()
+        if len(sha) == 40 and all(c in "0123456789abcdef" for c in sha):
+            return SHA_ZIP_URL.format(sha=sha)
+    except Exception:
+        pass
+    return ZIP_URL
 
 
 def latest_version() -> str:
@@ -125,7 +143,7 @@ def self_update(progress: ProgressFn) -> Dict[str, Any]:
         raise HelperError(E_BAD_REQUEST, f"Unexpected install folder: {base}")
 
     progress(None, "update:download")
-    blob = _fetch(ZIP_URL, MAX_ZIP_BYTES, progress)
+    blob = _fetch(_latest_zip_url(), MAX_ZIP_BYTES, progress)
     warnings: List[str] = []
     with tempfile.TemporaryDirectory(prefix="mdl-update-") as tmp:
         tmpdir = Path(tmp)
