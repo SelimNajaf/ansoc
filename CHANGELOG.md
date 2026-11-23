@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.22.0
+
+- **Pinterest: a fixed Download button**, like *Analyze reels* on Instagram. On a pin it downloads the pin (hover it: *Download image* / *Download video*); on a board it downloads the whole board. It sits in Pinterest's own left menu, under its icons (same size, same spacing), so it never covers Pinterest's buttons, the search bar or the pins. Progress shows in the small note at the bottom, and the button spins while it works. In a very narrow window, where Pinterest hides that menu, the button stays hidden (right-click still works).
+
 ## 2.21.1
 
 - Analyzing: reels now appear at a steady pace (about one a second): the first group of 12 is shown while the next group is read, so it looks like one reel is checked every second.

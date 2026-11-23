@@ -1,6 +1,8 @@
 /* Media Downloader - content script (Pinterest, TikTok, Instagram).
  * Reads the open page for the popup and the right-click menu (what is shown, Pinterest hints,
- * board pins). Shows a small toast only while a download started here runs. UI is built with DOM
+ * board pins). Shows a small toast only while a download started here runs, plus one fixed button
+ * where it fits without covering the site (Instagram profile: Analyze reels; Pinterest pin / board:
+ * Download, in Pinterest's left menu). UI is built with DOM
  * APIs inside a closed shadow root so the site's CSS cannot leak in. */
 (function () {
   "use strict";
@@ -220,8 +222,25 @@
     .ig:hover { filter: brightness(1.15); transform: translateY(-1px); }
     .ig:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
     .ig .logo { width: 26px; height: 26px; }
+    /* Pinterest pin / board: one round button in Pinterest's own left menu, in the free space under its icons */
+    .pin { position: fixed; z-index: 2147483000; display: none; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%;
+      background: var(--action-grad); color: var(--on-color); box-shadow: var(--sh-2); cursor: pointer; place-items: center;
+      transition: filter .15s, transform .15s; }
+    .pin.on { display: grid; }
+    .pin:hover { filter: brightness(1.12); transform: scale(1.05); }
+    .pin:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .pin > .ico { width: 22px; height: 22px; stroke-width: 2.25; }
+    .pin .lbl { position: absolute; left: calc(100% + 10px); top: 50%; transform: translate(-4px, -50%); opacity: 0; pointer-events: none;
+      white-space: nowrap; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+      box-shadow: var(--sh-2); font: 600 var(--fs-m)/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: opacity .15s, transform .15s; }
+    .pin:hover .lbl, .pin:focus-visible .lbl { opacity: 1; transform: translate(0, -50%); }
+    .pin .spin { display: none; width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.35); border-top-color: var(--on-color);
+      box-sizing: border-box; animation: spin .8s linear infinite; }
+    .pin.busy .spin { display: block; }
+    .pin.busy > .ico { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .ico { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    @media (prefers-reduced-motion: reduce) { .toast, .fill, .fill.indet { transition: none; animation: none; } }`;
+    @media (prefers-reduced-motion: reduce) { .toast, .fill, .fill.indet, .pin, .pin .lbl { transition: none; animation: none; } }`;
 
   /** Copy the variables of ui/tokens.css into the toast, so it matches the extension's pages. */
   async function loadTokens(shadow) {
@@ -270,6 +289,12 @@
       }
     });
     shadow.appendChild(ui.ig);
+    ui.pinLbl = el("span", { class: "lbl" });
+    ui.pin = el("button", { class: "pin", type: "button" }, [icon("download"), el("span", { class: "spin" }), ui.pinLbl]);
+    ui.pin.addEventListener("pointerenter", pinLabel);
+    ui.pin.addEventListener("focus", pinLabel);
+    ui.pin.addEventListener("click", onPinButton);
+    shadow.appendChild(ui.pin);
     ui.host = host;
     (document.body || document.documentElement).appendChild(host);
   }
@@ -354,6 +379,88 @@
     }
     watch = { batchId: res.data.batchId, total: res.data.count };
     setStatus(t("status_board_queued", [String(res.data.count)]) + (expected && pins.length < expected ? " " + t("note_board_partial") : ""));
+  }
+
+  // ========================================================================== Pinterest: fixed button (pin / board pages)
+  // Same idea as the Instagram "Analyze reels" button, but Pinterest's top right is its search bar and
+  // profile, and the pin grid fills the rest. The one free place is its left menu under its own icons:
+  // the button joins that column (same 48px size, same rhythm) and stays out of everything else.
+  // If the menu is not there (narrow window, new layout) the button stays hidden: right-click still works.
+  const PIN_SIZE = 48;
+
+  function pinRail() {
+    const nav = document.getElementById("VerticalNavContent") ||
+      Array.from(document.querySelectorAll("nav")).find((n) => getComputedStyle(n).position === "fixed");
+    if (!nav) return null;
+    const r = nav.getBoundingClientRect();
+    if (r.left > 4 || r.width < PIN_SIZE || r.width > 120 || r.height < window.innerHeight * 0.6) return null;
+    const items = Array.from(nav.querySelectorAll('a[href], button, [role="button"]'))
+      .map((e) => e.getBoundingClientRect())
+      .filter((b) => b.width > 0 && b.height > 0)
+      .sort((a, b) => a.top - b.top);
+    return items.length ? { r, items } : null;
+  }
+
+  /** Free slot in the left menu: one step below its top group, never touching its bottom group. */
+  function pinSpot() {
+    const rail = pinRail();
+    if (!rail) return null;
+    const { r, items } = rail;
+    // the top group ends where the next icon is far away (Settings sits alone at the bottom)
+    let last = items[0];
+    let step = 0;
+    for (let i = 1; i < items.length; i++) {
+      const gap = items[i].top - items[i - 1].top;
+      if (step && gap > step * 1.8) break;
+      step = step || gap;
+      last = items[i];
+    }
+    step = step || PIN_SIZE + 24;
+    const top = last.top + step;
+    const left = r.left + (r.width - PIN_SIZE) / 2;
+    const clash = items.some((b) => top < b.bottom + 12 && top + PIN_SIZE > b.top - 12);
+    if (clash || top + PIN_SIZE > Math.min(r.bottom, window.innerHeight) - 12) return null;
+    return { top: Math.round(top), left: Math.round(left) };
+  }
+
+  function updatePinButton() {
+    const on = current.platform === "pinterest" && (current.type === "pin" || current.type === "board");
+    if (!on && !ui.pin) return;
+    if (on) ensureUI();
+    const s = on ? pinSpot() : null;
+    ui.pin.classList.toggle("on", !!s);
+    if (!s) return;
+    ui.pin.style.top = s.top + "px";
+    ui.pin.style.left = s.left + "px";
+    ui.pin.classList.toggle("busy", !!collecting || !!(watch && watch.fromPin));
+  }
+
+  function pinLabel() {
+    const text = current.type === "board" ? t("btn_download_board")
+      : collectHints().isVideo ? t("btn_download_video") : t("btn_download_image");
+    ui.pinLbl.textContent = text;
+    ui.pin.setAttribute("aria-label", text);
+  }
+
+  async function onPinButton() {
+    if (collecting || (watch && watch.fromPin)) return show(); // already working: just show the progress
+    if (current.type === "board") {
+      startBoard();
+      return;
+    }
+    if (current.type !== "pin" || !current.pinId) return;
+    setActions([]);
+    setProgress(null);
+    setStatus(t("status_queued"));
+    const res = await send({ type: "download", pinId: current.pinId, hints: collectHints() });
+    if (!res.ok) {
+      setProgress(false);
+      setStatus(res.error.message, "err");
+      hideLater(8000);
+      return;
+    }
+    watch = { jobId: res.data.jobId, fromPin: true };
+    updatePinButton();
   }
 
   // ========================================================================== progress from storage
@@ -487,7 +594,14 @@
     if (ui.ig) ui.ig.classList.toggle("on", igProfile);
   }
 
-  onUrlChange();
-  setInterval(onUrlChange, 700);
-  window.addEventListener("popstate", onUrlChange);
+  function tick() {
+    onUrlChange();
+    // Pinterest draws its menu late and moves it with the window size: find the free slot again
+    updatePinButton();
+  }
+
+  tick();
+  setInterval(tick, 700);
+  window.addEventListener("popstate", tick);
+  window.addEventListener("resize", updatePinButton);
 })();
