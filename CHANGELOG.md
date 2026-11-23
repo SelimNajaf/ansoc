@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.26.0
+
+- **Reels Analyzer: new Repeats section** (above the Reels table). It finds reels whose covers are the same picture: the store posted the same video (or the same opening shot) again. Stores repeat what sells.
+  - Each group shows its covers in date order with views (gold / green frame = hit / good), the number of repeats (×4) and their total views.
+  - The title line compares: median views of repeated reels vs all reels (on napwrap.store: 99.6K vs 40.1K).
+  - **Show in table** puts the group's reels in the table; click a cover for its details.
+- How: each cover gets a small fingerprint on your computer. Free, no AI; the pictures come from Instagram's image server, not its API (no rate limit). Fingerprints are kept with the saved analysis.
+- An older saved analysis has no pictures: press **Analyze** once to check its covers.
+
 ## 2.25.0
 
 - **Every chart now leads to its reels.** Click and the Reels table shows exactly those reels:

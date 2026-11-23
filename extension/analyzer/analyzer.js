@@ -468,6 +468,7 @@ function load(data, cachedAt) {
   renderProfile();
   renderRangeBar();
   applyRange();
+  hashCovers(data);
 }
 
 /**
@@ -507,6 +508,7 @@ function applyRange() {
   renderActivity();
   renderTable();
   renderMap();
+  renderRepeats();
   updateActionBar();
 }
 
@@ -676,6 +678,155 @@ function renderCalendar() {
     }
   }
   wrap.append(grid);
+}
+
+// ------------------------------------------------------------------ repeats (the same cover posted again)
+/*
+ * Every cover gets a 64-bit fingerprint (dHash: 9×8 gray pixels, "is this pixel brighter than its right
+ * neighbour?"). Two covers whose fingerprints differ in at most REP_BITS bits are the same picture
+ * (re-posted video, same first frame). Tested on a real store: such pairs correlate 0.8–1.0, random
+ * pairs ~0. Free: the small cover images (≥ 320 px) come from Instagram's image server, not its API.
+ * Fingerprints are kept with the cached analysis (the image links expire, the fingerprints don't).
+ */
+const REP_BITS = 8;
+const REP_SHOW = 6;
+
+async function coverHash(url) {
+  const res = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
+  if (!res.ok) throw new Error(String(res.status));
+  const bm = await createImageBitmap(await res.blob());
+  const c = new OffscreenCanvas(9, 8);
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(bm, 0, 0, 9, 8);
+  bm.close();
+  const d = g.getImageData(0, 0, 9, 8).data;
+  const gray = [];
+  for (let i = 0; i < 72; i++) gray.push(d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114);
+  let hex = "";
+  for (let y = 0; y < 8; y++) {
+    let nib = 0;
+    for (let x = 0; x < 8; x++) {
+      nib = (nib << 1) | (gray[y * 9 + x] > gray[y * 9 + x + 1] ? 1 : 0);
+      if (x % 4 === 3) {
+        hex += nib.toString(16);
+        nib = 0;
+      }
+    }
+  }
+  return hex; // 16 hex digits
+}
+const POP = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4];
+function hexBits(a, b) {
+  let n = 0;
+  for (let i = 0; i < 16; i++) n += POP[parseInt(a[i], 16) ^ parseInt(b[i], 16)];
+  return n;
+}
+
+/** Fingerprint the covers that have none yet (4 at a time), then keep them in the cache. */
+async function hashCovers(data) {
+  const todo = state.allRows.filter((r) => !r.coverHash && r.thumbnail && IG_THUMB.test(r.thumbnail));
+  if (!todo.length) return;
+  state.repProgress = { done: 0, total: todo.length };
+  renderRepeats();
+  let next = 0;
+  const worker = async () => {
+    while (next < todo.length && state.data === data) {
+      const r = todo[next++];
+      try {
+        r.coverHash = await coverHash(r.thumbnail);
+      } catch (_e) { /* expired or blocked image: no fingerprint */ }
+      state.repProgress.done++;
+      if (state.repProgress.done % 8 === 0) renderRepeats();
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  if (state.data !== data) return; // another profile was opened meanwhile
+  state.repProgress = null;
+  renderRepeats();
+  saveCoverHashes(data);
+}
+
+async function saveCoverHashes(data) {
+  try {
+    const r = await chrome.storage.local.get(CACHE_KEY);
+    const cache = r[CACHE_KEY] || {};
+    const entry = cache[data.username.toLowerCase()];
+    if (!entry) return;
+    const byCode = new Map(state.allRows.filter((x) => x.coverHash).map((x) => [x.code, x.coverHash]));
+    entry.data.reels = entry.data.reels.map((x) => (byCode.has(x.code) ? Object.assign({}, x, { coverHash: byCode.get(x.code) }) : x));
+    await chrome.storage.local.set({ [CACHE_KEY]: cache });
+  } catch (_e) { /* storage full: the fingerprints are made again next time */ }
+}
+
+/** Groups of reels in the range with (nearly) the same cover; biggest and most watched first. */
+function repeatGroups() {
+  const rows = state.rows.filter((r) => r.coverHash);
+  const p = rows.map((_, i) => i);
+  const find = (i) => (p[i] === i ? i : (p[i] = find(p[i])));
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = i + 1; j < rows.length; j++) if (hexBits(rows[i].coverHash, rows[j].coverHash) <= REP_BITS) p[find(i)] = find(j);
+  }
+  const m = new Map();
+  rows.forEach((r, i) => m.set(find(i), (m.get(find(i)) || []).concat(r)));
+  const views = (g) => g.reduce((a, r) => a + (r.views || 0), 0);
+  return [...m.values()].filter((g) => g.length > 1)
+    .map((g) => g.sort((a, b) => (a.ts || 0) - (b.ts || 0)))
+    .sort((a, b) => b.length - a.length || views(b) - views(a))
+    .map((g) => ({ rows: g, views: views(g), key: g[0].code }));
+}
+
+function renderRepeats() {
+  const wrap = $("repWrap");
+  if (!wrap) return;
+  wrap.replaceChildren();
+  const more = $("repMore");
+  more.hidden = true;
+  const prog = state.repProgress;
+  if (prog) {
+    $("repSub").textContent = t("an_rep_checking", [String(prog.done), String(prog.total)]);
+    wrap.append(el("div", { class: "rep-progress" }, [el("i", { style: `width:${Math.round((prog.done / Math.max(1, prog.total)) * 100)}%` })]));
+  }
+  const hashed = state.rows.filter((r) => r.coverHash).length;
+  if (!hashed) {
+    if (!prog) $("repSub").textContent = t(state.rows.some((r) => r.thumbnail) ? "an_rep_none_yet" : "an_rep_need");
+    return;
+  }
+  const groups = repeatGroups();
+  if (!prog) {
+    const inG = groups.flatMap((g) => g.rows.map((r) => r.views)).filter(isNum).sort((a, b) => a - b);
+    const all = state.rows.map((r) => r.views).filter(isNum).sort((a, b) => a - b);
+    $("repSub").textContent = groups.length
+      ? t("an_rep_sub", [String(groups.length), String(inG.length), cmp(St.quantile(inG, 0.5)), cmp(St.quantile(all, 0.5))])
+      : t("an_rep_zero", [String(hashed)]);
+  }
+  const shown = state.repAll ? groups : groups.slice(0, REP_SHOW);
+  if (groups.length > REP_SHOW) {
+    more.hidden = false;
+    more.textContent = state.repAll ? t("an_rep_less") : t("an_rep_more", [String(groups.length)]);
+  }
+  shown.forEach((g, gi) => {
+    const src = `rep:${g.key}`;
+    const on = state.filter && state.filter.src === src;
+    const label = t("an_rep_group", [String(gi + 1)]);
+    const lab = el("button", { type: "button", class: "rep-lab", title: t("an_pick_hint") }, [
+      el("span", { class: "rep-n", text: `×${g.rows.length}` }),
+      el("span", { class: "rep-v", text: `${cmp(g.views)} ${t("an_views_word")}` }),
+      el("span", { class: "rep-go", text: on ? t("an_rep_shown") : t("an_rep_show") }),
+    ]);
+    lab.addEventListener("click", () => pickRows(src, label, g.rows));
+    const items = g.rows.map((r) => {
+      const tier = r.success && r.success.tier === "hit" ? " hit" : r.success && r.success.tier ? " good" : "";
+      const pic = r.thumbnail && IG_THUMB.test(r.thumbnail)
+        ? el("img", { class: "rep-img", alt: "", loading: "lazy", referrerpolicy: "no-referrer", src: r.thumbnail })
+        : el("span", { class: "rep-img" });
+      const b = el("button", { type: "button", class: "rep-item" + tier, title: t("an_dr_preview_hint") }, [
+        pic, el("span", { class: "rep-views", text: cmp(r.views || 0) }), el("span", { class: "rep-date", text: r.ts ? dateShort(r.ts) : "" }),
+      ]);
+      b.addEventListener("click", () => openDetails(r.code));
+      return b;
+    });
+    wrap.append(el("div", { class: "rep-row" + (on ? " on" : "") }, [lab, el("div", { class: "rep-items" }, items)]));
+  });
 }
 
 // ------------------------------------------------------------------ reaction map (two scatter views, four corners)
@@ -3086,6 +3237,11 @@ function renderTable() {
     renderMap();
   }
   renderCalendar(); // marks the picked day
+  // the Repeats card marks a picked group
+  if (((state.filter && state.filter.src) || "").startsWith("rep:") || (state.repSrc || "").startsWith("rep:")) {
+    state.repSrc = (state.filter && state.filter.src) || "";
+    renderRepeats();
+  }
   // the What works charts mark a picked hour / window / posts-per-day bar
   const src = (state.filter && state.filter.src) || "";
   if (src !== (state.wwSrc || "") && (src.match(/^(hour|win|perday):/) || (state.wwSrc || "").match(/^(hour|win|perday):/))) {
@@ -3703,6 +3859,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderChart();
     renderActivityChart();
     renderTable();
+  });
+  $("repMore").addEventListener("click", () => {
+    state.repAll = !state.repAll;
+    renderRepeats();
   });
   for (const b of $("mapSeg").children) {
     b.addEventListener("click", () => {
