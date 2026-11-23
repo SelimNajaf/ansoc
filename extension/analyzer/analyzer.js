@@ -604,8 +604,9 @@ function renderSchedule() {
     return;
   }
   const W = 900;
-  const H = 300;
-  const m = { l: 46, r: 14, t: 14, b: 30 };
+  const H = 520; // 24 hour rows of ~20 px: every hour gets its label
+  const SIDE = 64; // per-hour bars on the right
+  const m = { l: 46, r: 14 + SIDE + 10, t: 14, b: 30 };
   const pw = W - m.l - m.r;
   const ph = H - m.t - m.b;
   const rg = state.range;
@@ -654,12 +655,42 @@ function renderSchedule() {
   band(tw.second, "also");
   band(tw.best, "best");
 
-  // hour grid (every 3 h) and labels
-  for (let k = 0; k <= 24; k += 3) {
+  // hour grid and labels: every hour (stronger every 3 h, dashed at midnight)
+  for (let k = 0; k <= 24; k++) {
     const h = (12 + k) % 24;
     const y = m.t + (k / 24) * ph;
-    root.append(svg("line", { class: "grid" + (h === 0 ? " sch-mid" : ""), x1: m.l, x2: m.l + pw, y1: y, y2: y }));
-    if (k < 24) root.append(svg("text", { class: "axis", x: m.l - 6, y: y + 4, "text-anchor": "end" }, `${p2h(h)}:00`));
+    root.append(svg("line", { class: "grid" + (h === 0 ? " sch-mid" : k % 3 ? " sch-hgrid" : ""), x1: m.l, x2: m.l + pw, y1: y, y2: y }));
+    if (k < 24) root.append(svg("text", { class: "axis" + (h === 0 ? " sch-midlab" : ""), x: m.l - 6, y: y + 4, "text-anchor": "end" }, `${p2h(h)}:00`));
+  }
+  // right side: reels posted in each hour (gray) with their hits (gold); click = that hour's reels
+  const perHour = Array.from({ length: 24 }, () => ({ n: 0, hit: 0 }));
+  for (const r of rows) {
+    const h = new Date(r.ts).getHours();
+    perHour[h].n++;
+    if (TIER_FILTERS.hit(r)) perHour[h].hit++;
+  }
+  const maxH = Math.max(1, ...perHour.map((x) => x.n));
+  const sx = m.l + pw + 10;
+  const rowH = ph / 24;
+  root.append(svg("text", { class: "axis", x: sx, y: m.t + ph + 18 }, t("an_sch_side")));
+  for (let h = 0; h < 24; h++) {
+    const c = perHour[h];
+    const y = m.t + (hpos(h) / 24) * ph;
+    const src = `hour:${h}`;
+    const g = svg("g", { class: "sch-side" + (c.n ? " pick" : "") + (state.filter && state.filter.src === src ? " on" : "") });
+    g.append(svg("rect", { class: "sch-side-hit", x: sx - 4, y, width: SIDE + 8, height: rowH }));
+    if (c.n) {
+      const w = Math.max(2, (c.n / maxH) * (SIDE - 18));
+      g.append(svg("rect", { class: "sch-side-bar", x: sx, y: y + 3, width: w, height: rowH - 6, rx: 2 }));
+      if (c.hit) g.append(svg("rect", { class: "sch-side-gold", x: sx, y: y + 3, width: Math.max(2, (c.hit / maxH) * (SIDE - 18)), height: rowH - 6, rx: 2 }));
+      g.append(svg("text", { class: "sch-side-n", x: sx + w + 3, y: y + rowH / 2 + 4 }, String(c.n)));
+      bindRowsTip(g, () => {
+        const rs = rowsInHours([h]);
+        return { head: hourRange(h), lines: [t("an_reels_count", [String(rs.length)]), hitLine(rs), t("an_pick_hint")], rows: rs };
+      });
+      g.addEventListener("click", () => pickRows(src, hourRange(h), rowsInHours([h])));
+    }
+    root.append(g);
   }
   // day ticks: weekly (or monthly for long ranges)
   const days = Math.round((d1 - d0) / St.DAY);

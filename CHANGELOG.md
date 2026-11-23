@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.27.1
+
+- **Posting schedule, taller and clearer:** every hour now has its own label and grid line (midnight stands out), so you can read the exact posting time of each dot.
+- **New on the right: reels per hour.** A small bar for each hour with how many reels went out then; the gold part = hits. Hover for the numbers and pictures, click to see that hour's reels in the table.
+
 ## 2.27.0
 
 - **Calendar replaced by Posting schedule.** The calendar repeated what *Posting activity* already shows. The new chart shows *when in the day* each reel went out:

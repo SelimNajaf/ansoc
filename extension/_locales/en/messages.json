@@ -1614,5 +1614,8 @@
   },
   "an_sch_hint": {
     "message": "Size = views · click a dot for details · click the band for its reels"
+  },
+  "an_sch_side": {
+    "message": "reels / hour"
   }
 }

@@ -831,6 +831,15 @@ body.shooting .shot-btn { animation: none; }
 .sch-wrap svg { min-width: 560px; }
 .chart-wrap .sch-mid { stroke: var(--muted); stroke-dasharray: 4 4; }
 .chart-wrap .sch-vgrid { stroke-dasharray: 2 4; }
+.chart-wrap .sch-hgrid { stroke: color-mix(in srgb, var(--line) 55%, transparent); }
+.chart-wrap .sch-midlab { fill: var(--fg); font-weight: 700; }
+.chart-wrap .sch-side-hit { fill: transparent; }
+.chart-wrap .sch-side.pick { cursor: pointer; }
+.chart-wrap .sch-side.pick:hover .sch-side-hit { fill: color-mix(in srgb, var(--fg) 6%, transparent); }
+.chart-wrap .sch-side.on .sch-side-hit { fill: color-mix(in srgb, var(--brand) 14%, transparent); stroke: var(--brand); }
+.chart-wrap .sch-side-bar { fill: var(--neutral); }
+.chart-wrap .sch-side-gold { fill: url(#gHit) var(--hit); }
+.chart-wrap .sch-side-n { fill: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; pointer-events: none; }
 .chart-wrap .sch-band { cursor: pointer; outline: none; }
 .chart-wrap .sch-band rect { fill: color-mix(in srgb, var(--good) 9%, transparent); stroke: color-mix(in srgb, var(--good) 35%, transparent); stroke-dasharray: 4 3; }
 .chart-wrap .sch-band.also rect { fill: color-mix(in srgb, var(--good) 5%, transparent); stroke: color-mix(in srgb, var(--good) 20%, transparent); }
