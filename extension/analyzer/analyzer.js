@@ -425,6 +425,8 @@ function load(data, cachedAt) {
   state.filter = null;
   // a new profile starts with the reels above the average views (a relative pick: it follows the date range)
   state.filters = [{ key: "views", min: -Infinity, max: Infinity, preset: "avg" }];
+  state.savedSteps = null;
+  state.mapZone = null;
   state.sort = null;
   closeFilterPop();
   state.selected.clear();
@@ -504,7 +506,210 @@ function applyRange() {
   renderChart();
   renderActivity();
   renderTable();
+  renderMap();
   updateActionBar();
+}
+
+// ------------------------------------------------------------------ reaction map (two scatter views, four corners)
+/*
+ * "vs": x = views (log), y = Success 0–100. Split at the median views of the range and at Success 50.
+ *   top right = Winners (seen and acted on), top left = Buyers (few views, many react),
+ *   bottom right = Just views (seen, nobody acts), bottom left = Weak.
+ * "cl": x = like rate, y = comment rate (both log). Split at their medians.
+ *   top right = Hot, top left = Talkers (comments = buying intent), bottom right = Likers, bottom left = Quiet.
+ * Dots: gold = hit, green = good, gray = other; hollow = younger than 3 days (still collecting).
+ * Click a corner: the table shows those reels (its own steps are put aside until the corner is cleared).
+ * Click a dot: details panel. Hover a dot: preview.
+ */
+const MAP_VIEWS = {
+  vs: {
+    x: (r) => (r.views > 0 ? r.views : null),
+    y: (r) => (isNum(r.successScore) ? r.successScore : null),
+    xLog: true, yLog: false, yFixed: [0, 100], ySplit: () => 50,
+    xLabel: "an_map_x_views", yLabel: "an_map_y_success",
+    zones: { tr: "an_map_winners", tl: "an_map_buyers", br: "an_map_justviews", bl: "an_map_weak" },
+  },
+  cl: {
+    x: (r) => (r.likeRate > 0 ? r.likeRate : null),
+    y: (r) => (r.commentRate > 0 ? r.commentRate : null),
+    xLog: true, yLog: true, pct: true,
+    xLabel: "an_map_x_likes", yLabel: "an_map_y_comments",
+    zones: { tr: "an_map_hot", tl: "an_map_talkers", br: "an_map_likers", bl: "an_map_quiet" },
+  },
+};
+const ZONE_TONE = { tr: "hit", tl: "good", br: "bad", bl: "neutral" };
+const compactNum = (n) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+const pctText = (x) => {
+  const p = x * 100;
+  return (p >= 10 ? p.toFixed(0) : p >= 1 ? +p.toFixed(1) : p >= 0.1 ? +p.toFixed(2) : +p.toFixed(3)) + "%";
+};
+
+/** 1-2-5 ticks inside [lo, hi] for a log axis (thinned to at most ~7). */
+function logTicks(lo, hi) {
+  const out = [];
+  for (let e = Math.floor(Math.log10(lo)); e <= Math.ceil(Math.log10(hi)); e++) {
+    for (const m of [1, 2, 5]) {
+      const v = m * Math.pow(10, e);
+      if (v >= lo && v <= hi) out.push(v);
+    }
+  }
+  if (out.length <= 7) return out;
+  const ones = out.filter((v) => Math.abs(Math.log10(v) - Math.round(Math.log10(v))) < 1e-9);
+  return ones.length >= 2 ? ones : out.filter((_, i) => i % 2 === 0);
+}
+
+function renderMap() {
+  const wrap = $("mapWrap");
+  if (!wrap) return;
+  wrap.replaceChildren();
+  hideMapTip();
+  const key = state.mapView === "cl" ? "cl" : "vs";
+  for (const b of $("mapSeg").children) b.classList.toggle("on", b.dataset.map === key);
+  const V = MAP_VIEWS[key];
+  const pts = state.rows.map((r) => ({ r, x: V.x(r), y: V.y(r) })).filter((p) => isNum(p.x) && isNum(p.y));
+  if (pts.length < 4) {
+    wrap.append(el("p", { class: "muted small map-empty", text: t("an_map_few") }));
+    return;
+  }
+  const W = 900;
+  const H = 380;
+  const m = { l: 58, r: 16, t: 14, b: 42 };
+  const pw = W - m.l - m.r;
+  const ph = H - m.t - m.b;
+  const xs = pts.map((p) => p.x).sort((a, b) => a - b);
+  const ys = pts.map((p) => p.y).sort((a, b) => a - b);
+  const pad = (lo, hi, log) => (log ? [lo / 1.25, hi * 1.25] : [lo, hi]);
+  const [x0, x1] = pad(xs[0], xs[xs.length - 1], V.xLog);
+  const [y0, y1] = V.yFixed || pad(ys[0], ys[ys.length - 1], V.yLog);
+  const lin = (v, a, b, log) => (log ? (Math.log(v) - Math.log(a)) / (Math.log(b) - Math.log(a) || 1) : (v - a) / (b - a || 1));
+  const X = (v) => m.l + lin(v, x0, x1, V.xLog) * pw;
+  const Y = (v) => m.t + ph - lin(v, y0, y1, V.yLog) * ph;
+  const xSplit = St.quantile(xs, 0.5);
+  const ySplit = V.ySplit ? V.ySplit() : St.quantile(ys, 0.5);
+  const zoneOf = (p) => (p.y >= ySplit ? "t" : "b") + (p.x >= xSplit ? "r" : "l");
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t("an_map_title") });
+
+  // the four corners: tinted, clickable, with name and count
+  const sx = X(xSplit);
+  const sy = Y(ySplit);
+  const rects = {
+    tl: [m.l, m.t, sx - m.l, sy - m.t], tr: [sx, m.t, W - m.r - sx, sy - m.t],
+    bl: [m.l, sy, sx - m.l, m.t + ph - sy], br: [sx, sy, W - m.r - sx, m.t + ph - sy],
+  };
+  const counts = { tl: 0, tr: 0, bl: 0, br: 0 };
+  for (const p of pts) counts[zoneOf(p)]++;
+  for (const z of ["tl", "tr", "bl", "br"]) {
+    const [x, y, w, h] = rects[z];
+    const on = state.mapZone && state.mapZone.view === key && state.mapZone.zone === z;
+    const g = svg("g", { class: `mz ${ZONE_TONE[z]}` + (on ? " on" : "") + (state.mapZone && !on ? " dim" : ""), tabindex: "0", role: "button",
+      "aria-label": `${t(V.zones[z])}: ${counts[z]}` });
+    g.append(svg("rect", { class: "mz-bg", x, y, width: Math.max(0, w), height: Math.max(0, h), rx: 6 }));
+    const right = z.endsWith("r");
+    const top = z.startsWith("t");
+    const lx = right ? x + w - 10 : x + 10;
+    const ly = top ? y + 20 : y + h - 10;
+    g.append(svg("text", { class: "mz-name", x: lx, y: ly, "text-anchor": right ? "end" : "start" }, `${t(V.zones[z])} · ${counts[z]}`));
+    g.append(svg("title", {}, t(`${V.zones[z]}_tip`)));
+    const pick = () => pickMapZone(key, z, t(V.zones[z]), pts.filter((p) => zoneOf(p) === z));
+    g.addEventListener("click", pick);
+    g.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        pick();
+      }
+    });
+    root.append(g);
+  }
+  // axes: ticks, split lines, names
+  const fmtX = (v) => (V.pct ? pctText(v) : compactNum(v));
+  const fmtY = (v) => (V.pct ? pctText(v) : String(Math.round(v)));
+  for (const v of V.xLog ? logTicks(x0, x1) : []) {
+    root.append(svg("line", { class: "grid", x1: X(v), x2: X(v), y1: m.t, y2: m.t + ph }));
+    root.append(svg("text", { class: "axis", x: X(v), y: m.t + ph + 16, "text-anchor": "middle" }, fmtX(v)));
+  }
+  const yt = V.yLog ? logTicks(y0, y1) : [0, 25, 50, 75, 100];
+  for (const v of yt) {
+    root.append(svg("line", { class: "grid", x1: m.l, x2: m.l + pw, y1: Y(v), y2: Y(v) }));
+    root.append(svg("text", { class: "axis", x: m.l - 6, y: Y(v) + 4, "text-anchor": "end" }, fmtY(v)));
+  }
+  root.append(svg("line", { class: "msplit", x1: sx, x2: sx, y1: m.t, y2: m.t + ph }));
+  root.append(svg("line", { class: "msplit", x1: m.l, x2: m.l + pw, y1: sy, y2: sy }));
+  root.append(svg("text", { class: "axis mx-name", x: m.l + pw, y: H - 4, "text-anchor": "end" }, `${t(V.xLabel)} →`));
+  root.append(svg("text", { class: "axis mx-name", x: 12, y: m.t + ph / 2, transform: `rotate(-90 12 ${m.t + ph / 2})`, "text-anchor": "middle" }, `${t(V.yLabel)} →`));
+
+  // dots: others first, hits on top
+  const rank = (p) => (p.r.success && p.r.success.tier === "hit" ? 2 : p.r.success && p.r.success.tier ? 1 : 0);
+  pts.sort((a, b) => rank(a) - rank(b));
+  for (const p of pts) {
+    const tier = rank(p) === 2 ? "hit" : rank(p) === 1 ? "good" : "other";
+    const isNew = !!(p.r.perf && p.r.perf.isNew);
+    const inZone = !state.mapZone || state.mapZone.view !== key || zoneOf(p) === state.mapZone.zone;
+    const c = svg("circle", {
+      class: `mdot ${tier}` + (isNew ? " new" : "") + (inZone ? "" : " dim") + (state.openCode === p.r.code ? " open" : ""),
+      cx: X(p.x).toFixed(1), cy: Y(p.y).toFixed(1), r: tier === "other" ? 4.5 : 5.5, tabindex: "-1",
+    });
+    c.addEventListener("pointerenter", (ev) => showMapTip(p.r, ev));
+    c.addEventListener("pointerleave", hideMapTip);
+    c.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      openDetails(p.r.code);
+      renderMap(); // marks the open dot
+    });
+    root.append(c);
+  }
+  wrap.append(root);
+}
+
+function pickMapZone(view, zone, label, pts) {
+  const same = state.mapZone && state.mapZone.view === view && state.mapZone.zone === zone;
+  if (same || !pts.length) {
+    state.filter = null;
+  } else {
+    // the corner replaces the table steps for now (a "Buyers" corner under "Views ≥ avg" would be empty)
+    if (!state.savedSteps) state.savedSteps = state.filters;
+    state.filters = [];
+    state.filter = { kind: "codes", codes: new Set(pts.map((p) => p.r.code)), label };
+    state.mapZone = { view, zone };
+  }
+  renderChart();
+  renderActivityChart();
+  renderTable();
+  renderMap();
+}
+
+function showMapTip(r, ev) {
+  const tip = $("mapTip");
+  const card = $("mapCard").getBoundingClientRect();
+  const kids = [];
+  if (r.thumbnail && /^https:\/\/[^/]*(cdninstagram\.com|fbcdn\.net)\//.test(r.thumbnail)) {
+    const img = el("img", { class: "mt-img", alt: "", referrerpolicy: "no-referrer" });
+    img.src = r.thumbnail;
+    img.addEventListener("error", () => img.remove());
+    kids.push(img);
+  }
+  const line = (label, value) => el("div", { class: "mt-row" }, [el("span", { class: "muted", text: label }), el("strong", { text: value })]);
+  kids.push(el("div", { class: "mt-body" }, [
+    el("div", { class: "mt-date muted", text: r.ts ? dateLong(r.ts) : "" }),
+    line(t("an_col_views"), fmt(r.views)),
+    line(t("an_col_success"), isNum(r.successScore) ? String(Math.round(r.successScore)) : "–"),
+    line(t("an_map_y_comments"), isNum(r.commentRate) ? pctText(r.commentRate) : "–"),
+    line(t("an_map_x_likes"), isNum(r.likeRate) ? pctText(r.likeRate) : "–"),
+  ]));
+  tip.replaceChildren(...kids);
+  tip.hidden = false;
+  // beside the dot, kept inside the card
+  const w = tip.offsetWidth;
+  const h = tip.offsetHeight;
+  let x = ev.clientX - card.left + 14;
+  if (x + w > card.width - 8) x = ev.clientX - card.left - w - 14;
+  let y = ev.clientY - card.top - h / 2;
+  y = Math.max(8, Math.min(card.height - h - 8, y));
+  tip.style.left = `${Math.round(x)}px`;
+  tip.style.top = `${Math.round(y)}px`;
+}
+function hideMapTip() {
+  const tip = $("mapTip");
+  if (tip) tip.hidden = true;
 }
 
 // ------------------------------------------------------------------ date range bar (timeline brush)
@@ -1661,6 +1866,7 @@ function baseRows() {
   const f = state.filter;
   if (f && f.kind === "views") rows = rows.filter((r) => r.views != null && r.views >= f.from && r.views < f.to);
   if (f && f.kind === "date") rows = rows.filter((r) => r.ts >= f.from && r.ts < f.to);
+  if (f && f.kind === "codes") rows = rows.filter((r) => f.codes.has(r.code));
   return rows;
 }
 /** pools[i] = the reels step i sees; the last one = what the table shows. */
@@ -2679,15 +2885,26 @@ let lastClickedCode = null; // anchor for Shift+click range selection
 function renderTable() {
   const body = $("reelBody");
   body.replaceChildren();
+  // a map corner was cleared: the table steps it put aside come back (unless new ones were made meanwhile)
+  if (state.savedSteps && !(state.filter && state.filter.kind === "codes")) {
+    if (!state.filters.length) state.filters = state.savedSteps;
+    state.savedSteps = null;
+  }
+  if (state.mapZone && !(state.filter && state.filter.kind === "codes")) {
+    state.mapZone = null;
+    renderMap();
+  }
   const pools = chainPools();
   const rows = visibleRows();
   renderChain(pools);
   $("filterBar").hidden = !state.filter;
   if (state.filter) {
     const f = state.filter;
-    $("filterText").textContent = f.kind === "date"
-      ? t("an_filter_date", [dateRangeLabel(f.from, f.to), String(rows.length)])
-      : t("an_filter_active", [rangeLabel(f.from, f.to), String(rows.length)]);
+    $("filterText").textContent = f.kind === "codes"
+      ? t("an_filter_map", [f.label, String(rows.length)])
+      : f.kind === "date"
+        ? t("an_filter_date", [dateRangeLabel(f.from, f.to), String(rows.length)])
+        : t("an_filter_active", [rangeLabel(f.from, f.to), String(rows.length)]);
   }
   rows.forEach((r, i) => {
     const cb = el("input", { type: "checkbox", "aria-label": r.code });
@@ -3289,6 +3506,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderActivityChart();
     renderTable();
   });
+  for (const b of $("mapSeg").children) {
+    b.addEventListener("click", () => {
+      state.mapView = b.dataset.map;
+      renderMap();
+    });
+  }
   $("clearFilter").addEventListener("click", () => {
     state.filter = null;
     renderChart();

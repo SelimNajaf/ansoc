@@ -1509,5 +1509,92 @@
   },
   "cm_parent": {
     "message": "Media Downloader"
+  },
+  "an_map_title": {
+    "message": "Reaction map"
+  },
+  "an_map_info": {
+    "message": "Each dot is a reel. The dashed lines split the reels into four corners. Click a corner to see those reels in the table; click it again to go back. Click a dot for its details."
+  },
+  "an_map_vs": {
+    "message": "Views × Success"
+  },
+  "an_map_cl": {
+    "message": "Comments × Likes"
+  },
+  "an_map_x_views": {
+    "message": "Views"
+  },
+  "an_map_y_success": {
+    "message": "Success"
+  },
+  "an_map_x_likes": {
+    "message": "Like rate"
+  },
+  "an_map_y_comments": {
+    "message": "Comment rate"
+  },
+  "an_map_winners": {
+    "message": "Winners"
+  },
+  "an_map_winners_tip": {
+    "message": "Many views and high Success: seen and acted on."
+  },
+  "an_map_buyers": {
+    "message": "Buyers"
+  },
+  "an_map_buyers_tip": {
+    "message": "Fewer views than usual but high Success: a small audience that reacts. Worth repeating with more reach."
+  },
+  "an_map_justviews": {
+    "message": "Just views"
+  },
+  "an_map_justviews_tip": {
+    "message": "Many views but low Success: watched, few comments or likes. Entertainment, not intent."
+  },
+  "an_map_weak": {
+    "message": "Weak"
+  },
+  "an_map_weak_tip": {
+    "message": "Few views and low Success."
+  },
+  "an_map_hot": {
+    "message": "Hot"
+  },
+  "an_map_hot_tip": {
+    "message": "Comment rate and like rate both above the store's median."
+  },
+  "an_map_talkers": {
+    "message": "Talkers"
+  },
+  "an_map_talkers_tip": {
+    "message": "Many comments for the likes: people ask, tag friends or reply to the call to action. Buying intent."
+  },
+  "an_map_likers": {
+    "message": "Likers"
+  },
+  "an_map_likers_tip": {
+    "message": "Many likes, few comments: liked, but people don't ask."
+  },
+  "an_map_quiet": {
+    "message": "Quiet"
+  },
+  "an_map_quiet_tip": {
+    "message": "Comment rate and like rate both below the store's median."
+  },
+  "an_map_other": {
+    "message": "Other"
+  },
+  "an_map_new": {
+    "message": "< 3 days"
+  },
+  "an_map_hint": {
+    "message": "Click a corner to filter · a dot for details"
+  },
+  "an_map_few": {
+    "message": "Not enough reels with numbers in this range."
+  },
+  "an_filter_map": {
+    "message": "$1: $2 reels"
   }
 }

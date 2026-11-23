@@ -773,5 +773,55 @@ body.shooting .shot-btn { animation: none; }
 #results > #cards { order: 4; }
 #results > #activityCard { order: 6; }
 #results > #distCard { order: 7; }
-#results > #reelsCard { order: 8; }
-#results > :not(.card):not(.kpis) { order: 9; }
+#results > #mapCard { order: 8; }
+#results > #reelsCard { order: 9; }
+#results > :not(.card):not(.kpis) { order: 10; }
+
+/* ---------------------------------------------------------------- reaction map (scatter, four corners) */
+.map-card { position: relative; }
+.map-wrap svg { min-width: 520px; }
+.map-empty { padding: 24px 0; text-align: center; }
+.chart-wrap .mz { cursor: pointer; outline: none; }
+.chart-wrap .mz-bg { fill: transparent; transition: fill .15s; }
+.chart-wrap .mz.hit .mz-bg { fill: color-mix(in srgb, var(--hit) 6%, transparent); }
+.chart-wrap .mz.good .mz-bg { fill: color-mix(in srgb, var(--good) 6%, transparent); }
+.chart-wrap .mz.bad .mz-bg { fill: color-mix(in srgb, var(--bad) 5%, transparent); }
+.chart-wrap .mz.neutral .mz-bg { fill: color-mix(in srgb, var(--neutral) 4%, transparent); }
+.chart-wrap .mz:hover .mz-bg, .chart-wrap .mz:focus-visible .mz-bg { stroke: var(--line); stroke-width: 1.5; }
+.chart-wrap .mz.hit:hover .mz-bg, .chart-wrap .mz.hit.on .mz-bg { fill: color-mix(in srgb, var(--hit) 16%, transparent); }
+.chart-wrap .mz.good:hover .mz-bg, .chart-wrap .mz.good.on .mz-bg { fill: color-mix(in srgb, var(--good) 16%, transparent); }
+.chart-wrap .mz.bad:hover .mz-bg, .chart-wrap .mz.bad.on .mz-bg { fill: color-mix(in srgb, var(--bad) 13%, transparent); }
+.chart-wrap .mz.neutral:hover .mz-bg, .chart-wrap .mz.neutral.on .mz-bg { fill: color-mix(in srgb, var(--neutral) 14%, transparent); }
+.chart-wrap .mz.on .mz-bg { stroke: var(--brand); stroke-width: 1.5; }
+.chart-wrap .mz-name { font-size: var(--fs-s); font-weight: 700; pointer-events: none; }
+.chart-wrap .mz.hit .mz-name { fill: var(--hit); }
+.chart-wrap .mz.good .mz-name { fill: var(--good); }
+.chart-wrap .mz.bad .mz-name { fill: var(--bad); }
+.chart-wrap .mz.neutral .mz-name { fill: var(--muted); }
+.chart-wrap .mz.dim .mz-name { opacity: .5; }
+.chart-wrap .msplit { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; pointer-events: none; }
+.chart-wrap .mx-name { font-weight: 600; }
+.chart-wrap .mdot { stroke: var(--surface); stroke-width: 1; cursor: pointer; transition: r .1s; }
+.chart-wrap .mdot.other { fill: var(--neutral); }
+.chart-wrap .mdot.good { fill: var(--good); }
+.chart-wrap .mdot.hit { fill: var(--hit); }
+.chart-wrap .mdot.new { fill: transparent; stroke-width: 1.75; }
+.chart-wrap .mdot.new.other { stroke: var(--neutral); }
+.chart-wrap .mdot.new.good { stroke: var(--good); }
+.chart-wrap .mdot.new.hit { stroke: var(--hit); }
+.chart-wrap .mdot.dim { opacity: .18; }
+.chart-wrap .mdot:hover { r: 8; }
+.chart-wrap .mdot.open { stroke: var(--fg); stroke-width: 2.5; }
+.sw.dot { width: 10px; height: 10px; border-radius: 50%; }
+.sw.dot.hit { background: var(--hit); }
+.sw.dot.good { background: var(--good); }
+.sw.dot.other { background: var(--neutral); }
+.sw.dot.new { background: transparent; border: 1.75px solid var(--muted); box-sizing: border-box; }
+.map-tip { position: absolute; z-index: 20; display: flex; gap: 10px; align-items: flex-start; pointer-events: none;
+  padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m); box-shadow: var(--sh-2);
+  font-size: var(--fs-s); max-width: 280px; }
+.map-tip[hidden] { display: none; }
+.map-tip .mt-img { width: 72px; height: 128px; object-fit: cover; border-radius: var(--r-s); flex: none; background: var(--soft); }
+.map-tip .mt-body { display: grid; gap: 3px; min-width: 130px; }
+.map-tip .mt-row { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.map-tip .mt-date { margin-bottom: 2px; }

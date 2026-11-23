@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.23.0
+
+- **Reels Analyzer: new Reaction map** (right above the Reels table). Every reel is a dot; dashed lines split them into four corners.
+  - **Views × Success:** *Winners* (many views, high Success), *Buyers* (fewer views but people react), *Just views* (watched, nobody acts), *Weak*.
+  - **Comments × Likes:** *Hot*, *Talkers* (many comments for the likes: buying intent), *Likers*, *Quiet*.
+  - Gold = hit, green = good, hollow = younger than 3 days.
+- **Click a corner** and the table shows only those reels; click it again (or *Clear*) and your table filters come back.
+- **Hover a dot** to see its picture, date, views, Success and rates; **click it** for the details panel.
+
 ## 2.22.1
 
 - **Fixed (Windows): "Helper not installed" in a second Chrome profile.** When Media Downloader runs in two Chrome profiles at once, the second one's helper could not start ("the helper started but exited immediately"), because the first was holding its log file. Each one now starts on its own.
