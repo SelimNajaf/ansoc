@@ -88,6 +88,7 @@ helper/                    Python 3.9+ helper
   main.py                  install / uninstall / check CLI; writes the host wrapper (pindl_host.bat / .sh)
   common.py                IS_WINDOWS / IS_MAC, errors, paths
 tools/brain_model.py  tools/brain_analysis.py   fit the Success score on research/*.json
+tools/audio_length_test.py   Phase-5 test: length / audio vs Success on research/audio/*.json
 research/                  owner's Export data JSON files (git-ignored)
 translations/az/  QURASHDIRMA-OXU.txt          Azerbaijani texts for people installing it
 Install-* Update-* Uninstall-*   end-user scripts (Windows .bat, macOS .command)
