@@ -772,7 +772,7 @@ body.shooting .shot-btn { animation: none; }
 #results > #rangeCard { order: 2; }
 #results > #cards { order: 4; }
 #results > #activityCard { order: 6; }
-#results > #calCard { order: 6; }
+#results > #schCard { order: 6; }
 #results > #distCard { order: 7; }
 #results > #mapCard { order: 8; }
 #results > #reelsCard { order: 9; }
@@ -827,30 +827,17 @@ body.shooting .shot-btn { animation: none; }
 .map-tip .mt-row { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
 .map-tip .mt-date { margin-bottom: 2px; }
 
-/* ---------------------------------------------------------------- calendar (one square per day) */
-.cal-wrap { overflow-x: auto; }
-.cal-grid { display: grid; grid-template-columns: 52px repeat(31, minmax(18px, 1fr)); gap: 4px; min-width: 640px; max-width: 1100px; }
-.cal-m { font-size: var(--fs-xs); color: var(--muted); align-self: center; font-weight: 600; }
-.cal-dn { font-size: var(--fs-xs); color: var(--muted); text-align: center; }
-.cal-c { aspect-ratio: 1; border-radius: var(--r-xs); border: 0; padding: 0; display: grid; place-items: center;
-  font: 700 var(--fs-xs)/1 var(--font); font-variant-numeric: tabular-nums; color: var(--fg); }
-.cal-c.void, .cal-c.out { background: transparent; }
-.cal-c.out { background: color-mix(in srgb, var(--soft) 35%, transparent); }
-.cal-c.none { background: var(--soft); }
-button.cal-c { cursor: pointer; transition: transform .1s, filter .1s; }
-button.cal-c:hover { transform: scale(1.12); filter: brightness(1.15); }
-button.cal-c:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
-.cal-c.posted { background: color-mix(in srgb, var(--neutral) 55%, transparent); }
-.cal-c.good { background: var(--good); color: var(--on-color); }
-.cal-c.hit { background: var(--hit-grad, var(--hit)); color: var(--on-hit); }
-.cal-c.young { box-shadow: inset 0 0 0 2px var(--fg); }
-.cal-c.on { outline: 2px solid var(--brand); outline-offset: 1px; }
-.cal-c.dim { opacity: .35; }
-.sw.cal { width: 12px; height: 12px; border-radius: 3px; }
-.sw.cal.hit { background: var(--hit); }
-.sw.cal.good { background: var(--good); }
-.sw.cal.posted { background: color-mix(in srgb, var(--neutral) 55%, transparent); }
-.sw.cal.none { background: var(--soft); }
+/* ---------------------------------------------------------------- posting schedule (date × hour) */
+.sch-wrap svg { min-width: 560px; }
+.chart-wrap .sch-mid { stroke: var(--muted); stroke-dasharray: 4 4; }
+.chart-wrap .sch-vgrid { stroke-dasharray: 2 4; }
+.chart-wrap .sch-band { cursor: pointer; outline: none; }
+.chart-wrap .sch-band rect { fill: color-mix(in srgb, var(--good) 9%, transparent); stroke: color-mix(in srgb, var(--good) 35%, transparent); stroke-dasharray: 4 3; }
+.chart-wrap .sch-band.also rect { fill: color-mix(in srgb, var(--good) 5%, transparent); stroke: color-mix(in srgb, var(--good) 20%, transparent); }
+.chart-wrap .sch-band:hover rect, .chart-wrap .sch-band:focus-visible rect { fill: color-mix(in srgb, var(--good) 15%, transparent); }
+.chart-wrap .sch-band.on rect { fill: color-mix(in srgb, var(--good) 18%, transparent); stroke: var(--good); stroke-dasharray: none; }
+.chart-wrap .sch-band-lab { fill: var(--good); font-size: var(--fs-s); font-weight: 800; pointer-events: none; }
+.chart-wrap .sch-band.also .sch-band-lab { font-weight: 600; opacity: .8; }
 
 /* ---------------------------------------------------------------- chart picks + rich hover */
 .hc .hc-hit.pick { cursor: pointer; }

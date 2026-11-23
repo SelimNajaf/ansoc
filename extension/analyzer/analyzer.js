@@ -552,11 +552,11 @@ function showRowsTip(ev, head, lines, rows) {
     img.addEventListener("error", () => img.remove());
     return img;
   });
-  tip.replaceChildren(
+  tip.replaceChildren(...[
     el("div", { class: "rt-head", text: head }),
     ...lines.filter(Boolean).map((l) => el("div", { class: "rt-line", text: l })),
     pics.length ? el("div", { class: "rt-pics" }, pics) : null,
-  );
+  ].filter(Boolean));
   tip.hidden = false;
   moveRowsTip(ev);
 }
@@ -586,96 +586,126 @@ function bindRowsTip(node, fn) {
   node.addEventListener("pointerleave", hideRowsTip);
 }
 
-// ------------------------------------------------------------------ calendar (one square per day)
+// ------------------------------------------------------------------ posting schedule (date × hour)
 /*
- * Rows = months (newest on top), columns = day of the month 1–31. Weekdays are left out on purpose.
- * A square = one day of the range: gold = a hit was posted that day, green = a good reel, gray = posted,
- * empty = no reel. The number = reels posted that day. Ring = the day holds a reel younger than 3 days.
- * Click a day: the table (and the activity chart) show that day; click again to clear.
+ * One dot per reel: x = the day it was posted, y = the time of day (12:00 at the top, midnight in the
+ * middle, 11:59 at the bottom: same order as the Best time chart). Dot size = views (log), color =
+ * Success (gold hit, green good, gray other; hollow = younger than 3 days). The best window of What
+ * works is a green band across the whole range. Shows the store's daily rhythm, when it moved its
+ * posting times, and where the hits fall. Hover = the reel, click = details, click the band = its reels.
  */
-function renderCalendar() {
-  const wrap = $("calWrap");
+function renderSchedule() {
+  const wrap = $("schWrap");
   if (!wrap) return;
   wrap.replaceChildren();
-  const days = new Map(); // dayStart -> {n, best, views, hit, good, young}
-  for (const r of state.rows) {
-    if (!r.ts) continue;
-    const k = St.dayStart(r.ts);
-    const d = days.get(k) || { n: 0, best: null, views: 0, hit: 0, good: 0, young: false };
-    d.n++;
-    d.views += r.views || 0;
-    if (isNum(r.successScore)) d.best = Math.max(d.best == null ? -1 : d.best, r.successScore);
-    if (r.success && r.success.tier === "hit") d.hit++;
-    else if (r.success && r.success.tier) d.good++;
-    if (r.perf && r.perf.isNew) d.young = true;
-    days.set(k, d);
-  }
-  const keys = [...days.keys()];
-  if (!keys.length) {
-    $("calSub").textContent = "";
+  const rows = state.rows.filter((r) => r.ts);
+  if (rows.length < 3) {
+    $("schSub").textContent = "";
     return;
   }
+  const W = 900;
+  const H = 300;
+  const m = { l: 46, r: 14, t: 14, b: 30 };
+  const pw = W - m.l - m.r;
+  const ph = H - m.t - m.b;
   const rg = state.range;
-  const first = rg ? rg.from : Math.min(...keys);
-  const last = rg ? rg.to - 1 : Math.max(state.windowEnd || 0, ...keys);
-  const posted = keys.filter((k) => k >= first && k <= last);
-  const hitDays = posted.filter((k) => days.get(k).hit).length;
-  $("calSub").textContent = t("an_cal_sub", [String(posted.length), String(hitDays)]);
-  const f = state.filter;
-  const grid = el("div", { class: "cal-grid", role: "grid", "aria-label": t("an_cal_title") });
-  // header: day numbers
-  grid.append(el("span", { class: "cal-m" }));
-  for (let i = 1; i <= 31; i++) grid.append(el("span", { class: "cal-dn", text: i % 5 === 0 || i === 1 ? String(i) : "" }));
-  const firstD = new Date(first);
-  let y = new Date(last).getFullYear();
-  let mo = new Date(last).getMonth();
-  while (y > firstD.getFullYear() || (y === firstD.getFullYear() && mo >= firstD.getMonth())) {
-    const label = new Date(y, mo, 1).toLocaleString("en", { month: "short" }) + (y !== new Date().getFullYear() ? ` ${String(y).slice(2)}` : "");
-    grid.append(el("span", { class: "cal-m", text: label }));
-    const len = new Date(y, mo + 1, 0).getDate();
-    for (let day = 1; day <= 31; day++) {
-      if (day > len) {
-        grid.append(el("span", { class: "cal-c void" }));
-        continue;
-      }
-      const k = St.dayStart(new Date(y, mo, day).getTime());
-      const inRange = k >= St.dayStart(first) && k <= last;
-      const d = days.get(k);
-      if (!inRange) {
-        grid.append(el("span", { class: "cal-c out" }));
-        continue;
-      }
-      if (!d) {
-        grid.append(el("span", { class: "cal-c none", title: dateLong(k) }));
-        continue;
-      }
-      const tone = d.hit ? "hit" : d.good ? "good" : "posted";
-      const on = f && f.kind === "date" && f.from <= k && k < f.to;
-      const tip = [dateLong(k), t("an_reels_count", [String(d.n)]), `${t("an_col_views")}: ${fmt(d.views)}`,
-        `${t("an_cal_best")}: ${d.best == null ? "–" : Math.round(d.best)}`];
-      if (d.hit) tip.push(`${t("an_tier_hit")}: ${d.hit}`);
-      if (d.good) tip.push(`${t("an_tier_good")}: ${d.good}`);
-      if (d.young) tip.push(t("an_map_new"));
-      const cell = el("button", {
-        type: "button", class: `cal-c ${tone}` + (d.young ? " young" : "") + (on ? " on" : "") + (f && f.kind === "date" && !on ? " dim" : ""),
-        "aria-label": tip.join(", "), text: String(d.n),
-      });
-      bindRowsTip(cell, () => ({ head: tip[0], lines: tip.slice(1), rows: state.rows.filter((r) => r.ts >= k && r.ts < St.addDays(k, 1)) }));
-      cell.addEventListener("click", () => {
-        state.filter = on ? null : { kind: "date", from: k, to: St.addDays(k, 1) };
-        renderChart();
-        renderActivityChart();
-        renderTable();
-      });
-      grid.append(cell);
+  const d0 = St.dayStart(rg ? rg.from : Math.min(...rows.map((r) => r.ts)));
+  const d1 = St.addDays(St.dayStart(rg ? rg.to - 1 : Math.max(state.windowEnd || 0, ...rows.map((r) => r.ts))), 1);
+  const X = (ts) => m.l + ((ts - d0) / Math.max(1, d1 - d0)) * pw;
+  // hour position: 12:00 -> 0, 23:59 -> ~12, 00:00 -> 12, 11:59 -> ~24
+  const hpos = (h) => (h - 12 + 24) % 24;
+  const Y = (hFloat) => m.t + (hpos(hFloat) / 24) * ph;
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t("an_sch_title") });
+
+  // best / second window bands (from What works)
+  const tw = state.wwTime || {};
+  const band = (w, cls) => {
+    if (!w) return;
+    const hours = [];
+    for (let k = 0; k < w.len; k++) hours.push((w.start + k) % 24);
+    const src = `win:${w.start}:${w.len}`;
+    const on = state.filter && state.filter.src === src;
+    // a window crossing 12:00 wraps around the top/bottom edge: draw it in parts
+    const cols = hours.map(hpos).sort((x, y) => x - y);
+    const runs = [];
+    for (const c of cols) {
+      if (runs.length && runs[runs.length - 1][1] === c - 1) runs[runs.length - 1][1] = c;
+      else runs.push([c, c]);
     }
-    mo--;
-    if (mo < 0) {
-      mo = 11;
-      y--;
-    }
+    const g = svg("g", { class: `sch-band ${cls}` + (on ? " on" : ""), role: "button", tabindex: "0", "aria-label": windowLabel(w) });
+    for (const [x, y] of runs) g.append(svg("rect", { x: m.l, y: m.t + (x / 24) * ph, width: pw, height: ((y - x + 1) / 24) * ph }));
+    const lab = runs.reduce((p, r) => (r[1] - r[0] > p[1] - p[0] ? r : p));
+    g.append(svg("text", { class: "sch-band-lab", x: m.l + pw - 6, y: m.t + (lab[0] / 24) * ph + 14, "text-anchor": "end" },
+      `${cls === "best" ? "★ " : ""}${windowLabel(w)} · ${PD.effectsUI.fmt(w.lift)}`));
+    const pick = () => pickRows(src, windowLabel(w), rowsInHours(hours));
+    g.addEventListener("click", pick);
+    g.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        pick();
+      }
+    });
+    bindRowsTip(g, () => {
+      const rs = rowsInHours(hours);
+      return { head: windowLabel(w), lines: [t("an_reels_count", [String(rs.length)]), hitLine(rs), t("an_pick_hint")], rows: rs };
+    });
+    root.append(g);
+  };
+  band(tw.second, "also");
+  band(tw.best, "best");
+
+  // hour grid (every 3 h) and labels
+  for (let k = 0; k <= 24; k += 3) {
+    const h = (12 + k) % 24;
+    const y = m.t + (k / 24) * ph;
+    root.append(svg("line", { class: "grid" + (h === 0 ? " sch-mid" : ""), x1: m.l, x2: m.l + pw, y1: y, y2: y }));
+    if (k < 24) root.append(svg("text", { class: "axis", x: m.l - 6, y: y + 4, "text-anchor": "end" }, `${p2h(h)}:00`));
   }
-  wrap.append(grid);
+  // day ticks: weekly (or monthly for long ranges)
+  const days = Math.round((d1 - d0) / St.DAY);
+  const step = days > 200 ? 30 : days > 70 ? 14 : 7;
+  for (let d = d0; d < d1; d = St.addDays(d, step)) {
+    const x = X(d);
+    root.append(svg("line", { class: "grid sch-vgrid", x1: x, x2: x, y1: m.t, y2: m.t + ph }));
+    root.append(svg("text", { class: "axis", x, y: H - 10, "text-anchor": "middle" }, dateShort(d)));
+  }
+
+  // dots: small and gray first, hits on top
+  const vs = rows.map((r) => r.views).filter((v) => v > 0).sort((x, y) => x - y);
+  const lo = Math.log(vs[0] || 1);
+  const hi = Math.log(vs[vs.length - 1] || 10);
+  const rad = (v) => (v > 0 ? 3 + ((Math.log(v) - lo) / Math.max(0.1, hi - lo)) * 6 : 3);
+  const rank = (r) => (r.success && r.success.tier === "hit" ? 2 : r.success && r.success.tier ? 1 : 0);
+  const sorted = rows.slice().sort((x, y) => rank(x) - rank(y) || (x.views || 0) - (y.views || 0));
+  const f = state.filter;
+  for (const r of sorted) {
+    const d = new Date(r.ts);
+    const dayMid = St.dayStart(r.ts) + St.DAY / 2;
+    const tier = rank(r) === 2 ? "hit" : rank(r) === 1 ? "good" : "other";
+    const inPick = !f || (f.kind === "codes" ? f.codes.has(r.code) : f.kind === "date" ? r.ts >= f.from && r.ts < f.to
+      : f.kind === "views" ? r.views != null && r.views >= f.from && r.views < f.to : true);
+    const c = svg("circle", {
+      class: `mdot ${tier}` + (r.perf && r.perf.isNew ? " new" : "") + (inPick ? "" : " dim") + (state.openCode === r.code ? " open" : ""),
+      cx: X(dayMid).toFixed(1), cy: Y(d.getHours() + d.getMinutes() / 60).toFixed(1), r: rad(r.views).toFixed(1),
+    });
+    bindRowsTip(c, () => ({
+      head: `${dateLong(r.ts)} ${p2(d.getHours())}:${p2(d.getMinutes())}`,
+      lines: [`${t("an_col_views")}: ${fmt(r.views)}`, `${t("an_col_success")}: ${isNum(r.successScore) ? Math.round(r.successScore) : "–"}`],
+      rows: [r],
+    }));
+    c.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      hideRowsTip();
+      openDetails(r.code);
+    });
+    root.append(c);
+  }
+  wrap.append(root);
+  const best = tw.best;
+  const inBest = best ? rowsInHours([...Array(best.len).keys()].map((k) => (best.start + k) % 24)).length : 0;
+  $("schSub").textContent = best
+    ? t("an_sch_sub", [String(inBest), String(rows.length), windowLabel(best)])
+    : t("an_sch_sub_plain", [String(rows.length)]);
 }
 
 // ------------------------------------------------------------------ reaction map (two scatter views, four corners)
@@ -3085,7 +3115,7 @@ function renderTable() {
     state.mapZone = null;
     renderMap();
   }
-  renderCalendar(); // marks the picked day
+  renderSchedule(); // dims the reels outside the pick
   // the What works charts mark a picked hour / window / posts-per-day bar
   const src = (state.filter && state.filter.src) || "";
   if (src !== (state.wwSrc || "") && (src.match(/^(hour|win|perday):/) || (state.wwSrc || "").match(/^(hour|win|perday):/))) {

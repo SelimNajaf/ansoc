@@ -1597,34 +1597,22 @@
   "an_filter_map": {
     "message": "$1: $2 reels"
   },
-  "an_cal_title": {
-    "message": "Calendar"
-  },
-  "an_cal_info": {
-    "message": "One square per day. Gold = a hit was posted that day, green = a good reel, gray = posted, empty = no reel. The number is how many reels were posted. A ring = a reel younger than 3 days (Success still settling). Click a day to see its reels in the table."
-  },
-  "an_cal_sub": {
-    "message": "$1 posting days · $2 with a hit"
-  },
-  "an_cal_hit": {
-    "message": "Hit day"
-  },
-  "an_cal_good": {
-    "message": "Good day"
-  },
-  "an_cal_posted": {
-    "message": "Posted"
-  },
-  "an_cal_none": {
-    "message": "No reel"
-  },
-  "an_cal_best": {
-    "message": "Best Success"
-  },
-  "an_cal_hint": {
-    "message": "Number = reels · click a day to filter"
-  },
   "an_pick_hint": {
     "message": "Click to see these reels in the table"
+  },
+  "an_sch_title": {
+    "message": "Posting schedule"
+  },
+  "an_sch_info": {
+    "message": "Every dot is a reel: left to right = the day it was posted, top to bottom = the time of day (12:00 at the top, midnight in the middle). Bigger dot = more views; gold = hit, green = good. The green band is the store's best window from What works. You see its daily rhythm, when it changed its posting times, and where the hits fall."
+  },
+  "an_sch_sub": {
+    "message": "$1 of $2 reels posted in the best window ($3)"
+  },
+  "an_sch_sub_plain": {
+    "message": "$1 reels"
+  },
+  "an_sch_hint": {
+    "message": "Size = views · click a dot for details · click the band for its reels"
   }
 }

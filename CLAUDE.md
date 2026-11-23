@@ -35,7 +35,8 @@ Read this file first, in every new environment. It replaces a long explanation f
   no "Current season" read option (removed 2.16.2), no Compare stores page (removed 2.13.0),
   no permanent panel on top of Instagram / TikTok / Pinterest (removed 2.20.0),
   no Repeats / same-cover groups (cover fingerprints, removed 2.26.1: not useful enough),
-  no audio (original vs music) or reel-length analysis (dropped: standard in organic dropshipping).
+  no audio (original vs music) or reel-length analysis (dropped: standard in organic dropshipping),
+  no day-square Calendar (replaced by Posting schedule in 2.27.0: it only repeated Posting activity).
 - A chart's own switches sit right above that chart. Views histogram defaults to log; activity line defaults to total views.
 
 ---
@@ -58,8 +59,8 @@ via Native Messaging. Everything runs locally; nothing is uploaded.
 
 Order on the page (CSS `order` on `#results` children in analyzer.css): fetch form + profile preview card → loader (reels appear one by one) → profile card →
 **Time range** (brush over activity, detected seasons) → KPI cards → **Views distribution** →
-**Posting activity** → **What works** (best hour window, ideal posts per day) → **Calendar** (months × days 1–31,
-color = best reel of the day, click = that day in the table) → **Reaction map**
+**Posting activity** → **What works** (best hour window, ideal posts per day) → **Posting schedule** (date × time of day,
+dot = reel, size = views, color = Success, best window as a green band) → **Reaction map**
 (scatter: Views × Success / Comments × Likes, four clickable corners filter the table, hover preview) → **Reels table**
 (column filters with sliders, ordered filter chain, Success chips, details drawer, select + download /
 copy links / copy captions / CSV / Export data, 📷 full-page screenshot).

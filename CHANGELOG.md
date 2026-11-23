@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.27.0
+
+- **Calendar replaced by Posting schedule.** The calendar repeated what *Posting activity* already shows. The new chart shows *when in the day* each reel went out:
+  - left to right = the day, top to bottom = the time (12:00 at the top, midnight in the middle, like *Best time*);
+  - every reel is a dot: bigger = more views, gold = hit, green = good;
+  - the store's best window is a green band across the chart, with how many reels fell into it.
+  - You see the store's daily rhythm, the day it changed its posting times, and where the hits land.
+- Hover a dot for the reel, click it for details; click the green band to see its reels in the table. A chart pick elsewhere fades the other dots.
+- Fixed: the hover card could show the word "null" when a reel had no picture.
+
 ## 2.26.1
 
 - **Removed:** the *Repeats* section of the Reels Analyzer (it took space without telling much). The two image-server permissions it needed are gone too.
