@@ -1779,14 +1779,15 @@ function renderWhatWorks() {
   const items = wwItems();
   const tiles = $("wwTiles");
   tiles.replaceChildren();
-  $("wwChart").replaceChildren();
   state.wwEffects = {};
   for (const key of ["perWeek", "gap"]) state.wwEffects[key] = St.successEffect(items.map((it) => ({ group: it[key], p: it.p })));
   // the two timing brains: the store's own best stretch of hours, and the best number of reels a day
   state.wwTime = St.bestTimeWindows(items.map((it) => ({ hour: it.hour, p: it.p })));
   state.wwDay = St.postsPerDay(items.map((it) => ({ day: it.day, n: it.nDay, p: it.p })));
   $("wwNote").textContent = t("ww_note", [String(items.length)]);
-  if (!state.wwDim || !["perDay", "perWeek", "gap"].includes(state.wwDim)) state.wwDim = "perDay";
+  // no chart here any more (2.29.1): Best time jumps to Posting schedule, Posts per day shows those days' reels in the table
+  const dd = state.wwDay;
+  const daySrc = dd ? `perday:${dd.ideal.n}` : "";
   const pick = (key) => () => {
     if (key === "window") {
       // the hours live in Posting schedule (right side + green band)
@@ -1797,12 +1798,15 @@ function renderWhatWorks() {
       card.classList.add("flash");
       return;
     }
-    state.wwDim = key;
-    renderWhatWorks();
+    if (key === "perDay" && dd) {
+      pickRows(daySrc, t("ww_per_day_v2", [String(dd.ideal.n)]), rowsOnDaysWith(dd.ideal.n));
+      if (state.filter) $("reelsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
   const conf = (c) => el("span", { class: `fx-conf ${c}`, title: t(`fx_conf_${c}`), text: c === "clear" ? "●●●" : c === "likely" ? "●●○" : "●○○" });
   const tile = (key, icon, titleKey, value, pill, pillTone, sub, c) => {
-    const node = el("button", { type: "button", class: "fx-tile" + (value ? "" : " empty") + (state.wwDim === key ? " on" : ""), onclick: pick(key) }, [
+    const on = key === "perDay" && daySrc && state.filter && state.filter.src === daySrc;
+    const node = el("button", { type: "button", class: "fx-tile" + (value ? "" : " empty") + (on ? " on" : ""), onclick: pick(key) }, [
       el("div", { class: "fx-tile-top" }, [el("span", { class: "fx-icon" }, [PD.icon(icon)]), el("span", { class: "fx-tile-title", text: t(titleKey) })]),
       el("div", { class: "fx-tile-val", text: value || t("fx_not_enough") }),
       value ? el("div", { class: "fx-tile-sub" }, [pill ? el("span", { class: "fx-pill " + pillTone, text: pill }) : null, el("span", { class: "fx-tile-n", text: sub }), conf(c)])
@@ -1813,75 +1817,15 @@ function renderWhatWorks() {
   const w = state.wwTime.best;
   tile("window", "clock", "ww_time", w ? windowLabel(w) : "", w ? PD.effectsUI.fmt(w.lift) : "", w ? (w.lift >= 1.05 ? "good" : "mid") : "",
     w ? t("ww_window_sub", [String(w.len), String(w.n)]) : "", w ? w.confidence : "few");
-  const dd = state.wwDay;
   tile("perDay", "repeat", "ww_per_day", dd ? t(dd.ideal.n >= dd.maxN && dd.top.n === dd.maxN ? "ww_per_day_edge" : "ww_per_day_v2", [String(dd.ideal.n)]) : "",
     dd ? t("ww_hits_day", [dd.ideal.perDay.toFixed(1)]) : "", "good", dd ? t("ww_days", [String(dd.days)]) : "", dd ? dd.confidence : "few");
   for (const key of ["perWeek", "gap"]) {
     const dim = WW_DIMS[key];
-    const node = PD.effectsUI.tile(dim.icon, dim.title, state.wwEffects[key], dim.label, pick(key));
-    node.classList.toggle("on", state.wwDim === key);
-    tiles.append(node);
-  }
-  const box = $("wwChart");
-  if (state.wwDim === "perDay") box.append(perDayChart(state.wwDay));
-  else {
-    const dim = WW_DIMS[state.wwDim];
-    box.append(PD.effectsUI.bars(state.wwEffects[state.wwDim], { order: dim.order, label: dim.label }));
+    tiles.append(PD.effectsUI.tile(dim.icon, dim.title, state.wwEffects[key], dim.label));
   }
 }
 
 const windowLabel = (w) => `${p2h(w.start)}:00–${p2h((w.start + w.len) % 24)}:00`;
-
-/** Reels per day: real days (bars, hits per day on average) next to the fitted curve; ideal = green. */
-function perDayChart(dd) {
-  if (!dd) return el("p", { class: "muted small", text: t("fx_need_more") });
-  const W = 900;
-  const H = 240;
-  const m = { l: 40, r: 16, t: 40, b: 40 };
-  const pw = W - m.l - m.r;
-  const ph = H - m.t - m.b;
-  const cw = pw / dd.maxN;
-  const yMaxRaw = Math.max(0.1, ...dd.actual.map((g) => g.perDay), ...dd.curve.map((c) => c.perDay));
-  const yStep = St.niceStep(yMaxRaw, 4);
-  const yMax = Math.ceil(yMaxRaw / yStep) * yStep;
-  const y = (v) => m.t + ph - (v / yMax) * ph;
-  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, class: "hc", role: "img", "aria-label": t("ww_per_day") });
-  for (let v = 0; v <= yMax + 1e-9; v += yStep) {
-    root.append(svg("line", { class: "grid", x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }));
-    root.append(svg("text", { class: "axis", x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, v < 1 ? v.toFixed(1) : String(Math.round(v * 10) / 10)));
-  }
-  root.append(svg("text", { class: "axis", x: 4, y: 12 }, t("ww_axis_hits_day")));
-  const ix = dd.ideal.n - 1;
-  root.append(svg("rect", { class: "hc-band best", x: m.l + ix * cw + 1, y: m.t - 22, width: cw - 2, height: ph + 22, rx: 8 }));
-  root.append(svg("text", { class: "hc-label best", x: Math.max(m.l + 80, Math.min(W - m.r - 80, m.l + (ix + 0.5) * cw)), y: m.t - 8, "text-anchor": "middle" },
-    `★ ${t("ww_per_day_v2", [String(dd.ideal.n)])} · ${t("ww_hits_day", [dd.ideal.perDay.toFixed(1)])}`));
-  const byN = new Map(dd.actual.map((g) => [g.n, g]));
-  for (let n = 1; n <= dd.maxN; n++) {
-    const x = m.l + (n - 1) * cw;
-    const g = byN.get(n);
-    if (g) {
-      const r = svg("rect", { class: "hc-bar day" + (g.days < 2 ? " thin" : ""), x: x + cw * 0.2, y: y(g.perDay), width: cw * 0.6, height: Math.max(2, m.t + ph - y(g.perDay)), rx: 3 });
-      const src = `perday:${n}`;
-      if (state.filter && state.filter.src === src) r.classList.add("on");
-      const rowsOf = () => rowsOnDaysWith(n);
-      bindRowsTip(r, () => ({ head: t("ww_per_day_v2", [String(n)]), lines: [t("ww_day_tip", [String(n), String(g.days), g.perDay.toFixed(2)])], rows: rowsOf() }));
-      r.addEventListener("click", () => pickRows(src, t("ww_per_day_v2", [String(n)]), rowsOf()));
-      r.classList.add("pick");
-      root.append(r);
-      root.append(svg("text", { class: "hc-n", x: x + cw / 2, y: m.t + ph + 28, "text-anchor": "middle" }, t("ww_days_short", [String(g.days)])));
-    }
-    root.append(svg("text", { class: "axis hc-hour" + (n === dd.ideal.n ? " midnight" : ""), x: x + cw / 2, y: m.t + ph + 14, "text-anchor": "middle" }, String(n)));
-  }
-  const pts = dd.curve.map((c) => [m.l + (c.n - 0.5) * cw, y(c.perDay)]);
-  root.append(svg("polyline", { class: "hc-curve", points: pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ") }));
-  for (const [px, py] of pts) root.append(svg("circle", { class: "hc-dot", cx: px, cy: py, r: 3 }));
-  const legend = el("div", { class: "legend small" }, [
-    el("span", {}, [el("i", { class: "sw hc-sw-bar" }), el("span", { text: t("ww_lg_days") })]),
-    el("span", {}, [el("i", { class: "sw line hc-sw-curve" }), el("span", { text: t("ww_lg_fit") })]),
-    el("span", { class: "muted", text: t("ww_lg_caution") }),
-  ]);
-  return el("div", {}, [el("div", { class: "chart-wrap hc-wrap" }, [root]), legend]);
-}
 
 // ------------------------------------------------------------------ CSV export (timing + performance)
 /*
@@ -3091,9 +3035,9 @@ function renderTable() {
     renderMap();
   }
   renderSchedule(); // dims the reels outside the pick
-  // the What works charts mark a picked hour / window / posts-per-day bar
+  // the Posts per day tile lights up while its days are picked
   const src = (state.filter && state.filter.src) || "";
-  if (src !== (state.wwSrc || "") && (src.match(/^(hour|win|perday):/) || (state.wwSrc || "").match(/^(hour|win|perday):/))) {
+  if (src !== (state.wwSrc || "") && (src.startsWith("perday:") || (state.wwSrc || "").startsWith("perday:"))) {
     state.wwSrc = src;
     renderWhatWorks();
   } else state.wwSrc = src;

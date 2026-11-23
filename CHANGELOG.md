@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.29.1
+
+- **What works: the chart under the tiles is gone** (it said little). Only the tiles stay:
+  - *Best time* jumps to Posting schedule;
+  - *Posts per day* shows the reels from days with the ideal count in the table (click again to clear).
+
 ## 2.29.0
 
 - **Best time and Posting schedule are now one chart.** Posting schedule is the main view and carries the Best time brain:
