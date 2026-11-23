@@ -1514,7 +1514,7 @@
     "message": "Reaction map"
   },
   "an_map_info": {
-    "message": "Each dot is a reel. The dashed lines split the reels into four corners. Click a corner to see those reels in the table; click it again to go back. Click a dot for its details."
+    "message": "Each dot is a reel. The dashed lines split the reels into four corners. Views × Success: the Success axis is stretched at both ends (0.1 · 1 · 10 · 50 · 80 · 99) so low reels don't pile up on one line; the gold line = hit (80). Click a corner to see those reels in the table; click it again to go back. Click a dot for its details."
   },
   "an_map_vs": {
     "message": "Views × Success"
@@ -1623,6 +1623,9 @@
   },
   "an_map_med_views": {
     "message": "median $1 views"
+  },
+  "an_map_hit_line": {
+    "message": "Hit ≥ 80"
   },
   "an_map_typical": {
     "message": "Typical"

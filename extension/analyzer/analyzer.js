@@ -793,8 +793,9 @@ function renderSchedule() {
 const MAP_VIEWS = {
   vs: {
     x: (r) => (r.views > 0 ? r.views : null),
-    y: (r) => (isNum(r.successScore) ? r.successScore : null),
-    xLog: true, yLog: false, yFixed: [0, 100], ySplit: () => 50,
+    // unrounded Success; the axis is stretched (logit) so the many reels near 0 no longer sit on one line
+    y: (r) => (r.success && isNum(r.success.p) ? Math.min(99.75, Math.max(0.03, r.success.p * 100)) : null),
+    xLog: true, yLog: false, yLogit: true, yFixed: [0.03, 99.75], yTicks: [0.1, 1, 10, 50, 80, 95, 99], ySplit: () => 50, yHit: 80,
     xLabel: "an_map_x_views", yLabel: "an_map_y_success",
     zones: { tr: "an_map_winners", tl: "an_map_buyers", br: "an_map_justviews", bl: "an_map_weak" },
   },
@@ -851,8 +852,11 @@ function renderMap() {
   const [x0, x1] = pad(xs[0], xs[xs.length - 1], V.xLog);
   const [y0, y1] = V.yFixed || pad(ys[0], ys[ys.length - 1], V.yLog);
   const lin = (v, a, b, log) => (log ? (Math.log(v) - Math.log(a)) / (Math.log(b) - Math.log(a) || 1) : (v - a) / (b - a || 1));
+  const logit = (v) => Math.log(v / (100 - v));
   const X = (v) => m.l + lin(v, x0, x1, V.xLog) * pw;
-  const Y = (v) => m.t + ph - lin(v, y0, y1, V.yLog) * ph;
+  const Y = V.yLogit
+    ? (v) => m.t + ph - ((logit(v) - logit(y0)) / (logit(y1) - logit(y0))) * ph
+    : (v) => m.t + ph - lin(v, y0, y1, V.yLog) * ph;
   const xSplit = St.quantile(xs, 0.5);
   const ySplit = V.ySplit ? V.ySplit() : St.quantile(ys, 0.5);
   const zoneOf = (p) => (p.y >= ySplit ? "t" : "b") + (p.x >= xSplit ? "r" : "l");
@@ -876,7 +880,8 @@ function renderMap() {
     const right = z.endsWith("r");
     const top = z.startsWith("t");
     const lx = right ? x + w - 10 : x + 10;
-    const ly = top ? y + 20 : y + h - 26;
+    // Views × Success: the low corners' names sit under the split line (their floor is crowded with dots)
+    const ly = top || V.yLogit ? y + 20 : y + h - 26;
     const zr = inZone[z];
     const share = Math.round((zr.length / pts.length) * 100);
     const hits = zr.filter(TIER_FILTERS.hit).length;
@@ -900,18 +905,24 @@ function renderMap() {
   }
   // axes: ticks, split lines, names
   const fmtX = (v) => (V.pct ? pctText(v) : compactNum(v));
-  const fmtY = (v) => (V.pct ? pctText(v) : String(Math.round(v)));
+  const fmtY = (v) => (V.pct ? pctText(v) : String(v < 1 ? v : Math.round(v)));
   for (const v of V.xLog ? logTicks(x0, x1) : []) {
     root.append(svg("line", { class: "grid", x1: X(v), x2: X(v), y1: m.t, y2: m.t + ph }));
     root.append(svg("text", { class: "axis", x: X(v), y: m.t + ph + 16, "text-anchor": "middle" }, fmtX(v)));
   }
-  const yt = V.yLog ? logTicks(y0, y1) : [0, 25, 50, 75, 100];
+  const yt = V.yTicks || (V.yLog ? logTicks(y0, y1) : [0, 25, 50, 75, 100]);
   for (const v of yt) {
     root.append(svg("line", { class: "grid", x1: m.l, x2: m.l + pw, y1: Y(v), y2: Y(v) }));
     root.append(svg("text", { class: "axis", x: m.l - 6, y: Y(v) + 4, "text-anchor": "end" }, fmtY(v)));
   }
   root.append(svg("line", { class: "msplit", x1: sx, x2: sx, y1: m.t, y2: m.t + ph }));
   root.append(svg("line", { class: "msplit", x1: m.l, x2: m.l + pw, y1: sy, y2: sy }));
+  if (V.yHit) {
+    // the gold line: Success 80 = hit
+    const hy = Y(V.yHit);
+    root.append(svg("line", { class: "mhit", x1: m.l, x2: m.l + pw, y1: hy, y2: hy }));
+    root.append(svg("text", { class: "mhit-lab", x: (m.l + sx) / 2, y: hy - 5, "text-anchor": "middle" }, t("an_map_hit_line")));
+  }
   root.append(svg("text", { class: "axis mx-name", x: m.l + pw, y: H - 4, "text-anchor": "end" }, `${t(V.xLabel)} →`));
   root.append(svg("text", { class: "axis mx-name", x: 12, y: m.t + ph / 2, transform: `rotate(-90 12 ${m.t + ph / 2})`, "text-anchor": "middle" }, `${t(V.yLabel)} →`));
 

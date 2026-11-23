@@ -819,7 +819,9 @@ body.shooting .shot-btn { animation: none; }
 .sw.dot.other { background: var(--neutral); }
 .sw.dot.new { background: transparent; border: 1.75px solid var(--muted); box-sizing: border-box; }
 .chart-wrap .mz-stat { font-size: var(--fs-xs); fill: var(--muted); pointer-events: none; }
-.chart-wrap .mtrend { fill: none; stroke: var(--info); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
+.chart-wrap .mhit { stroke: var(--hit); stroke-width: 1.5; stroke-dasharray: 2 4; opacity: 0.8; pointer-events: none; }
+.chart-wrap .mhit-lab { fill: var(--hit); font-size: var(--fs-xs); font-weight: 700; pointer-events: none; }
+.chart-wrap .mtrend {fill: none; stroke: var(--info); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
 .chart-wrap .mtrend-lab { fill: var(--info); font-size: var(--fs-xs); font-weight: 700; pointer-events: none; }
 .sw.line.trend { border-color: var(--info); }
 

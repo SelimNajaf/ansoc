@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.30.0
+
+- **Reaction map (Views × Success) reads better:**
+  - the Success axis is stretched at both ends (0.1 · 1 · 10 · 50 · 80 · 99): about half of a store's reels used to sit flat on 0, now they spread out and you see which weak reels came close;
+  - a gold **Hit ≥ 80** line;
+  - the low corners' names moved under the middle line, away from the crowded floor.
+
 ## 2.29.1
 
 - **What works: the chart under the tiles is gone** (it said little). Only the tiles stay:
