@@ -775,7 +775,6 @@ body.shooting .shot-btn { animation: none; }
 #results > #calCard { order: 6; }
 #results > #distCard { order: 7; }
 #results > #mapCard { order: 8; }
-#results > #repCard { order: 8; }
 #results > #reelsCard { order: 9; }
 #results > :not(.card):not(.kpis) { order: 10; }
 
@@ -871,28 +870,3 @@ button.cal-c:focus-visible { outline: 2px solid var(--brand); outline-offset: 1p
 .rows-tip .rt-img { width: 56px; height: 100px; object-fit: cover; border-radius: var(--r-s); background: var(--soft); border: 2px solid transparent; }
 .rows-tip .rt-img.hit { border-color: var(--hit); }
 .rows-tip .rt-img.good { border-color: var(--good); }
-
-/* ---------------------------------------------------------------- repeats (same cover posted again) */
-.rep-wrap { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); }
-.rep-wrap > .rep-progress { grid-column: 1 / -1; }
-.rep-row { display: flex; gap: 10px; align-items: stretch; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--bg); }
-.rep-row.on { border-color: var(--brand); }
-.rep-lab { flex: none; width: 104px; display: grid; align-content: start; gap: 3px; text-align: left; padding: 6px 8px; border: 0; border-radius: var(--r-s);
-  background: var(--soft); color: var(--fg); cursor: pointer; font: inherit; }
-.rep-lab:hover { filter: brightness(1.15); }
-.rep-lab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.rep-lab .rep-n { font-size: var(--fs-l); font-weight: 800; }
-.rep-lab .rep-v { font-size: var(--fs-s); color: var(--muted); font-variant-numeric: tabular-nums; }
-.rep-lab .rep-go { font-size: var(--fs-xs); color: var(--info); margin-top: 4px; }
-.rep-items { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-.rep-item { flex: none; width: 72px; display: grid; gap: 2px; justify-items: center; padding: 0; border: 0; background: transparent; color: var(--fg);
-  cursor: pointer; font: inherit; }
-.rep-item:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--r-s); }
-.rep-img { width: 72px; height: 128px; object-fit: cover; border-radius: var(--r-s); background: var(--soft); border: 2px solid transparent; box-sizing: border-box; }
-.rep-item.hit .rep-img { border-color: var(--hit); }
-.rep-item.good .rep-img { border-color: var(--good); }
-.rep-item .rep-views { font-size: var(--fs-xs); font-weight: 700; font-variant-numeric: tabular-nums; }
-.rep-item .rep-date { font-size: var(--fs-xs); color: var(--muted); }
-.rep-item:hover .rep-img { filter: brightness(1.1); }
-.rep-progress { height: 4px; background: var(--soft); border-radius: 2px; overflow: hidden; }
-.rep-progress > i { display: block; height: 100%; background: var(--brand-grad); transition: width .2s; }

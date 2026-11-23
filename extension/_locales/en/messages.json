@@ -1626,41 +1626,5 @@
   },
   "an_pick_hint": {
     "message": "Click to see these reels in the table"
-  },
-  "an_rep_title": {
-    "message": "Repeats"
-  },
-  "an_rep_info": {
-    "message": "Reels whose covers are the same picture: the store posted the same video (or the same opening shot) again. Stores repeat what sells. Found by a fingerprint of each cover, on your computer, free. Click a group to see its reels in the table; click a picture for its details."
-  },
-  "an_rep_checking": {
-    "message": "Checking covers… $1 / $2"
-  },
-  "an_rep_none_yet": {
-    "message": "Covers not checked yet."
-  },
-  "an_rep_need": {
-    "message": "Analyze again to check the covers (the saved result has no pictures)."
-  },
-  "an_rep_sub": {
-    "message": "$1 groups · $2 reels · median views $3 vs $4 for all reels"
-  },
-  "an_rep_zero": {
-    "message": "No repeated covers among $1 reels."
-  },
-  "an_rep_more": {
-    "message": "All $1 groups"
-  },
-  "an_rep_less": {
-    "message": "Fewer"
-  },
-  "an_rep_group": {
-    "message": "Repeat #$1"
-  },
-  "an_rep_show": {
-    "message": "Show in table"
-  },
-  "an_rep_shown": {
-    "message": "In table ✓"
   }
 }

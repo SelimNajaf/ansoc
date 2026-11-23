@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.26.1
+
+- **Removed:** the *Repeats* section of the Reels Analyzer (it took space without telling much). The two image-server permissions it needed are gone too.
+
 ## 2.26.0
 
 - **Reels Analyzer: new Repeats section** (above the Reels table). It finds reels whose covers are the same picture: the store posted the same video (or the same opening shot) again. Stores repeat what sells.

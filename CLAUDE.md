@@ -33,7 +33,8 @@ Read this file first, in every new environment. It replaces a long explanation f
 - Decisions they already made (don't bring these back): no Viral/Strong/Winner/Top-10% KPI tiles,
   no "How is this calculated?", no rows of fact chips under charts, no "What to do" / "Top reels" blocks (removed 2.20.0),
   no "Current season" read option (removed 2.16.2), no Compare stores page (removed 2.13.0),
-  no permanent panel on top of Instagram / TikTok / Pinterest (removed 2.20.0).
+  no permanent panel on top of Instagram / TikTok / Pinterest (removed 2.20.0),
+  no Repeats / same-cover groups (cover fingerprints, removed 2.26.1: not useful enough).
 - A chart's own switches sit right above that chart. Views histogram defaults to log; activity line defaults to total views.
 
 ---
@@ -58,8 +59,7 @@ Order on the page (CSS `order` on `#results` children in analyzer.css): fetch fo
 **Time range** (brush over activity, detected seasons) → KPI cards → **Views distribution** →
 **Posting activity** → **What works** (best hour window, ideal posts per day) → **Calendar** (months × days 1–31,
 color = best reel of the day, click = that day in the table) → **Reaction map**
-(scatter: Views × Success / Comments × Likes, four clickable corners filter the table, hover preview) → **Repeats**
-(same cover posted again: dHash of each cover, ≤ 8 of 64 bits apart, kept as `coverHash` in the cache) → **Reels table**
+(scatter: Views × Success / Comments × Likes, four clickable corners filter the table, hover preview) → **Reels table**
 (column filters with sliders, ordered filter chain, Success chips, details drawer, select + download /
 copy links / copy captions / CSV / Export data, 📷 full-page screenshot).
 
