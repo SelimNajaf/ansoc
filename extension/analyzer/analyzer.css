@@ -824,7 +824,7 @@ body.shooting .shot-btn { animation: none; }
 .sw.line.trend { border-color: var(--info); }
 
 /* ---------------------------------------------------------------- posting schedule (date × hour) */
-.sch-wrap svg { min-width: 560px; }
+.sch-wrap svg { min-width: 680px; }
 .chart-wrap .sch-mid { stroke: var(--muted); stroke-dasharray: 4 4; }
 .chart-wrap .sch-vgrid { stroke-dasharray: 2 4; }
 .chart-wrap .sch-hgrid { stroke: color-mix(in srgb, var(--line) 55%, transparent); }
@@ -834,7 +834,18 @@ body.shooting .shot-btn { animation: none; }
 .chart-wrap .sch-side.pick:hover .sch-side-hit { fill: color-mix(in srgb, var(--fg) 6%, transparent); }
 .chart-wrap .sch-side.on .sch-side-hit { fill: color-mix(in srgb, var(--brand) 14%, transparent); stroke: var(--brand); }
 .chart-wrap .sch-side-bar { fill: var(--neutral); }
-.chart-wrap .sch-side-gold { fill: url(#gHit) var(--hit); }
+.chart-wrap .sch-side-bar.good { fill: var(--good); }
+.chart-wrap .sch-side-bar.bad { fill: var(--bad); }
+.chart-wrap .sch-side-hits { fill: var(--hit); font-weight: 700; }
+.chart-wrap .sch-side-bg { fill: color-mix(in srgb, var(--soft) 45%, transparent); }
+.chart-wrap .sch-lift-grid { stroke: color-mix(in srgb, var(--info) 25%, transparent); stroke-width: 1; }
+.chart-wrap .sch-lift-grid.one { stroke: color-mix(in srgb, var(--info) 60%, transparent); stroke-dasharray: 4 3; }
+.chart-wrap .sch-curve { fill: none; stroke: var(--info); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; pointer-events: none; }
+.chart-wrap .succ-axis { fill: var(--info); }
+.chart-wrap .sch-tint.good { fill: color-mix(in srgb, var(--good) 9%, transparent); }
+.chart-wrap .sch-tint.bad { fill: color-mix(in srgb, var(--bad) 7%, transparent); }
+.sch-card.flash { animation: sch-flash 1.2s ease-out; }
+@keyframes sch-flash { 0%, 30% { box-shadow: 0 0 0 2px var(--good); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .chart-wrap .sch-side-n { fill: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; pointer-events: none; }
 .chart-wrap .sch-band { cursor: pointer; outline: none; }
 .chart-wrap .sch-band rect { fill: color-mix(in srgb, var(--good) 9%, transparent); stroke: color-mix(in srgb, var(--good) 35%, transparent); stroke-dasharray: 4 3; }
@@ -862,3 +873,5 @@ body.shooting .shot-btn { animation: none; }
 .rows-tip .rt-img { width: 56px; height: 100px; object-fit: cover; border-radius: var(--r-s); background: var(--soft); border: 2px solid transparent; }
 .rows-tip .rt-img.hit { border-color: var(--hit); }
 .rows-tip .rt-img.good { border-color: var(--good); }
+
+.sch-sw-tint { background: linear-gradient(90deg, color-mix(in srgb, var(--good) 45%, transparent) 50%, color-mix(in srgb, var(--bad) 40%, transparent) 50%); }

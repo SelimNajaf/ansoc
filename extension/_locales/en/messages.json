@@ -1604,7 +1604,7 @@
     "message": "Posting schedule"
   },
   "an_sch_info": {
-    "message": "Every dot is a reel: left to right = the day it was posted, top to bottom = the time of day (12:00 at the top, midnight in the middle). Bigger dot = more views; gold = hit, green = good. The green band is the store's best window from What works. You see its daily rhythm, when it changed its posting times, and where the hits fall."
+    "message": "Every dot is a reel: left to right = the day it was posted, top to bottom = the time of day (12:00 at the top, midnight in the middle). Bigger dot = more views; gold = hit, green = good. Hour rows are tinted green / rose when reels posted then do better / worse than usual (Success). Right side = Best time: reels per hour (green / rose bars, ★ = hits) and the blue line = success vs usual (1× dashed). The green band is the best window."
   },
   "an_sch_sub": {
     "message": "$1 of $2 reels posted in the best window ($3)"
@@ -1626,5 +1626,8 @@
   },
   "an_map_typical": {
     "message": "Typical"
+  },
+  "an_sch_lg_tint": {
+    "message": "Hour better / worse than usual"
   }
 }

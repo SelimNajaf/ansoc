@@ -60,7 +60,8 @@ via Native Messaging. Everything runs locally; nothing is uploaded.
 Order on the page (CSS `order` on `#results` children in analyzer.css): fetch form + profile preview card → loader (reels appear one by one) → profile card →
 **Time range** (brush over activity, detected seasons) → KPI cards → **Views distribution** →
 **Posting activity** → **What works** (best hour window, ideal posts per day) → **Posting schedule** (date × time of day,
-dot = reel, size = views, color = Success, best window as a green band) → **Reaction map**
+dot = reel, size = views, color = Success, best window as a green band; hour rows tinted by success lift; right side =
+Best time: reels/hour bars colored by lift + blue success curve — the old separate hours chart is gone, the Best time tile jumps here) → **Reaction map**
 (scatter: Views × Success / Comments × Likes, four clickable corners filter the table, hover preview) → **Reels table**
 (column filters with sliders, ordered filter chain, Success chips, details drawer, select + download /
 copy links / copy captions / CSV / Export data, 📷 full-page screenshot).

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.29.0
+
+- **Best time and Posting schedule are now one chart.** Posting schedule is the main view and carries the Best time brain:
+  - **right side, wider:** reels per hour as bars, **green / rose = reels posted then do better / worse than usual** (Success), ★ = hits; the **blue line** = success vs usual (1× dashed);
+  - **left side:** every hour row is tinted green / rose the same way, so you see good and bad hours behind the dots;
+  - the green best-window band now runs across both sides.
+- *What works → Best time* no longer opens its own chart: clicking it jumps to Posting schedule. The other tiles work as before (*Reels per day* is shown first).
+
 ## 2.28.0
 
 - **Reaction map, more to read at a glance:**
