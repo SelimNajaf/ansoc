@@ -818,14 +818,10 @@ body.shooting .shot-btn { animation: none; }
 .sw.dot.good { background: var(--good); }
 .sw.dot.other { background: var(--neutral); }
 .sw.dot.new { background: transparent; border: 1.75px solid var(--muted); box-sizing: border-box; }
-.map-tip { position: absolute; z-index: 20; display: flex; gap: 10px; align-items: flex-start; pointer-events: none;
-  padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m); box-shadow: var(--sh-2);
-  font-size: var(--fs-s); max-width: 280px; }
-.map-tip[hidden] { display: none; }
-.map-tip .mt-img { width: 72px; height: 128px; object-fit: cover; border-radius: var(--r-s); flex: none; background: var(--soft); }
-.map-tip .mt-body { display: grid; gap: 3px; min-width: 130px; }
-.map-tip .mt-row { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
-.map-tip .mt-date { margin-bottom: 2px; }
+.chart-wrap .mz-stat { font-size: var(--fs-xs); fill: var(--muted); pointer-events: none; }
+.chart-wrap .mtrend { fill: none; stroke: var(--info); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
+.chart-wrap .mtrend-lab { fill: var(--info); font-size: var(--fs-xs); font-weight: 700; pointer-events: none; }
+.sw.line.trend { border-color: var(--info); }
 
 /* ---------------------------------------------------------------- posting schedule (date × hour) */
 .sch-wrap svg { min-width: 560px; }

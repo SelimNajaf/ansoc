@@ -791,9 +791,9 @@ function renderMap() {
   const wrap = $("mapWrap");
   if (!wrap) return;
   wrap.replaceChildren();
-  hideMapTip();
   const key = state.mapView === "cl" ? "cl" : "vs";
   for (const b of $("mapSeg").children) b.classList.toggle("on", b.dataset.map === key);
+  $("mapTrendLg").hidden = key !== "vs";
   const V = MAP_VIEWS[key];
   const pts = state.rows.map((r) => ({ r, x: V.x(r), y: V.y(r) })).filter((p) => isNum(p.x) && isNum(p.y));
   if (pts.length < 4) {
@@ -801,7 +801,7 @@ function renderMap() {
     return;
   }
   const W = 900;
-  const H = 380;
+  const H = 470;
   const m = { l: 58, r: 16, t: 14, b: 42 };
   const pw = W - m.l - m.r;
   const ph = H - m.t - m.b;
@@ -825,20 +825,29 @@ function renderMap() {
     tl: [m.l, m.t, sx - m.l, sy - m.t], tr: [sx, m.t, W - m.r - sx, sy - m.t],
     bl: [m.l, sy, sx - m.l, m.t + ph - sy], br: [sx, sy, W - m.r - sx, m.t + ph - sy],
   };
-  const counts = { tl: 0, tr: 0, bl: 0, br: 0 };
-  for (const p of pts) counts[zoneOf(p)]++;
+  const inZone = { tl: [], tr: [], bl: [], br: [] };
+  for (const p of pts) inZone[zoneOf(p)].push(p.r);
   for (const z of ["tl", "tr", "bl", "br"]) {
     const [x, y, w, h] = rects[z];
     const on = state.mapZone && state.mapZone.view === key && state.mapZone.zone === z;
     const g = svg("g", { class: `mz ${ZONE_TONE[z]}` + (on ? " on" : "") + (state.mapZone && !on ? " dim" : ""), tabindex: "0", role: "button",
-      "aria-label": `${t(V.zones[z])}: ${counts[z]}` });
+      "aria-label": `${t(V.zones[z])}: ${inZone[z].length}` });
     g.append(svg("rect", { class: "mz-bg", x, y, width: Math.max(0, w), height: Math.max(0, h), rx: 6 }));
     const right = z.endsWith("r");
     const top = z.startsWith("t");
     const lx = right ? x + w - 10 : x + 10;
-    const ly = top ? y + 20 : y + h - 10;
-    g.append(svg("text", { class: "mz-name", x: lx, y: ly, "text-anchor": right ? "end" : "start" }, `${t(V.zones[z])} · ${counts[z]}`));
-    g.append(svg("title", {}, t(`${V.zones[z]}_tip`)));
+    const ly = top ? y + 20 : y + h - 26;
+    const zr = inZone[z];
+    const share = Math.round((zr.length / pts.length) * 100);
+    const hits = zr.filter(TIER_FILTERS.hit).length;
+    const medV = St.quantile(zr.map((r) => r.views).filter(isNum).sort((a, b) => a - b), 0.5);
+    const anchor = right ? "end" : "start";
+    g.append(svg("text", { class: "mz-name", x: lx, y: ly, "text-anchor": anchor }, `${t(V.zones[z])} · ${zr.length} (${share}%)`));
+    if (zr.length) {
+      g.append(svg("text", { class: "mz-stat", x: lx, y: ly + 16, "text-anchor": anchor },
+        `${hits ? t("an_map_hits_n", [String(hits)]) + " · " : ""}${t("an_map_med_views", [cmp(medV)])}`));
+    }
+    bindRowsTip(g, () => ({ head: `${t(V.zones[z])} · ${zr.length}`, lines: [t(`${V.zones[z]}_tip`), hitLine(zr), t("an_pick_hint")], rows: zr }));
     const pick = () => pickMapZone(key, z, t(V.zones[z]), pts.filter((p) => zoneOf(p) === z));
     g.addEventListener("click", pick);
     g.addEventListener("keydown", (ev) => {
@@ -866,21 +875,53 @@ function renderMap() {
   root.append(svg("text", { class: "axis mx-name", x: m.l + pw, y: H - 4, "text-anchor": "end" }, `${t(V.xLabel)} →`));
   root.append(svg("text", { class: "axis mx-name", x: 12, y: m.t + ph / 2, transform: `rotate(-90 12 ${m.t + ph / 2})`, "text-anchor": "middle" }, `${t(V.yLabel)} →`));
 
-  // dots: others first, hits on top
+  // typical line (Views × Success only): the median Success of reels with similar views (8 equal-count groups)
+  if (key === "vs" && pts.length >= 24) {
+    const byX = pts.slice().sort((a, b) => a.x - b.x);
+    const k = 8;
+    const line = [];
+    for (let i = 0; i < k; i++) {
+      const part = byX.slice(Math.floor((i * byX.length) / k), Math.floor(((i + 1) * byX.length) / k));
+      if (part.length < 3) continue;
+      const mx = V.xLog ? Math.exp(St.quantile(part.map((p) => Math.log(p.x)), 0.5)) : St.quantile(part.map((p) => p.x), 0.5);
+      const my = St.quantile(part.map((p) => p.y).sort((a, b) => a - b), 0.5);
+      line.push([X(mx), Y(my)]);
+    }
+    if (line.length >= 3) {
+      root.append(svg("polyline", { class: "mtrend", points: line.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(" ") }));
+      const [lx, ly] = line[line.length - 1];
+      root.append(svg("text", { class: "mtrend-lab", x: lx - 4, y: ly - 8, "text-anchor": "end" }, t("an_map_typical")));
+    }
+  }
+
+  // dots: others first, hits on top. Comments × Likes: size = views (the x axis already shows them in the other view)
   const rank = (p) => (p.r.success && p.r.success.tier === "hit" ? 2 : p.r.success && p.r.success.tier ? 1 : 0);
-  pts.sort((a, b) => rank(a) - rank(b));
+  pts.sort((a, b) => rank(a) - rank(b) || (a.r.views || 0) - (b.r.views || 0));
+  const vs = pts.map((p) => p.r.views).filter((v) => v > 0).sort((a, b) => a - b);
+  const vlo = Math.log(vs[0] || 1);
+  const vhi = Math.log(vs[vs.length - 1] || 10);
+  const size = (p, tier) => (key === "cl" && p.r.views > 0 ? 3 + ((Math.log(p.r.views) - vlo) / Math.max(0.1, vhi - vlo)) * 6.5 : tier === "other" ? 4.5 : 5.5);
   for (const p of pts) {
     const tier = rank(p) === 2 ? "hit" : rank(p) === 1 ? "good" : "other";
     const isNew = !!(p.r.perf && p.r.perf.isNew);
-    const inZone = !state.mapZone || state.mapZone.view !== key || zoneOf(p) === state.mapZone.zone;
+    const shown = !state.mapZone || state.mapZone.view !== key || zoneOf(p) === state.mapZone.zone;
     const c = svg("circle", {
-      class: `mdot ${tier}` + (isNew ? " new" : "") + (inZone ? "" : " dim") + (state.openCode === p.r.code ? " open" : ""),
-      cx: X(p.x).toFixed(1), cy: Y(p.y).toFixed(1), r: tier === "other" ? 4.5 : 5.5, tabindex: "-1",
+      class: `mdot ${tier}` + (isNew ? " new" : "") + (shown ? "" : " dim") + (state.openCode === p.r.code ? " open" : ""),
+      cx: X(p.x).toFixed(1), cy: Y(p.y).toFixed(1), r: size(p, tier).toFixed(1), tabindex: "-1",
     });
-    c.addEventListener("pointerenter", (ev) => showMapTip(p.r, ev));
-    c.addEventListener("pointerleave", hideMapTip);
+    const r = p.r;
+    bindRowsTip(c, () => ({
+      head: r.ts ? `${dateLong(r.ts)} ${p2(new Date(r.ts).getHours())}:${p2(new Date(r.ts).getMinutes())}` : r.code,
+      lines: [
+        `${t("an_col_views")}: ${fmt(r.views)}`,
+        `${t("an_col_success")}: ${isNum(r.successScore) ? Math.round(r.successScore) : "–"}`,
+        `${t("an_map_y_comments")}: ${isNum(r.commentRate) ? pctText(r.commentRate) : "–"} · ${t("an_map_x_likes")}: ${isNum(r.likeRate) ? pctText(r.likeRate) : "–"}`,
+      ],
+      rows: [r],
+    }));
     c.addEventListener("click", (ev) => {
       ev.stopPropagation();
+      hideRowsTip();
       openDetails(p.r.code);
       renderMap(); // marks the open dot
     });
@@ -901,41 +942,6 @@ function pickMapZone(view, zone, label, pts) {
   renderActivityChart();
   renderTable();
   renderMap();
-}
-
-function showMapTip(r, ev) {
-  const tip = $("mapTip");
-  const card = $("mapCard").getBoundingClientRect();
-  const kids = [];
-  if (r.thumbnail && /^https:\/\/[^/]*(cdninstagram\.com|fbcdn\.net)\//.test(r.thumbnail)) {
-    const img = el("img", { class: "mt-img", alt: "", referrerpolicy: "no-referrer" });
-    img.src = r.thumbnail;
-    img.addEventListener("error", () => img.remove());
-    kids.push(img);
-  }
-  const line = (label, value) => el("div", { class: "mt-row" }, [el("span", { class: "muted", text: label }), el("strong", { text: value })]);
-  kids.push(el("div", { class: "mt-body" }, [
-    el("div", { class: "mt-date muted", text: r.ts ? dateLong(r.ts) : "" }),
-    line(t("an_col_views"), fmt(r.views)),
-    line(t("an_col_success"), isNum(r.successScore) ? String(Math.round(r.successScore)) : "–"),
-    line(t("an_map_y_comments"), isNum(r.commentRate) ? pctText(r.commentRate) : "–"),
-    line(t("an_map_x_likes"), isNum(r.likeRate) ? pctText(r.likeRate) : "–"),
-  ]));
-  tip.replaceChildren(...kids);
-  tip.hidden = false;
-  // beside the dot, kept inside the card
-  const w = tip.offsetWidth;
-  const h = tip.offsetHeight;
-  let x = ev.clientX - card.left + 14;
-  if (x + w > card.width - 8) x = ev.clientX - card.left - w - 14;
-  let y = ev.clientY - card.top - h / 2;
-  y = Math.max(8, Math.min(card.height - h - 8, y));
-  tip.style.left = `${Math.round(x)}px`;
-  tip.style.top = `${Math.round(y)}px`;
-}
-function hideMapTip() {
-  const tip = $("mapTip");
-  if (tip) tip.hidden = true;
 }
 
 // ------------------------------------------------------------------ date range bar (timeline brush)

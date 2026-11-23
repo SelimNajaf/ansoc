@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.28.0
+
+- **Reaction map, more to read at a glance:**
+  - taller chart;
+  - every corner shows its share and numbers: e.g. *Winners · 18 (9%)* and *10 hits · median 1.2M views*;
+  - **hover a corner** for what it means and the pictures of its best reels;
+  - **Views × Success:** a blue dashed *Typical* line = the usual Success for that many views. Dots above it did better than their reach suggests;
+  - **Comments × Likes:** bigger dot = more views, so you see which *Talkers* also had reach.
+- Hovering a dot now shows the same card as the other charts (picture, time, views, Success, comment and like rate).
+
 ## 2.27.1
 
 - **Posting schedule, taller and clearer:** every hour now has its own label and grid line (midnight stands out), so you can read the exact posting time of each dot.

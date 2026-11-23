@@ -1589,7 +1589,7 @@
     "message": "< 3 days"
   },
   "an_map_hint": {
-    "message": "Click a corner to filter · a dot for details"
+    "message": "Hover a corner for its reels · click it to filter · click a dot for details"
   },
   "an_map_few": {
     "message": "Not enough reels with numbers in this range."
@@ -1617,5 +1617,14 @@
   },
   "an_sch_side": {
     "message": "reels / hour"
+  },
+  "an_map_hits_n": {
+    "message": "$1 hits"
+  },
+  "an_map_med_views": {
+    "message": "median $1 views"
+  },
+  "an_map_typical": {
+    "message": "Typical"
   }
 }
