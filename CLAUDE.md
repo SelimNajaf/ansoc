@@ -34,7 +34,8 @@ Read this file first, in every new environment. It replaces a long explanation f
   no "How is this calculated?", no rows of fact chips under charts, no "What to do" / "Top reels" blocks (removed 2.20.0),
   no "Current season" read option (removed 2.16.2), no Compare stores page (removed 2.13.0),
   no permanent panel on top of Instagram / TikTok / Pinterest (removed 2.20.0),
-  no Repeats / same-cover groups (cover fingerprints, removed 2.26.1: not useful enough).
+  no Repeats / same-cover groups (cover fingerprints, removed 2.26.1: not useful enough),
+  no audio (original vs music) or reel-length analysis (dropped: standard in organic dropshipping).
 - A chart's own switches sit right above that chart. Views histogram defaults to log; activity line defaults to total views.
 
 ---
@@ -88,7 +89,6 @@ helper/                    Python 3.9+ helper
   main.py                  install / uninstall / check CLI; writes the host wrapper (pindl_host.bat / .sh)
   common.py                IS_WINDOWS / IS_MAC, errors, paths
 tools/brain_model.py  tools/brain_analysis.py   fit the Success score on research/*.json
-tools/audio_length_test.py   Phase-5 test: length / audio vs Success on research/audio/*.json
 research/                  owner's Export data JSON files (git-ignored)
 translations/az/  QURASHDIRMA-OXU.txt          Azerbaijani texts for people installing it
 Install-* Update-* Uninstall-*   end-user scripts (Windows .bat, macOS .command)
