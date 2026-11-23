@@ -65,7 +65,19 @@ def _write_wrapper() -> Path:
     host = HELPER_DIR / "native_host.py"
     if IS_WINDOWS:
         wrapper = HELPER_DIR / "pindl_host.bat"
-        wrapper.write_text(f'@echo off\r\n"{py}" -u "{host}" %* 2>>"{HELPER_DIR / "host-stderr.log"}"\r\n', encoding="utf-8")
+        # cmd keeps a 2>> file locked while the host runs. A second Chrome profile (or browser) starts
+        # its own host; if that one also had to open host-stderr.log, cmd would refuse to start it
+        # ("helper started but exited immediately"). So: probe the log, fall back to a second one, then NUL.
+        # Only stderr is redirected: stdout is Chrome's message pipe and must stay clean.
+        lines = [
+            "@echo off",
+            "setlocal",
+            f'set "ERR={HELPER_DIR / "host-stderr.log"}"',
+            f'2>nul (type nul >>"%ERR%") || set "ERR={HELPER_DIR / "host-stderr-2.log"}"',
+            '2>nul (type nul >>"%ERR%") || set "ERR=NUL"',
+            f'"{py}" -u "{host}" %* 2>>"%ERR%"',
+        ]
+        wrapper.write_text("\r\n".join(lines) + "\r\n", encoding="utf-8")
     else:
         wrapper = HELPER_DIR / "pindl_host.sh"
         err = HELPER_DIR / "host-stderr.log"

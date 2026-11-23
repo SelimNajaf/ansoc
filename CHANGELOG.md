@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.22.1
+
+- **Fixed (Windows): "Helper not installed" in a second Chrome profile.** When Media Downloader runs in two Chrome profiles at once, the second one's helper could not start ("the helper started but exited immediately"), because the first was holding its log file. Each one now starts on its own.
+- Needs the helper update: use **Update now** in the popup of the profile where the helper still works, then press ↻ on the extension in the other profile once.
+
 ## 2.22.0
 
 - **Pinterest: a fixed Download button**, like *Analyze reels* on Instagram. On a pin it downloads the pin (hover it: *Download image* / *Download video*); on a board it downloads the whole board. It sits in Pinterest's own left menu, under its icons (same size, same spacing), so it never covers Pinterest's buttons, the search bar or the pins. Progress shows in the small note at the bottom, and the button spins while it works. In a very narrow window, where Pinterest hides that menu, the button stays hidden (right-click still works).
